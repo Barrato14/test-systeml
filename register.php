@@ -108,6 +108,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Register</button>
                     </form>
+                    <div class="text-center my-3 text-muted">OR</div>
+                    <div class="d-grid gap-2">
+                        <!-- Replace YOUR_SUPABASE_URL with your actual Supabase project URL and YOUR_DOMAIN with your Render domain -->
+                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-danger">
+                            <i class="bi bi-google"></i> Continue with Google
+                        </a>
+                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-primary">
+                            <i class="bi bi-facebook"></i> Continue with Facebook
+                        </a>
+                    </div>
                     <div class="mt-3 text-center">
                         Already have an account? <a href="login.php">Login here</a>.
                     </div>
