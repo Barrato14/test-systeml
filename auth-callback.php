@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const result = await sessionRes.json();
                         
                         if (result.status === 'success') {
-                            window.location.href = 'dashboard.php';
+                            window.location.href = 'participant/dashboard.php';
                         } else {
                             window.location.href = 'login.php?error=session_failed';
                         }
