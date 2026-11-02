@@ -2,80 +2,27 @@
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure user has correct role (assuming requireRole exists in auth.php, or check manually)
-if (function_exists('requireRole')) {
-    requireRole(['Participant', 'Administrator']);
+// Ensure the user is logged in and is a Participant
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Participant') {
+    header('Location: ../login.php');
+    exit();
 }
 
-$error = '';
-$success = '';
-$participantId = $_SESSION['user_id'] ?? null;
+$participant_id = $_SESSION['user_id'];
+$firstName = $_SESSION['user_name'] ?? 'Student';
 
-// Handle Registration POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id'])) {
-    $eventId = $_POST['register_event_id'];
-    
-    // 1. Fetch event capacity
-    $eventRes = supabaseRequest('events?id=eq.' . $eventId, 'GET');
-    $event = (!empty($eventRes['data'])) ? $eventRes['data'][0] : null;
+// Fetch the participant's registered events. 
+// We use Supabase's embedded resource feature (select=*,events(*)) to get the event details at the same time.
+$endpoint = "event_registrations?participant_id=eq.$participant_id&select=*,events(*)";
+$response = supabaseRequest($endpoint, 'GET');
 
-    if (!$event) {
-        $error = "Event not found.";
-    } else {
-        // 2. Check current approved registrations count
-        $regRes = supabaseRequest('event_registrations?event_id=eq.' . $eventId . '&status=eq.Approved', 'GET');
-        $currentCount = is_array($regRes['data']) ? count($regRes['data']) : 0;
-
-        // 3. Check if user is already registered
-        $userRegRes = supabaseRequest('event_registrations?event_id=eq.' . $eventId . '&participant_id=eq.' . $participantId, 'GET');
-        $isRegistered = (!empty($userRegRes['data'])) ? count($userRegRes['data']) : 0;
-
-        if ($isRegistered > 0) {
-            $error = "You are already registered for this event.";
-        } elseif ($currentCount >= $event['capacity']) {
-            $error = "Event has reached maximum capacity.";
-        } else {
-            // 4. Insert registration
-            $insertRes = supabaseRequest('event_registrations', 'POST', [
-                'event_id' => $eventId,
-                'participant_id' => $participantId,
-                'status' => 'Approved'
-            ]);
-
-            if ($insertRes['code'] === 201 || $insertRes['code'] === 200) {
-                // Optional audit log via REST if table exists
-                /*
-                supabaseRequest('audit_logs', 'POST', [
-                    'user_id' => $participantId,
-                    'action' => 'Event Registration',
-                    'details' => "Registered for event ID: $eventId"
-                ]);
-                */
-                $success = "Successfully registered for the event!";
-            } else {
-                $error = "Failed to register. Please try again.";
-            }
-        }
-    }
-}
-
-// Fetch available upcoming events with embedded registrations to count current registrations
-$eventsRes = supabaseRequest('events?status=eq.Upcoming&order=start_datetime.asc&select=*,event_registrations(status)', 'GET');
-$availableEvents = [];
-
-if (!empty($eventsRes['data']) && is_array($eventsRes['data'])) {
-    foreach ($eventsRes['data'] as $ev) {
-        // Count approved registrations for this event
-        $approvedCount = 0;
-        if (!empty($ev['event_registrations'])) {
-            foreach ($ev['event_registrations'] as $reg) {
-                if (isset($reg['status']) && $reg['status'] === 'Approved') {
-                    $approvedCount++;
-                }
-            }
-        }
-        $ev['current_registrations'] = $approvedCount;
-        $availableEvents[] = $ev;
+// Safely extract the data array
+$registrations = [];
+if (is_array($response)) {
+    if (isset($response['data']) && is_array($response['data'])) {
+        $registrations = $response['data'];
+    } elseif (isset($response[0])) {
+        $registrations = $response;
     }
 }
 ?>
@@ -83,54 +30,99 @@ if (!empty($eventsRes['data']) && is_array($eventsRes['data'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Participant Dashboard - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Welcome, <?= htmlspecialchars($_SESSION['user_name'] ?? 'Participant') ?></h2>
-        <div>
-            <a href="my-events.php" class="btn btn-secondary me-2">My Events</a>
-            <a href="../logout.php" class="btn btn-outline-danger">Logout</a>
+
+<!-- Simple Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="#">EMIS Dashboard</a>
+        <div class="d-flex">
+            <span class="navbar-text text-white me-3">Welcome, <?= htmlspecialchars($firstName) ?></span>
+            <a href="../logout.php" class="btn btn-outline-light btn-sm">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="h4">My Events</h2>
+            <p class="text-muted">Manage your event registrations and QR passes here.</p>
+        </div>
+        <div class="col-auto">
+            <!-- We will build this 'browse events' page later -->
+            <a href="my-events.php" class="btn btn-primary">Browse New Events</a>
         </div>
     </div>
 
-    <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
-
-    <h4 class="mb-3">Available Upcoming Events</h4>
     <div class="row">
-        <?php foreach ($availableEvents as $event): ?>
-            <?php 
-                $isFull = $event['current_registrations'] >= $event['capacity'];
+        <?php if (empty($registrations)): ?>
+            <div class="col-12">
+                <div class="alert alert-info text-center py-5 shadow-sm">
+                    <h5>You haven't registered for any events yet.</h5>
+                    <p class="mb-0">Click 'Browse New Events' to find something to attend!</p>
+                </div>
+            </div>
+        <?php else: ?>
+            <?php foreach ($registrations as $reg): 
+                // Extract the embedded event data
+                $event = $reg['events'] ?? null;
+                if (!$event) continue; 
+                
+                $status = $reg['status'];
+                $eventId = $event['id'];
+                
+                // Format the date nicely
+                $dateObj = new DateTime($event['start_datetime']);
+                $formattedDate = $dateObj->format('F j, Y, g:i a');
             ?>
-            <div class="col-md-4 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h5 class="card-title"><?= htmlspecialchars($event['title']) ?></h5>
-                        <p class="text-muted mb-1"><small><?= htmlspecialchars($event['venue']) ?></small></p>
-                        <p class="text-muted"><small><?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?></small></p>
-                        <p class="card-text"><?= htmlspecialchars(substr($event['description'] ?? '', 0, 100)) ?>...</p>
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <span class="badge <?= $isFull ? 'bg-danger' : 'bg-success' ?>">
-                                <?= $event['current_registrations'] ?> / <?= $event['capacity'] ?> Registered
-                            </span>
-                            <form method="POST">
-                                <input type="hidden" name="register_event_id" value="<?= $event['id'] ?>">
-                                <button type="submit" class="btn btn-sm btn-primary" <?= $isFull ? 'disabled' : '' ?>>
-                                    <?= $isFull ? 'Full' : 'Register' ?>
-                                </button>
-                            </form>
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary"><?= htmlspecialchars($event['title']) ?></h5>
+                            <h6 class="card-subtitle mb-2 text-muted"><?= htmlspecialchars($event['category'] ?? 'General Event') ?></h6>
+                            
+                            <p class="card-text small mb-1">
+                                <strong>Date:</strong> <?= $formattedDate ?><br>
+                                <strong>Venue:</strong> <?= htmlspecialchars($event['venue']) ?>
+                            </p>
+                            
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                
+                                <!-- Status Badge -->
+                                <?php if ($status === 'Approved'): ?>
+                                    <span class="badge bg-success">Approved</span>
+                                <?php elseif ($status === 'Pending'): ?>
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                <?php elseif ($status === 'Rejected'): ?>
+                                    <span class="badge bg-danger">Rejected</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary"><?= htmlspecialchars($status) ?></span>
+                                <?php endif; ?>
+
+                                <!-- View QR Pass Button -->
+                                <?php if ($status === 'Approved'): ?>
+                                    <a href="my-qr.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-success fw-bold">
+                                        View QR Pass
+                                    </a>
+                                <?php else: ?>
+                                    <button class="btn btn-sm btn-outline-secondary" disabled>QR Not Ready</button>
+                                <?php endif; ?>
+
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-        <?php if (empty($availableEvents)): ?>
-            <div class="col-12"><p class="text-muted">No upcoming events available at the moment.</p></div>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
