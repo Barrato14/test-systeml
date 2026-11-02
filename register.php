@@ -9,9 +9,9 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $firstName = trim($_POST['first_name']);
     $lastName = trim($_POST['last_name']);
-    $email = trim($_POST['email']);
+    $email = strtolower(trim($_POST['email'])); // Force lowercase to avoid duplicate casing issues
     $password = $_POST['password'];
-    $role = 'Participant'; // Matches Supabase enum
+    $role = 'Participant'; // Matches Supabase user_role enum
 
     // Check if email already exists
     $existing = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
@@ -39,15 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $insertResponse = supabaseRequest('profiles', 'POST', $payload);
 
-        // Check if Supabase returned an error
-        $insertResponse = supabaseRequest('profiles', 'POST', $payload);
-
-        // Temporarily print the exact response from Supabase for debugging
-        if (!empty($insertResponse)) {
-            echo "<pre>";
-            print_r($insertResponse);
-            echo "</pre>";
-            exit;
+        // Check if Supabase returned an error (like a 409 duplicate key)
+        $errorCode = $insertResponse['code'] ?? ($insertResponse['data']['code'] ?? null);
+        
+        if ($errorCode == '23505' || $errorCode == 409) {
+            $error = "An account with this email address already exists.";
+        } elseif (isset($insertResponse['message']) || (isset($insertResponse['code']) && $insertResponse['code'] >= 400)) {
+            $error = "Database Error: " . ($insertResponse['message'] ?? ($insertResponse['data']['message'] ?? 'Unknown database rejection.'));
         } else {
             // Send verification email via Brevo API
             $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
