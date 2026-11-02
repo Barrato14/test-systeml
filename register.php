@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim($_POST['last_name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
-    $role = 'user';
+    $role = 'Participant'; // Matches Supabase enum
 
     // Check if email already exists
     $existing = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
