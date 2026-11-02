@@ -40,8 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $insertResponse = supabaseRequest('profiles', 'POST', $payload);
 
         // Check if Supabase returned an error
-        if (isset($insertResponse['code']) || isset($insertResponse['message'])) {
-            $error = "Database Error: " . ($insertResponse['message'] ?? 'Unknown database rejection.');
+        $insertResponse = supabaseRequest('profiles', 'POST', $payload);
+
+        // Temporarily print the exact response from Supabase for debugging
+        if (!empty($insertResponse)) {
+            echo "<pre>";
+            print_r($insertResponse);
+            echo "</pre>";
+            exit;
         } else {
             // Send verification email via Brevo API
             $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
