@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
                 // Change your-app.onrender.com to your actual live Render domain name
-                $verificationLink = "https://your-app.onrender.com/verify.php?token=" . $verificationToken;
+                $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
                 
                 $subject = "Verify Your EMIS Account";
                 $body = "
