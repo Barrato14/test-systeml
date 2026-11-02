@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
 <div class="container mt-5">
@@ -79,10 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </form>
                     <div class="text-center my-3 text-muted">OR</div>
                     <div class="d-grid gap-2">
-                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-danger">
+                        <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn btn-outline-danger">
                             <i class="bi bi-google"></i> Continue with Google
                         </a>
-                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-primary">
+                        <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn btn-outline-primary">
                             <i class="bi bi-facebook"></i> Continue with Facebook
                         </a>
                     </div>
