@@ -31,10 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
 
     // Set session variables securely
     session_regenerate_id(true);
+    // Set session variables securely
+    session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'] ?? '';
     $_SESSION['user_email'] = $email;
-    // Use their existing role from the DB if they have one, otherwise default to participant
-    $_SESSION['user_role'] = $user['role'] ?? 'participant'; 
+    $_SESSION['user_role'] = 'Participant'; // Must match dashboard check ('Participant')
     $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? $fullName));
 
     // Redirect straight to the participant dashboard
