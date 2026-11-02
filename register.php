@@ -20,14 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($firstName) || empty($lastName) || empty($email) || empty($password)) {
         $error = "All fields are required.";
     } else {
-        // Check if email exists
         $checkResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-        $existingRows = isset($checkResponse['data']) ? $checkResponse['data'] : $checkResponse;
+        $existingRows = [];
+        if (is_array($checkResponse)) {
+            $existingRows = isset($checkResponse['data']) ? $checkResponse['data'] : $checkResponse;
+        }
         
         if (!empty($existingRows)) {
             $error = "Email is already registered.";
         } else {
-            // Generate a unique dynamic verification token
             $verificationToken = bin2hex(random_bytes(32));
             $hash = password_hash($password, PASSWORD_BCRYPT);
             
@@ -45,9 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $statusCode = $insert['code'] ?? 200;
             
             if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
-                $success = "Registration successful! Please check your Gmail inbox to verify your account before logging in.";
-                
-                // Build dynamic verification link (Change yourdomain.com to your actual Render live URL)
+                // Change your-app.onrender.com to your actual live Render domain name
                 $verificationLink = "https://your-app.onrender.com/verify.php?token=" . $verificationToken;
                 
                 $subject = "Verify Your EMIS Account";
@@ -55,13 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h2>Hello " . htmlspecialchars($firstName) . ",</h2>
                     <p>Thank you for registering! Please click the button below to verify your email address:</p>
                     <p><a href='$verificationLink' style='background: #0d6efd; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Verify Email Address</a></p>
-                    <p>Or paste this link into your browser:<br><a href='$verificationLink'>$verificationLink</a></p>
                 ";
                 
-                sendSystemEmail($email, "$firstName $lastName", $subject, $body);
+                $mailResult = sendSystemEmail($email, "$firstName $lastName", $subject, $body);
+                
+                if ($mailResult === true) {
+                    $success = "Registration successful! Please check your Gmail inbox to verify your account.";
+                } else {
+                    $success = "Registration saved, but mail failed: " . htmlspecialchars($mailResult);
+                }
                 
             } else {
-                $error = "Registration failed. Please try again.";
+                $error = "Registration failed. (Ensure `is_verified` and `verification_token` columns exist in Supabase): " . json_encode($insert['data'] ?? $insert);
             }
         }
     }
