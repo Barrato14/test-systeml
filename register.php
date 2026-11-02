@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim($_POST['last_name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
-    $role = 'user'; // default role
+    $role = 'user';
 
     // Check if email already exists
     $existing = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
@@ -39,8 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $insertResponse = supabaseRequest('profiles', 'POST', $payload);
 
-        if ($insertResponse) {
-            // Send verification email via Resend API
+        // Check if Supabase returned an error
+        if (isset($insertResponse['code']) || isset($insertResponse['message'])) {
+            $error = "Database Error: " . ($insertResponse['message'] ?? 'Unknown database rejection.');
+        } else {
+            // Send verification email via Brevo API
             $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
             $subject = "Verify Your Account - EMIS";
             $htmlBody = "<p>Hi " . htmlspecialchars($firstName) . ",</p>"
@@ -51,12 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $emailResult = sendSystemEmail($email, $firstName . ' ' . $lastName, $subject, $htmlBody);
 
             if ($emailResult === true) {
-                $success = "Registration successful! Please check your Gmail inbox to verify your account.";
+                $success = "Registration successful! Please check your inbox to verify your account.";
             } else {
                 $error = "Registration saved, but mail failed: " . $emailResult;
             }
-        } else {
-            $error = "Failed to create user profile in the database.";
         }
     }
 }

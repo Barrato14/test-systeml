@@ -8,8 +8,8 @@ $isSuccess = false;
 if (!$token) {
     $message = "Invalid or missing verification token.";
 } else {
-    // 1. Find user with this token
-    $response = supabaseRequest('profiles?verification_token=eq.' . urlencode($token), 'GET');
+    // Find user with this token
+    $response = supabaseRequest('profiles?verification_token=eq.' . urlencode(trim($token)), 'GET');
     $rows = isset($response['data']) ? $response['data'] : $response;
 
     if (empty($rows)) {
@@ -17,13 +17,12 @@ if (!$token) {
     } else {
         $userId = $rows[0]['id'];
 
-        // 2. Update profile: set is_verified = true and clear the token so it can't be reused
+        // Update profile: set is_verified = true and clear token
         $payload = [
             'is_verified' => true,
             'verification_token' => null
         ];
 
-        // Supabase REST patch syntax using id filter
         $updateResponse = supabaseRequest('profiles?id=eq.' . $userId, 'PATCH', $payload);
         
         $isSuccess = true;

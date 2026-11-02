@@ -8,7 +8,6 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
 
     $url = 'https://api.brevo.com/v3/smtp/email';
     
-    // Brevo requires an array for 'to' and 'sender'
     $data = [
         'sender' => [
             'name' => 'EMIS Event System',
@@ -24,7 +23,6 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
         'htmlContent' => $htmlBody
     ];
 
-    // Handle attachments (like QR codes) if passed
     if ($attachmentData !== null) {
         $data['attachment'] = [
             [
@@ -53,7 +51,6 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
         return "cURL Connection Error: " . $curlError;
     }
 
-    // Brevo returns HTTP 201 Created on success
     if ($httpCode >= 200 && $httpCode < 300) {
         return true;
     } else {
