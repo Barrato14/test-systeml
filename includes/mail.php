@@ -8,20 +8,20 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
     $mail = new PHPMailer(true);
 
     try {
-        // SMTP Configuration
+        // Server settings
         $mail->isSMTP();
         $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com'; 
         $mail->SMTPAuth   = true;
-        $mail->Username   = getenv('SMTP_USER') ?: 'your-email@gmail.com'; 
-        $mail->Password   = getenv('SMTP_PASS') ?: 'your-app-password'; 
+        $mail->Username   = getenv('SMTP_USER'); // Must be your full Gmail address
+        $mail->Password   = getenv('SMTP_PASS'); // Must be your 16-character Google App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = getenv('SMTP_PORT') ?: 587;
 
-        // Sender & Recipient
-        $mail->setFrom($mail->Username, 'EMIS System');
+        // Recipients
+        $mail->setFrom(getenv('SMTP_USER'), 'EMIS Event System');
         $mail->addAddress($toEmail, $toName);
 
-        // Optional Attachment (Used for QR Codes)
+        // Optional Attachment (for QR codes later)
         if ($attachmentData !== null) {
             $mail->addStringAttachment($attachmentData, $attachmentName);
         }
@@ -35,7 +35,8 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        // Log the exact error to your server logs so you can see it in Render
+        error_log("Mailer Error: {$mail->ErrorInfo}");
         return false;
     }
 }

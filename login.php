@@ -28,13 +28,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = (!empty($rows) && isset($rows[0]) && is_array($rows[0])) ? $rows[0] : null;
 
     if ($user && isset($user['password_hash']) && password_verify($password, $user['password_hash'])) {
-        session_regenerate_id(true); // Prevent session fixation
-        $_SESSION['user_id'] = $user['id'] ?? '';
-        $_SESSION['user_email'] = $user['email'] ?? $email;
-        $_SESSION['user_role'] = $user['role'] ?? 'user';
-        $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         
-        redirectByRole($_SESSION['user_role']);
+        // --- VERIFICATION CHECK ADDED HERE ---
+        $isVerified = $user['is_verified'] ?? false;
+        if ($isVerified === false || $isVerified === 'false' || $isVerified === 0) {
+            $error = "Please check your Gmail inbox and click the verification link before logging in.";
+        } else {
+            // Proceed with login session setup
+            session_regenerate_id(true); // Prevent session fixation
+            $_SESSION['user_id'] = $user['id'] ?? '';
+            $_SESSION['user_email'] = $user['email'] ?? $email;
+            $_SESSION['user_role'] = $user['role'] ?? 'user';
+            $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+            
+            redirectByRole($_SESSION['user_role']);
+        }
+        // -------------------------------------
+
     } else {
         $error = "Invalid email or password.";
     }
@@ -69,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </form>
                     <div class="text-center my-3 text-muted">OR</div>
                     <div class="d-grid gap-2">
-                        <!-- Replace YOUR_SUPABASE_URL with your actual Supabase project URL and YOUR_DOMAIN with your Render domain -->
                         <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-danger">
                             <i class="bi bi-google"></i> Continue with Google
                         </a>

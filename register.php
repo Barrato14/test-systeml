@@ -1,7 +1,7 @@
 <?php
 require_once 'config/database.php'; 
 require_once 'includes/auth.php';
-require_once 'includes/mail.php';   // Loads the SMTP mailer
+require_once 'includes/mail.php';   
 
 if (function_exists('isLoggedIn') && isLoggedIn()) {
     redirectByRole($_SESSION['user_role']);
@@ -20,22 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($firstName) || empty($lastName) || empty($email) || empty($password)) {
         $error = "All fields are required.";
     } else {
-        // 1. Check if email already exists
+        // Check if email exists
         $checkResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-        
-        $existingRows = [];
-        if (is_array($checkResponse)) {
-            if (isset($checkResponse['data']) && is_array($checkResponse['data'])) {
-                $existingRows = $checkResponse['data'];
-            } else {
-                $existingRows = $checkResponse;
-            }
-        }
+        $existingRows = isset($checkResponse['data']) ? $checkResponse['data'] : $checkResponse;
         
         if (!empty($existingRows)) {
             $error = "Email is already registered.";
         } else {
-            // 2. Hash password and insert user
+            // Generate a unique dynamic verification token
+            $verificationToken = bin2hex(random_bytes(32));
             $hash = password_hash($password, PASSWORD_BCRYPT);
             
             $payload = [
@@ -43,30 +36,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password_hash' => $hash,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
-                'role' => $role
+                'role' => $role,
+                'verification_token' => $verificationToken,
+                'is_verified' => false
             ];
 
             $insert = supabaseRequest('profiles', 'POST', $payload);
             $statusCode = $insert['code'] ?? 200;
             
             if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
-                $success = "Registration successful! A welcome email has been sent to your inbox. You can now <a href='login.php'>login</a>.";
+                $success = "Registration successful! Please check your Gmail inbox to verify your account before logging in.";
                 
-                // 3. Trigger the SMTP Welcome Email
-                $subject = "Welcome to the Event Management Information System!";
+                // Build dynamic verification link (Change yourdomain.com to your actual Render live URL)
+                $verificationLink = "https://your-app.onrender.com/verify.php?token=" . $verificationToken;
+                
+                $subject = "Verify Your EMIS Account";
                 $body = "
-                    <h2>Hello " . htmlspecialchars($firstName) . "!,</h2>
-                    <p>Thank you for registering an account with EMIS.</p>
-                    <p>You can now log in using your email (<strong>" . htmlspecialchars($email) . "</strong>) to explore upcoming events and manage your QR passes.</p>
-                    <br>
-                    <p>Best regards,<br><strong>EMIS Team</strong></p>
+                    <h2>Hello " . htmlspecialchars($firstName) . ",</h2>
+                    <p>Thank you for registering! Please click the button below to verify your email address:</p>
+                    <p><a href='$verificationLink' style='background: #0d6efd; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Verify Email Address</a></p>
+                    <p>Or paste this link into your browser:<br><a href='$verificationLink'>$verificationLink</a></p>
                 ";
                 
-                // Sends the email using your SMTP configuration
                 sendSystemEmail($email, "$firstName $lastName", $subject, $body);
                 
             } else {
-                $error = "Registration failed. Please try again. (" . json_encode($insert['data'] ?? $insert) . ")";
+                $error = "Registration failed. Please try again.";
             }
         }
     }
@@ -76,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -90,37 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
                     <?php if ($success): ?><div class="alert alert-success"><?= $success ?></div><?php endif; ?>
                     <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">First Name</label>
-                            <input type="text" name="first_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" name="last_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
+                        <div class="mb-3"><label class="form-label">First Name</label><input type="text" name="first_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">Last Name</label><input type="text" name="last_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">Password</label><input type="password" name="password" class="form-control" required></div>
                         <button type="submit" class="btn btn-primary w-100">Register</button>
                     </form>
-                    <div class="text-center my-3 text-muted">OR</div>
-                    <div class="d-grid gap-2">
-                        <!-- Replace YOUR_SUPABASE_URL with your actual Supabase project URL and YOUR_DOMAIN with your Render domain -->
-                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-danger">
-                            <i class="bi bi-google"></i> Continue with Google
-                        </a>
-                        <a href="https://YOUR_SUPABASE_URL.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://YOUR_DOMAIN/auth-callback.php" class="btn btn-outline-primary">
-                            <i class="bi bi-facebook"></i> Continue with Facebook
-                        </a>
-                    </div>
-                    <div class="mt-3 text-center">
-                        Already have an account? <a href="login.php">Login here</a>.
-                    </div>
+                    <div class="mt-3 text-center">Already have an account? <a href="login.php">Login here</a>.</div>
                 </div>
             </div>
         </div>
