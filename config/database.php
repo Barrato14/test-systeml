@@ -1,11 +1,12 @@
 <?php
-// Supabase REST API Central Helper loaded securely from .env
+// Supabase REST API Central Helper supporting both Render environment variables and local .env
 
 $envFilePath = __DIR__ . '/../.env';
 $env = file_exists($envFilePath) ? parse_ini_file($envFilePath) : [];
 
-$supabaseUrl = $env['SUPABASE_URL'] ?? 'https://tnvrgvcijqccqucwxqyr.supabase.co';
-$apiKey = $env['SUPABASE_ANON_KEY'] ?? '';
+// Check Render server environment variables first, fallback to .env, then fallback to your URL
+$supabaseUrl = getenv('SUPABASE_URL') ?: ($env['SUPABASE_URL'] ?? 'https://tnvrgvcijqccqucwxqyr.supabase.co');
+$apiKey = getenv('SUPABASE_ANON_KEY') ?: ($env['SUPABASE_ANON_KEY'] ?? '');
 
 /**
  * Send a request to Supabase REST API
