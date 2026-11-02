@@ -20,9 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "All fields are required.";
     } else {
         // 1. Check if email already exists using Supabase REST GET query
-        $check = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
+        $checkResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
         
-        if (!empty($check['data'])) {
+        // Safely normalize check response whether it's wrapped in ['data'] or flat
+        $existingRows = [];
+        if (is_array($checkResponse)) {
+            if (isset($checkResponse['data']) && is_array($checkResponse['data'])) {
+                $existingRows = $checkResponse['data'];
+            } else {
+                $existingRows = $checkResponse;
+            }
+        }
+        
+        if (!empty($existingRows)) {
             $error = "Email is already registered.";
         } else {
             // 2. Hash the password and insert the new user via Supabase REST POST query
@@ -38,10 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $insert = supabaseRequest('profiles', 'POST', $payload);
 
-            if ($insert['code'] === 201 || $insert['code'] === 200) {
+            $statusCode = $insert['code'] ?? 200;
+            
+            if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
                 $success = "Registration successful! You can now <a href='login.php'>login</a>.";
             } else {
-                $error = "Registration failed. Please try again. (" . json_encode($insert['data']) . ")";
+                $error = "Registration failed. Please try again. (" . json_encode($insert['data'] ?? $insert) . ")";
             }
         }
     }

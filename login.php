@@ -15,26 +15,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Query user profile by email using Supabase REST API
     $response = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
     
-    // Supabase returns an array of records
-    $user = (!empty($response['data']) && is_array($response['data'])) ? $response['data'][0] : null;
+    // Safely handle both wrapped and flat response structures from Supabase
+    $rows = [];
+    if (is_array($response)) {
+        if (isset($response['data']) && is_array($response['data'])) {
+            $rows = $response['data'];
+        } else {
+            $rows = $response; // Direct array return case
+        }
+    }
 
-    if ($user && password_verify($password, $user['password_hash'])) {
+    $user = (!empty($rows) && isset($rows[0]) && is_array($rows[0])) ? $rows[0] : null;
+
+    if ($user && isset($user['password_hash']) && password_verify($password, $user['password_hash'])) {
         session_regenerate_id(true); // Prevent session fixation
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_role'] = $user['role'];
-        $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+        $_SESSION['user_id'] = $user['id'] ?? '';
+        $_SESSION['user_email'] = $user['email'] ?? $email;
+        $_SESSION['user_role'] = $user['role'] ?? 'user';
+        $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         
-        // Optional: Log audit trail via REST API if you have an audit_logs table
-        /*
-        supabaseRequest('audit_logs', 'POST', [
-            'user_id' => $user['id'],
-            'action' => 'Login',
-            'details' => 'Successful login'
-        ]);
-        */
-
-        redirectByRole($user['role']);
+        redirectByRole($_SESSION['user_role']);
     } else {
         $error = "Invalid email or password.";
     }
