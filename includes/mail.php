@@ -1,46 +1,63 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// Make sure Composer's autoloader is included in your project
-require_once __DIR__ . '/../vendor/autoload.php';
-
 function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData = null, $attachmentName = 'qrcode.png') {
-    $mail = new PHPMailer(true);
+    $apiKey = getenv('BREVO_API_KEY');
+    
+    if (!$apiKey) {
+        return "Brevo Error: BREVO_API_KEY environment variable is missing on Render.";
+    }
 
-    try {
-        // Server settings for Gmail SMTP
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        
-        // Put your actual Gmail address here
-        $mail->Username   = 'barratobien@gmail.com'; 
-        
-        // Put your 16-character Google App Password here (no spaces)
-        $mail->Password   = 'nnku anga dkpp fxxr'; 
-        
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
+    $url = 'https://api.brevo.com/v3/smtp/email';
+    
+    // Brevo requires an array for 'to' and 'sender'
+    $data = [
+        'sender' => [
+            'name' => 'EMIS Event System',
+            'email' => 'barratobien@gmail.com' 
+        ],
+        'to' => [
+            [
+                'email' => $toEmail,
+                'name' => $toName ?: 'User'
+            ]
+        ],
+        'subject' => $subject,
+        'htmlContent' => $htmlBody
+    ];
 
-        // Recipients
-        $mail->setFrom('barratobien@gmail.com', 'EMIS Event System');
-        $mail->addAddress($toEmail, $toName);
+    // Handle attachments (like QR codes) if passed
+    if ($attachmentData !== null) {
+        $data['attachment'] = [
+            [
+                'content' => base64_encode($attachmentData),
+                'name' => $attachmentName
+            ]
+        ];
+    }
 
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $htmlBody;
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'api-key: ' . $apiKey,
+        'Content-Type: application/json',
+        'accept: application/json'
+    ]);
 
-        // Handle attachments (like QR codes) if passed into the function
-        if ($attachmentData !== null) {
-            $mail->addStringAttachment($attachmentData, $attachmentName);
-        }
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-        $mail->send();
+    if ($curlError) {
+        return "cURL Connection Error: " . $curlError;
+    }
+
+    // Brevo returns HTTP 201 Created on success
+    if ($httpCode >= 200 && $httpCode < 300) {
         return true;
-    } catch (Exception $e) {
-        return "Gmail SMTP Error: " . $mail->ErrorInfo;
+    } else {
+        return "Brevo API Error (HTTP $httpCode): " . $response;
     }
 }
 ?>
