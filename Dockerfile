@@ -1,7 +1,10 @@
 FROM php:8.2-apache
 
-# Install cURL extension for Supabase REST requests
-RUN apt-get update && apt-get install -y libcurl4-openssl-dev && docker-php-ext-install curl
+# Install required system packages
+RUN apt-get update && apt-get install -y libcurl4-openssl-dev git unzip && docker-php-ext-install curl
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache URL rewriting
 RUN a2enmod rewrite
@@ -11,6 +14,10 @@ RUN echo "DirectoryIndex index.php index.html" > /etc/apache2/conf-available/dir
 
 # Copy all project files into Apache's web root
 COPY . /var/www/html/
+
+# Set working directory and install PHP dependencies via Composer
+WORKDIR /var/www/html
+RUN composer install --no-dev --optimize-autoloader
 
 # Set correct file permissions
 RUN chown -R www-data:www-data /var/www/html

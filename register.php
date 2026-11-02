@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php'; // This now loads our supabaseRequest() function
 require_once 'includes/auth.php';
+require_once 'includes/mail.php';   // This loads the new email helper
 
 if (function_exists('isLoggedIn') && isLoggedIn()) {
     redirectByRole($_SESSION['user_role']);
@@ -52,6 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
                 $success = "Registration successful! You can now <a href='login.php'>login</a>.";
+                
+                // 3. Send the Welcome Email upon successful registration
+                $subject = "Welcome to the Event Management System";
+                $body = "<h2>Hello " . htmlspecialchars($firstName) . ",</h2><p>Your account has been successfully registered. You can now log in to view and register for upcoming events.</p>";
+                
+                // This function won't break the page if it fails, it will just quietly log an error
+                sendSystemEmail($email, "$firstName $lastName", $subject, $body);
+                
             } else {
                 $error = "Registration failed. Please try again. (" . json_encode($insert['data'] ?? $insert) . ")";
             }
