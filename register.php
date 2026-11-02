@@ -1,7 +1,7 @@
 <?php
-require_once 'config/database.php'; // This now loads our supabaseRequest() function
+require_once 'config/database.php'; 
 require_once 'includes/auth.php';
-require_once 'includes/mail.php';   // This loads the new email helper
+require_once 'includes/mail.php';   // Loads the SMTP mailer
 
 if (function_exists('isLoggedIn') && isLoggedIn()) {
     redirectByRole($_SESSION['user_role']);
@@ -15,15 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim($_POST['last_name']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
-    $role = 'Participant'; // Default registration role
+    $role = 'Participant'; 
 
     if (empty($firstName) || empty($lastName) || empty($email) || empty($password)) {
         $error = "All fields are required.";
     } else {
-        // 1. Check if email already exists using Supabase REST GET query
+        // 1. Check if email already exists
         $checkResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
         
-        // Safely normalize check response whether it's wrapped in ['data'] or flat
         $existingRows = [];
         if (is_array($checkResponse)) {
             if (isset($checkResponse['data']) && is_array($checkResponse['data'])) {
@@ -36,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($existingRows)) {
             $error = "Email is already registered.";
         } else {
-            // 2. Hash the password and insert the new user via Supabase REST POST query
+            // 2. Hash password and insert user
             $hash = password_hash($password, PASSWORD_BCRYPT);
             
             $payload = [
@@ -48,17 +47,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             $insert = supabaseRequest('profiles', 'POST', $payload);
-
             $statusCode = $insert['code'] ?? 200;
             
             if ($statusCode === 201 || $statusCode === 200 || isset($insert['id']) || isset($insert[0]['id'])) {
-                $success = "Registration successful! You can now <a href='login.php'>login</a>.";
+                $success = "Registration successful! A welcome email has been sent to your inbox. You can now <a href='login.php'>login</a>.";
                 
-                // 3. Send the Welcome Email upon successful registration
-                $subject = "Welcome to the Event Management System";
-                $body = "<h2>Hello " . htmlspecialchars($firstName) . ",</h2><p>Your account has been successfully registered. You can now log in to view and register for upcoming events.</p>";
+                // 3. Trigger the SMTP Welcome Email
+                $subject = "Welcome to the Event Management Information System!";
+                $body = "
+                    <h2>Hello " . htmlspecialchars($firstName) . "!,</h2>
+                    <p>Thank you for registering an account with EMIS.</p>
+                    <p>You can now log in using your email (<strong>" . htmlspecialchars($email) . "</strong>) to explore upcoming events and manage your QR passes.</p>
+                    <br>
+                    <p>Best regards,<br><strong>EMIS Team</strong></p>
+                ";
                 
-                // This function won't break the page if it fails, it will just quietly log an error
+                // Sends the email using your SMTP configuration
                 sendSystemEmail($email, "$firstName $lastName", $subject, $body);
                 
             } else {
