@@ -1,43 +1,46 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+// Make sure Composer's autoloader is included in your project
+require_once __DIR__ . '/../vendor/autoload.php';
+
 function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData = null, $attachmentName = 'qrcode.png') {
-    $apiKey = getenv('RESEND_API_KEY');
-    
-    if (!$apiKey) {
-        return "Resend Error: RESEND_API_KEY environment variable is missing on Render.";
-    }
+    $mail = new PHPMailer(true);
 
-    $url = 'https://api.resend.com/emails';
-    
-    $data = [
-        // When testing for free, Resend uses onboarding@resend.dev as the sender
-        'from' => 'EMIS Event System <onboarding@resend.dev>',
-        'to' => [$toEmail],
-        'subject' => $subject,
-        'html' => $htmlBody
-    ];
+    try {
+        // Server settings for Gmail SMTP
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        
+        // Put your actual Gmail address here
+        $mail->Username   = 'barratobien@gmail.com'; 
+        
+        // Put your 16-character Google App Password here (no spaces)
+        $mail->Password   = 'nnku anga dkpp fxxr'; 
+        
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $apiKey,
-        'Content-Type: application/json'
-    ]);
+        // Recipients
+        $mail->setFrom('barratobien@gmail.com', 'EMIS Event System');
+        $mail->addAddress($toEmail, $toName);
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $htmlBody;
 
-    if ($curlError) {
-        return "cURL Connection Error: " . $curlError;
-    }
+        // Handle attachments (like QR codes) if passed into the function
+        if ($attachmentData !== null) {
+            $mail->addStringAttachment($attachmentData, $attachmentName);
+        }
 
-    if ($httpCode >= 200 && $httpCode < 300) {
+        $mail->send();
         return true;
-    } else {
-        return "Resend API Error (HTTP $httpCode): " . $response;
+    } catch (Exception $e) {
+        return "Gmail SMTP Error: " . $mail->ErrorInfo;
     }
 }
 ?>

@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
     $_SESSION['user_email'] = $email;
     $_SESSION['user_role'] = 'Participant'; // Must match dashboard check ('Participant')
     $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? $fullName));
-
     // Redirect straight to the participant dashboard
     header('Location: participant/dashboard.php');
     exit;
