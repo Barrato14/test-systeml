@@ -11,56 +11,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim($_POST['last_name']);
     $email = strtolower(trim($_POST['email'])); // Force lowercase to avoid duplicate casing issues
     $password = $_POST['password'];
+    $course = $_POST['course'] ?? '';
+    $section = $_POST['section'] ?? '';
     $role = 'Participant'; // Matches Supabase user_role enum
 
-    // Check if email already exists
-    $existing = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-    $rows = [];
-    if (is_array($existing)) {
-        $rows = isset($existing['data']) ? $existing['data'] : $existing;
-    }
-
-    if (!empty($rows)) {
-        $error = "An account with this email already exists.";
+    if (empty($course) || empty($section)) {
+        $error = "Please select both your course and year & section.";
     } else {
-        $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-        $verificationToken = bin2hex(random_bytes(32));
+        // Check if email already exists
+        $existing = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
+        $rows = [];
+        if (is_array($existing)) {
+            $rows = isset($existing['data']) ? $existing['data'] : $existing;
+        }
 
-        // Insert user profile into Supabase
-        $payload = [
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'password_hash' => $passwordHash,
-            'role' => $role,
-            'is_verified' => false,
-            'verification_token' => $verificationToken
-        ];
-
-        $insertResponse = supabaseRequest('profiles', 'POST', $payload);
-
-        // Check if Supabase returned an error (like a 409 duplicate key)
-        $errorCode = $insertResponse['code'] ?? ($insertResponse['data']['code'] ?? null);
-        
-        if ($errorCode == '23505' || $errorCode == 409) {
-            $error = "An account with this email address already exists.";
-        } elseif (isset($insertResponse['message']) || (isset($insertResponse['code']) && $insertResponse['code'] >= 400)) {
-            $error = "Database Error: " . ($insertResponse['message'] ?? ($insertResponse['data']['message'] ?? 'Unknown database rejection.'));
+        if (!empty($rows)) {
+            $error = "An account with this email already exists.";
         } else {
-            // Send verification email via Brevo API
-            $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
-            $subject = "Verify Your Account - EMIS";
-            $htmlBody = "<p>Hi " . htmlspecialchars($firstName) . ",</p>"
-                      . "<p>Thank you for registering. Please click the link below to verify your email address:</p>"
-                      . "<p><a href='" . $verificationLink . "'>Verify My Account</a></p>"
-                      . "<p>If you did not request this, please ignore this email.</p>";
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+            $verificationToken = bin2hex(random_bytes(32));
 
-            $emailResult = sendSystemEmail($email, $firstName . ' ' . $lastName, $subject, $htmlBody);
+            // Insert user profile into Supabase including course and section
+            $payload = [
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $email,
+                'password_hash' => $passwordHash,
+                'course' => $course,
+                'section' => $section,
+                'role' => $role,
+                'is_verified' => false,
+                'verification_token' => $verificationToken
+            ];
 
-            if ($emailResult === true) {
-                $success = "Registration successful! Please check your inbox to verify your account.";
+            $insertResponse = supabaseRequest('profiles', 'POST', $payload);
+
+            // Check if Supabase returned an error (like a 409 duplicate key)
+            $errorCode = $insertResponse['code'] ?? ($insertResponse['data']['code'] ?? null);
+            
+            if ($errorCode == '23505' || $errorCode == 409) {
+                $error = "An account with this email address already exists.";
+            } elseif (isset($insertResponse['message']) || (isset($insertResponse['code']) && $insertResponse['code'] >= 400)) {
+                $error = "Database Error: " . ($insertResponse['message'] ?? ($insertResponse['data']['message'] ?? 'Unknown database rejection.'));
             } else {
-                $error = "Registration saved, but mail failed: " . $emailResult;
+                // Send verification email via Brevo API
+                $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
+                $subject = "Verify Your Account - EMIS";
+                $htmlBody = "<p>Hi " . htmlspecialchars($firstName) . ",</p>"
+                          . "<p>Thank you for registering. Please click the link below to verify your email address:</p>"
+                          . "<p><a href='" . $verificationLink . "'>Verify My Account</a></p>"
+                          . "<p>If you did not request this, please ignore this email.</p>";
+
+                $emailResult = sendSystemEmail($email, $firstName . ' ' . $lastName, $subject, $htmlBody);
+
+                if ($emailResult === true) {
+                    $success = "Registration successful! Please check your inbox to verify your account.";
+                } else {
+                    $error = "Registration saved, but mail failed: " . $emailResult;
+                }
             }
         }
     }
@@ -94,6 +102,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="form-label">Last Name</label>
                             <input type="text" name="last_name" class="form-control" required>
                         </div>
+                        
+                        <!-- Course Selection -->
+                        <div class="mb-3">
+                            <label for="course" class="form-label">Course</label>
+                            <select name="course" id="course" class="form-select" required>
+                                <option value="">Select Course</option>
+                                <option value="ACT">ACT (Associate in Computer Technology)</option>
+                                <option value="HM">HM (Hotel Management)</option>
+                                <option value="CT">CT</option>
+                            </select>
+                        </div>
+
+                        <!-- Year & Section Selection -->
+                        <div class="mb-3">
+                            <label for="section" class="form-label">Year & Section</label>
+                            <select name="section" id="section" class="form-select" required>
+                                <option value="">Select Section</option>
+                                <optgroup label="Year 1">
+                                    <option value="1A">1A</option>
+                                    <option value="1B">1B</option>
+                                    <option value="1C">1C</option>
+                                </optgroup>
+                                <optgroup label="Year 2">
+                                    <option value="2A">2A</option>
+                                    <option value="2B">2B</option>
+                                    <option value="2C">2C</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">Email Address</label>
                             <input type="email" name="email" class="form-control" required>
