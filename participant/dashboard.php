@@ -164,9 +164,10 @@ foreach ($registrations as $reg) {
                                             <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
                                         </a>
                                     <?php elseif ($hasCheckedIn && !$hasTimedOut): ?>
-                                        <button onclick="handleTimeOut('<?= $eventId ?>')" class="btn btn-sm btn-warning fw-bold text-dark">
-                                            <i class="bi bi-box-arrow-left me-1"></i> Time Out
-                                        </button>
+                                        <!-- Updated to link directly to the secure camera/GPS time-out page -->
+                                        <a href="time-out.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-warning fw-bold text-dark">
+                                            <i class="bi bi-box-arrow-left me-1"></i> Time Out (Face/GPS)
+                                        </a>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Attendance Completed</span>
                                     <?php endif; ?>

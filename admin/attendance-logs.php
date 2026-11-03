@@ -129,20 +129,18 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Face Snapshot</th>
                                 <th>Participant / ID</th>
                                 <th>Course & Section</th>
                                 <th>Event ID</th>
-                                <th>Check-in Time</th>
-                                <th>Time Out</th>
+                                <th>Time In (Face & GPS)</th>
+                                <th>Time Out (Face & GPS)</th>
                                 <th>Status</th>
-                                <th>GPS Location</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($attendanceLogs)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($attendanceLogs as $log): 
@@ -150,17 +148,11 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                     $profile = $profilesMap[$pid] ?? [];
                                     $courseName = $profile['course'] ?? 'ACT/HM/CT';
                                     $sectionName = $profile['section'] ?? '1A';
+                                    $fullName = trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')) ?: 'Participant';
                                 ?>
                                     <tr>
                                         <td>
-                                            <?php if (!empty($log['photo_url'])): ?>
-                                                <img src="<?= htmlspecialchars($log['photo_url']) ?>" alt="Face Scan" class="snapshot-thumb border" title="Hover to zoom">
-                                            <?php else: ?>
-                                                <span class="text-muted small">No photo</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div><strong><?= htmlspecialchars(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? 'Participant')) ?></strong></div>
+                                            <div><strong><?= htmlspecialchars($fullName) ?></strong></div>
                                             <code class="small text-muted"><?= htmlspecialchars($pid) ?></code>
                                         </td>
                                         <td>
@@ -168,25 +160,47 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                             <span class="badge bg-secondary"><?= htmlspecialchars(strtoupper($sectionName)) ?></span>
                                         </td>
                                         <td><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></td>
-                                        <td><?= !empty($log['check_in_time']) ? date('M j, Y, g:i A', strtotime($log['check_in_time'])) : 'N/A' ?></td>
+                                        
+                                        <!-- Time In Details -->
                                         <td>
-                                            <?php if (!empty($log['time_out'])): ?>
-                                                <span class="text-success fw-bold"><?= date('M j, Y, g:i A', strtotime($log['time_out'])) ?></span>
-                                            <?php else: ?>
-                                                <span class="badge bg-warning text-dark">Active / Not Timed Out</span>
-                                            <?php endif; ?>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <?php if (!empty($log['photo_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['photo_url']) ?>" alt="Check-in Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                <?php else: ?>
+                                                    <span class="text-muted small">No photo</span>
+                                                <?php endif; ?>
+                                                <div>
+                                                    <div class="small fw-bold"><?= !empty($log['check_in_time']) ? date('M j, g:i A', strtotime($log['check_in_time'])) : 'N/A' ?></div>
+                                                    <?php if (!empty($log['latitude']) && !empty($log['longitude'])): ?>
+                                                        <a href="https://www.google.com/maps?q=<?= $log['latitude'] ?>,<?= $log['longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                            <i class="bi bi-geo-alt-fill"></i> Map In
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         </td>
+
+                                        <!-- Time Out Details -->
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <?php if (!empty($log['timeout_photo_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['timeout_photo_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                    <div>
+                                                        <div class="small fw-bold text-success"><?= date('M j, g:i A', strtotime($log['time_out'])) ?></div>
+                                                        <?php if (!empty($log['timeout_latitude']) && !empty($log['timeout_longitude'])): ?>
+                                                            <a href="https://www.google.com/maps?q=<?= $log['timeout_latitude'] ?>,<?= $log['timeout_longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                                <i class="bi bi-geo-alt-fill"></i> Map Out
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark">Active / Not Timed Out</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+
                                         <td>
                                             <span class="badge bg-success"><?= htmlspecialchars($log['status'] ?? 'Present') ?></span>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($log['latitude']) && !empty($log['longitude'])): ?>
-                                                <a href="https://www.google.com/maps?q=<?= $log['latitude'] ?>,<?= $log['longitude'] ?>" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-geo-alt-fill me-1"></i> View Map
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="text-muted small">No GPS</span>
-                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
