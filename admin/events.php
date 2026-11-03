@@ -130,13 +130,17 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                         </span>
                                     </td>
                                     <td>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="alert('Use this ID for Participant Camera Test: \n<?= $event['id'] ?>')" title="Get Event ID">
-                                                <i class="bi bi-clipboard"></i>
-                                            </button>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <!-- Copyable Event ID input box -->
+                                            <div class="input-group input-group-sm" style="width: 220px;">
+                                                <input type="text" class="form-control form-control-sm font-monospace text-muted" value="<?= htmlspecialchars($event['id']) ?>" id="event-id-<?= $event['id'] ?>" readonly>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('event-id-<?= $event['id'] ?>').value); alert('Event ID copied to clipboard!');" title="Copy ID">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
+                                            </div>
                                             
                                             <!-- Delete Button Form -->
-                                            <form method="POST" onsubmit="return confirm('Are you sure you want to delete this event?');">
+                                            <form method="POST" class="mb-0" onsubmit="return confirm('Are you sure you want to delete this event?');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="event_id" value="<?= htmlspecialchars($event['id']) ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Event">
