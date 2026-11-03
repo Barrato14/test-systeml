@@ -3,8 +3,8 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure user is logged in as an Admin
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admin') {
+// Ensure user is logged in as an Administrator
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'administrator') {
     header("Location: ../login.php");
     exit;
 }
@@ -18,43 +18,47 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Logs - Admin EMIS</title>
+    <title>Attendance Logs - EMIS Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .sidebar { min-height: 100vh; background: #343a40; color: white; }
-        .sidebar a { color: #cfd2d6; text-decoration: none; display: block; padding: 10px 15px; border-radius: 4px; margin-bottom: 5px; }
-        .sidebar a:hover, .sidebar a.active { background: #495057; color: white; }
-        .table-container { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .sidebar { min-height: 100vh; background-color: #343a40; color: white; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; padding: 12px 20px; display: block; }
+        .sidebar a:hover, .sidebar a.active { background-color: #495057; color: white; border-left: 4px solid #0d6efd; }
+        .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
         .snapshot-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
-        .snapshot-thumb:hover { transform: scale(2.5); }
+        .snapshot-thumb:hover { transform: scale(3); }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-            <h4 class="text-white mb-4"><i class="bi bi-shield-lock me-2"></i>Admin Panel</h4>
-            <ul class="list-unstyled">
-                <li><a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                <li><a href="events.php"><i class="bi bi-calendar-event me-2"></i> Manage Events</a></li>
-                <li><a href="attendance-logs.php" class="active"><i class="bi bi-clipboard-check me-2"></i> Attendance Logs</a></li>
-                <li><hr class="text-secondary"></li>
-                <li><a href="../logout.php" class="text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
-            </ul>
+<div class="d-flex">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar flex-shrink-0" style="width: 250px;">
+        <div class="p-4 text-center border-bottom border-secondary">
+            <h4 class="mb-0">EMIS Admin</h4>
+            <small class="text-muted">Command Center</small>
+        </div>
+        <nav class="mt-3">
+            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="events.php"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
+            <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
+            <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
+            <a href="reports.php"><i class="bi bi-bar-chart me-2"></i> Reports & Audits</a>
+            <a href="attendance-logs.php" class="active"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
+            <a href="../logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> Event Attendance Logs</h2>
+            <span class="badge bg-secondary fs-6">Total Check-ins: <?= count($attendanceLogs) ?></span>
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-clipboard-check text-primary me-2"></i> Event Attendance Logs</h2>
-                <span class="badge bg-secondary">Total Check-ins: <?= count($attendanceLogs) ?></span>
-            </div>
-
-            <div class="table-container">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -108,5 +112,6 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
