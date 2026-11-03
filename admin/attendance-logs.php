@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
@@ -9,9 +10,36 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admi
     exit;
 }
 
-// Fetch attendance records from Supabase
-$response = supabaseRequest('attendance?select=*&order=check_in_time.desc', 'GET');
-$attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $response['data'] : [];
+// Fetch attendance records and profiles from Supabase
+$attendanceRes = supabaseRequest('attendance?select=*&order=check_in_time.desc', 'GET');
+$attendanceLogs = ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) ? $attendanceRes['data'] : [];
+
+// Fetch profiles to map course/section info if available
+$profilesRes = supabaseRequest('profiles?select=*', 'GET');
+$profilesMap = [];
+if ($profilesRes['code'] === 200 && is_array($profilesRes['data'])) {
+    foreach ($profilesRes['data'] as $profile) {
+        $profilesMap[$profile['id']] = $profile;
+    }
+}
+
+// Filter parameters from query string
+$filterCourse = $_GET['course'] ?? '';
+$filterSection = $_GET['section'] ?? '';
+
+// Apply filters if selected
+if (!empty($filterCourse) || !empty($filterSection)) {
+    $attendanceLogs = array_filter($attendanceLogs, function($log) use ($profilesMap, $filterCourse, $filterSection) {
+        $pid = $log['participant_id'] ?? '';
+        $profile = $profilesMap[$pid] ?? [];
+        $pCourse = strtoupper($profile['course'] ?? '');
+        $pSection = strtoupper($profile['section'] ?? '');
+
+        if (!empty($filterCourse) && $pCourse !== strtoupper($filterCourse)) return false;
+        if (!empty($filterSection) && $pSection !== strtoupper($filterSection)) return false;
+        return true;
+    });
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,10 +81,48 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
     <!-- Main Content Area -->
     <div class="content-area flex-grow-1">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> Event Attendance Logs</h2>
-            <span class="badge bg-secondary fs-6">Total Check-ins: <?= count($attendanceLogs) ?></span>
+            <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> Course Attendance Logs</h2>
+            <span class="badge bg-secondary fs-6">Showing: <?= count($attendanceLogs) ?> Records</span>
         </div>
 
+        <!-- Filter Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <form method="GET" action="attendance-logs.php" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="course" class="form-label fw-bold small">Filter by Course</label>
+                        <select name="course" id="course" class="form-select">
+                            <option value="">All Courses (ACT, HM, CT)</option>
+                            <option value="ACT" <?= $filterCourse === 'ACT' ? 'selected' : '' ?>>ACT (Associate in Computer Technology)</option>
+                            <option value="HM" <?= $filterCourse === 'HM' ? 'selected' : '' ?>>HM (Hotel Management)</option>
+                            <option value="CT" <?= $filterCourse === 'CT' ? 'selected' : '' ?>>CT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="section" class="form-label fw-bold small">Filter by Year & Section</label>
+                        <select name="section" id="section" class="form-select">
+                            <option value="">All Sections (1A-2C)</option>
+                            <optgroup label="Year 1">
+                                <option value="1A" <?= $filterSection === '1A' ? 'selected' : '' ?>>1A</option>
+                                <option value="1B" <?= $filterSection === '1B' ? 'selected' : '' ?>>1B</option>
+                                <option value="1C" <?= $filterSection === '1C' ? 'selected' : '' ?>>1C</option>
+                            </optgroup>
+                            <optgroup label="Year 2">
+                                <option value="2A" <?= $filterSection === '2A' ? 'selected' : '' ?>>2A</option>
+                                <option value="2B" <?= $filterSection === '2B' ? 'selected' : '' ?>>2B</option>
+                                <option value="2C" <?= $filterSection === '2C' ? 'selected' : '' ?>>2C</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary me-2"><i class="bi bi-filter me-1"></i> Apply Filter</button>
+                        <a href="attendance-logs.php" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
         <div class="card shadow-sm border-0">
             <div class="card-body p-4">
                 <div class="table-responsive">
@@ -64,7 +130,8 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
                         <thead class="table-light">
                             <tr>
                                 <th>Face Snapshot</th>
-                                <th>Participant ID</th>
+                                <th>Participant / ID</th>
+                                <th>Course & Section</th>
                                 <th>Event ID</th>
                                 <th>Check-in Time</th>
                                 <th>Status</th>
@@ -74,10 +141,15 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
                         <tbody>
                             <?php if (empty($attendanceLogs)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No attendance records found yet.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($attendanceLogs as $log): ?>
+                                <?php foreach ($attendanceLogs as $log): 
+                                    $pid = $log['participant_id'] ?? '';
+                                    $profile = $profilesMap[$pid] ?? [];
+                                    $courseName = $profile['course'] ?? 'ACT/HM/CT';
+                                    $sectionName = $profile['section'] ?? '1A';
+                                ?>
                                     <tr>
                                         <td>
                                             <?php if (!empty($log['photo_url'])): ?>
@@ -86,7 +158,14 @@ $attendanceLogs = ($response['code'] === 200 && is_array($response['data'])) ? $
                                                 <span class="text-muted small">No photo</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><code class="small text-muted"><?= htmlspecialchars($log['participant_id'] ?? 'N/A') ?></code></td>
+                                        <td>
+                                            <div><strong><?= htmlspecialchars($profile['name'] ?? 'Participant') ?></strong></div>
+                                            <code class="small text-muted"><?= htmlspecialchars($pid) ?></code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark"><?= htmlspecialchars(strtoupper($courseName)) ?></span>
+                                            <span class="badge bg-secondary"><?= htmlspecialchars(strtoupper($sectionName)) ?></span>
+                                        </td>
                                         <td><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></td>
                                         <td><?= date('M j, Y, g:i A', strtotime($log['check_in_time'])) ?></td>
                                         <td>
