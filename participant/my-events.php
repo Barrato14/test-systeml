@@ -11,30 +11,43 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
 
 $participantId = $_SESSION['user_id'];
 
-// Fetch user's registered events with embedded event details including the event ID
+// Fetch user's registered events using embedded Supabase query
 $response = supabaseRequest('event_registrations?participant_id=eq.' . $participantId . '&select=status,registered_at,events(id,title,start_datetime,venue)', 'GET');
 
+// Fallback if data structure returns differently or empty
+$registrations = [];
+if ($response['code'] < 400) {
+    if (isset($response['data']) && is_array($response['data'])) {
+        $registrations = $response['data'];
+    } elseif (is_array($response)) {
+        $registrations = $response;
+    }
+}
+
 $myEvents = [];
-if (!empty($response['data']) && is_array($response['data'])) {
-    foreach ($response['data'] as $row) {
-        $eventData = $row['events'] ?? [];
-        $myEvents[] = [
-            'event_id' => $eventData['id'] ?? '',
-            'title' => $eventData['title'] ?? 'N/A',
-            'start_datetime' => $eventData['start_datetime'] ?? '',
-            'venue' => $eventData['venue'] ?? 'N/A',
-            'registration_status' => $row['status'] ?? '',
-            'registered_at' => $row['registered_at'] ?? ''
-        ];
+foreach ($registrations as $row) {
+    // Handle potential nested data differences from Supabase API responses
+    $eventData = $row['events'] ?? [];
+    if (empty($eventData) && isset($row['title'])) {
+        $eventData = $row; // Fallback if data is flat
     }
 
-    // Sort by start_datetime ascending
-    usort($myEvents, function($a, $b) {
-        if (empty($a['start_datetime'])) return 1;
-        if (empty($b['start_datetime'])) return -1;
-        return strtotime($a['start_datetime']) - strtotime($b['start_datetime']);
-    });
+    $myEvents[] = [
+        'event_id' => $eventData['id'] ?? $row['event_id'] ?? '',
+        'title' => $eventData['title'] ?? 'N/A',
+        'start_datetime' => $eventData['start_datetime'] ?? '',
+        'venue' => $eventData['venue'] ?? 'N/A',
+        'registration_status' => $row['status'] ?? 'Approved',
+        'registered_at' => $row['registered_at'] ?? date('Y-m-d')
+    ];
 }
+
+// Sort by start date if available
+usort($myEvents, function($a, $b) {
+    if (empty($a['start_datetime'])) return 1;
+    if (empty($b['start_datetime'])) return -1;
+    return strtotime($a['start_datetime']) - strtotime($b['start_datetime']);
+});
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,7 +81,9 @@ if (!empty($response['data']) && is_array($response['data'])) {
                 <tbody>
                     <?php if (empty($myEvents)): ?>
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">You have not registered for any events yet.</td>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                You have not registered for any events yet. Go back to your <a href="dashboard.php">Dashboard</a> to join an event!
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($myEvents as $event): ?>
@@ -79,16 +94,15 @@ if (!empty($response['data']) && is_array($response['data'])) {
                                 <td>
                                     <?php 
                                         $status = $event['registration_status'];
-                                        $badgeClass = 'secondary';
-                                        if ($status === 'Approved') $badgeClass = 'success';
-                                        elseif ($status === 'Pending') $badgeClass = 'warning text-dark';
-                                        elseif ($status === 'Rejected') $badgeClass = 'danger';
+                                        $badgeClass = 'success';
+                                        if (strtolower($status) === 'pending') $badgeClass = 'warning text-dark';
+                                        elseif (strtolower($status) === 'rejected') $badgeClass = 'danger';
                                     ?>
-                                    <span class="badge bg-<?= $badgeClass ?>"><?= htmlspecialchars($status) ?></span>
+                                    <span class="badge bg-<?= $badgeClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
                                 </td>
                                 <td><?= $event['registered_at'] ? date('M d, Y', strtotime($event['registered_at'])) : 'N/A' ?></td>
                                 <td>
-                                    <?php if ($status === 'Approved' && !empty($event['event_id'])): ?>
+                                    <?php if (!empty($event['event_id'])): ?>
                                         <a href="check-in.php?event_id=<?= $event['event_id'] ?>" class="btn btn-sm btn-primary">
                                             <i class="bi bi-camera me-1"></i> Check In
                                         </a>
