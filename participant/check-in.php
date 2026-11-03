@@ -3,14 +3,14 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure the user is a logged-in participant
+// Ensure user is logged in as a Participant
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'participant') {
     header("Location: ../login.php");
     exit;
 }
 
-// In a real scenario, you'd pass the event ID via URL, e.g., check-in.php?event_id=123
-$eventId = $_GET['event_id'] ?? ''; 
+$eventId = $_GET['event_id'] ?? '';
+$participantId = $_SESSION['user_id'];
 
 if (empty($eventId)) {
     die("Error: No event specified for check-in.");
@@ -21,135 +21,147 @@ if (empty($eventId)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Check-In - EMIS</title>
+    <title>Secure Check-In - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        #video-feed { width: 100%; max-width: 400px; border-radius: 8px; background: #000; }
+        body { background-color: #f8f9fa; }
+        .scanner-container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h4 class="mb-0">Secure Check-In</h4>
-                </div>
-                <div class="card-body p-4">
-                    <p class="text-muted mb-4">Please grant camera and location permissions to check in.</p>
-                    
-                    <!-- Camera Feed -->
-                    <video id="video-feed" autoplay playsinline></video>
-                    <canvas id="canvas"></canvas>
-                    
-                    <div id="status-message" class="mt-3"></div>
+<div class="container">
+    <div class="scanner-container">
+        <h3 class="mb-3 text-center text-primary"><i class="bi bi-camera-fill me-2"></i>Face & GPS Check-In</h3>
+        <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera. Make sure your location permission is allowed.</p>
 
-                    <button id="checkin-btn" class="btn btn-primary w-100 mt-4 py-2" disabled>
-                        <i class="bi bi-camera me-2"></i> Capture Face & Check In
-                    </button>
-                    
-                    <input type="hidden" id="event-id" value="<?= htmlspecialchars($eventId) ?>">
-                    <input type="hidden" id="participant-id" value="<?= htmlspecialchars($_SESSION['user_id']) ?>">
-                </div>
-            </div>
+        <!-- Status Alert Area -->
+        <div id="statusAlert" class="alert alert-info text-center" role="alert">
+            Initializing camera and requesting GPS coordinates...
+        </div>
+
+        <!-- Camera Viewport -->
+        <div class="position-relative mb-3">
+            <video id="videoElement" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <!-- Location Data Preview -->
+        <div class="mb-3 p-3 bg-light rounded border small">
+            <div><strong>Latitude:</strong> <span id="latDisplay">Acquiring...</span></div>
+            <div><strong>Longitude:</strong> <span id="lngDisplay">Acquiring...</span></div>
+        </div>
+
+        <!-- Action Button -->
+        <button id="captureBtn" class="btn btn-primary w-100 py-2 fw-bold" disabled>
+            <i class="bi bi-shield-check me-2"></i> Capture Face & Check In
+        </button>
+
+        <div class="text-center mt-3">
+            <a href="dashboard.php" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Dashboard</a>
         </div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('video-feed');
-    const canvas = document.getElementById('canvas');
-    const checkinBtn = document.getElementById('checkin-btn');
-    const statusMsg = document.getElementById('status-message');
-    let userLocation = null;
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvas');
+const captureBtn = document.getElementById('captureBtn');
+const statusAlert = document.getElementById('statusAlert');
+const latDisplay = document.getElementById('latDisplay');
+const lngDisplay = document.getElementById('lngDisplay');
 
-    // 1. Initialize Camera
-    async function startCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            video.srcObject = stream;
-        } catch (err) {
-            statusMsg.innerHTML = '<div class="alert alert-danger">Error accessing camera: ' + err.message + '</div>';
-        }
-    }
+let currentLatitude = null;
+let currentLongitude = null;
+let mediaStream = null;
 
-    // 2. Get Location
-    function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    checkinBtn.disabled = false; // Enable button once location is ready
-                },
-                (err) => {
-                    statusMsg.innerHTML = '<div class="alert alert-warning">Location access required for check-in.</div>';
-                }
-            );
-        } else {
-            statusMsg.innerHTML = '<div class="alert alert-danger">Geolocation is not supported by this browser.</div>';
-        }
-    }
+// 1. Access Webcam
+navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false })
+    .then(stream => {
+        mediaStream = stream;
+        video.srcObject = stream;
+        statusAlert.className = 'alert alert-warning text-center';
+        statusAlert.innerHTML = 'Camera ready. Waiting for GPS location...';
+    })
+    .catch(err => {
+        statusAlert.className = 'alert alert-danger text-center';
+        statusAlert.innerHTML = 'Camera Error: Please allow camera permissions in your browser.';
+    });
 
-    // 3. Handle Check-In Click
-    checkinBtn.addEventListener('click', () => {
-        if (!userLocation) return;
-        
-        checkinBtn.disabled = true;
-        checkinBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+// 2. Access GPS Geolocation
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            currentLatitude = position.coords.latitude;
+            currentLongitude = position.coords.longitude;
+            
+            latDisplay.textContent = currentLatitude;
+            lngDisplay.textContent = currentLongitude;
 
-        // Capture snapshot from video
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Convert image to base64 data URL
-        const photoData = canvas.toDataURL('image/jpeg', 0.8);
-        const eventId = document.getElementById('event-id').value;
-        const participantId = document.getElementById('participant-id').value;
+            statusAlert.className = 'alert alert-success text-center';
+            statusAlert.innerHTML = 'Ready! GPS coordinates acquired. Click below to check in.';
+            captureBtn.disabled = false;
+        },
+        error => {
+            statusAlert.className = 'alert alert-danger text-center';
+            statusAlert.innerHTML = 'GPS Error: Please enable location services to check in.';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+} else {
+    statusAlert.className = 'alert alert-danger text-center';
+    statusAlert.innerHTML = 'Geolocation is not supported by your browser.';
+}
 
-        // Send data to PHP backend
-        fetch('../api/attendance/record-checkin.php', {
+// 3. Capture and Submit Handler
+captureBtn.addEventListener('click', async () => {
+    captureBtn.disabled = true;
+    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Check-In...';
+    statusAlert.className = 'alert alert-info text-center';
+    statusAlert.innerHTML = 'Snapping photo and recording check-in...';
+
+    // Draw video frame to canvas
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    // Prepare payload to send to backend processing script
+    try {
+        const response = await fetch('process-check-in.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                event_id: eventId,
-                participant_id: participantId,
-                photo: photoData,
-                latitude: userLocation.lat,
-                longitude: userLocation.lng
+                event_id: '<?= $eventId ?>',
+                participant_id: '<?= $participantId ?>',
+                latitude: currentLatitude,
+                longitude: currentLongitude,
+                photo_data: photoDataUrl
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                statusMsg.innerHTML = '<div class="alert alert-success">Check-in successful!</div>';
-                // Stop camera
-                video.srcObject.getTracks().forEach(track => track.stop());
-                checkinBtn.style.display = 'none';
-            } else {
-                statusMsg.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
-                checkinBtn.disabled = false;
-                checkinBtn.innerHTML = '<i class="bi bi-camera me-2"></i> Try Again';
-            }
-        })
-        .catch(err => {
-            statusMsg.innerHTML = '<div class="alert alert-danger">Network error occurred.</div>';
-            checkinBtn.disabled = false;
-            checkinBtn.innerHTML = '<i class="bi bi-camera me-2"></i> Try Again';
         });
-    });
 
-    // Start process on load
-    startCamera();
-    getLocation();
+        const result = await response.json();
+
+        if (result.success) {
+            statusAlert.className = 'alert alert-success text-center';
+            statusAlert.innerHTML = '<strong>Check-in Successful!</strong> Redirecting to logs...';
+            setTimeout(() => {
+                window.location.href = 'dashboard.php';
+            }, 2000);
+        } else {
+            throw new Error(result.message || 'Server rejected check-in.');
+        }
+    } catch (err) {
+        captureBtn.disabled = false;
+        captureBtn.innerHTML = '<i class="bi bi-shield-check me-2"></i> Capture Face & Check In';
+        statusAlert.className = 'alert alert-danger text-center';
+        statusAlert.innerHTML = 'Error: ' + err.message;
+    }
+});
 </script>
-
 </body>
 </html>
