@@ -132,8 +132,8 @@ $activeQueues = 0;
                             <a href="events.php?action=new" class="btn btn-outline-primary text-start">
                                 <i class="bi bi-plus-circle me-2"></i> Create New Event
                             </a>
-                            <a href="equipment.php?action=scan" class="btn btn-outline-success text-start">
-                                <i class="bi bi-upc-scan me-2"></i> Scan QR Attendance
+                            <a href="attendance-logs.php" class="btn btn-outline-success text-start">
+                            <i class="bi bi-person-bounding-box me-2"></i> View Face & GPS Attendance
                             </a>
                             <a href="equipment.php?action=approve" class="btn btn-outline-warning text-start">
                                 <i class="bi bi-tools me-2"></i> Review Borrowing Requests
