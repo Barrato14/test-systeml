@@ -9,40 +9,27 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admi
     exit;
 }
 
-// Credential Fallback (Pulls from environment or uses your direct project credentials)
-$supabaseUrl = getenv('SUPABASE_URL') ?: ($_ENV['SUPABASE_URL'] ?? 'https://tnvrgvcijqccqucwxqyr.supabase.co');
-$supabaseKey = getenv('SUPABASE_KEY') ?: ($_ENV['SUPABASE_KEY'] ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRudnJndmNpanFjY3F1Y3d4cXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjkzNTE4OTMsImV4cCI6MjA0NDkyNzg5M30.YOUR_ANON_KEY_HERE'); 
-// (Make sure to paste your actual Supabase anon key above if your environment variables aren't loading locally)
-
 $successMsg = '';
 $errorMsg = '';
 
 // --- HANDLE DELETE EVENT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
-    $deleteId = $_POST['event_id'];
+    $deleteId = $_POST['event_id'] ?? '';
     
-    $chDel = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/events?id=eq.' . $deleteId);
-    curl_setopt($chDel, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($chDel, CURLOPT_CUSTOMREQUEST, 'DELETE');
-    curl_setopt($chDel, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $supabaseKey,
-        'apikey: ' . $supabaseKey
-    ]);
-    
-    $delResponse = curl_exec($chDel);
-    $delHttpCode = curl_getinfo($chDel, CURLINFO_HTTP_CODE);
-    curl_close($chDel);
+    if (!empty($deleteId)) {
+        $response = supabaseRequest('events?id=eq.' . $deleteId, 'DELETE');
 
-    if ($delHttpCode >= 400) {
-        $errorMsg = "Failed to delete event. It may be linked to existing attendance records.";
-    } else {
-        $successMsg = "Event deleted successfully!";
+        if ($response['code'] >= 400) {
+            $errorMsg = "Failed to delete event. It may be linked to existing attendance records.";
+        } else {
+            $successMsg = "Event deleted successfully!";
+        }
     }
 }
 
 // --- HANDLE CREATE EVENT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create') {
-    $payload = json_encode([
+    $payload = [
         'title' => trim($_POST['title']),
         'description' => trim($_POST['description']),
         'venue' => trim($_POST['venue']),
@@ -50,44 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'end_datetime' => $_POST['end_datetime'],
         'capacity' => (int)$_POST['capacity'],
         'status' => 'Upcoming'
-    ]);
+    ];
 
-    $ch = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/events');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $supabaseKey,
-        'apikey: ' . $supabaseKey,
-        'Content-Type: application/json',
-        'Prefer: return=representation'
-    ]);
-    
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    $response = supabaseRequest('events', 'POST', $payload);
 
-    if ($httpCode >= 400) {
-        $errorMsg = "Failed to create event. HTTP Code: $httpCode. Details: " . htmlspecialchars($response);
+    if ($response['code'] >= 400) {
+        $errorMsg = "Failed to create event. HTTP Code: {$response['code']}.";
     } else {
         $successMsg = "Event created successfully!";
     }
 }
 
 // --- FETCH ALL EVENTS ---
-$chGet = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/events?order=start_datetime.asc');
-curl_setopt($chGet, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($chGet, CURLOPT_HTTPHEADER, [
-    'Authorization: Bearer ' . $supabaseKey,
-    'apikey: ' . $supabaseKey
-]);
-$eventsResponse = curl_exec($chGet);
-curl_close($chGet);
-
-$events = json_decode($eventsResponse, true);
-if (!is_array($events) || isset($events['message'])) {
-    $events = []; 
-}
+$getResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
+$events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getResponse['data'] : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -154,16 +117,16 @@ if (!is_array($events) || isset($events['message'])) {
                         <?php else: ?>
                             <?php foreach ($events as $event): ?>
                                 <tr>
-                                    <td class="fw-bold"><?= htmlspecialchars($event['title']) ?></td>
-                                    <td><?= htmlspecialchars($event['venue']) ?></td>
+                                    <td class="fw-bold"><?= htmlspecialchars($event['title'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($event['venue'] ?? '') ?></td>
                                     <td>
-                                        <small class="d-block text-muted">Start: <?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?></small>
-                                        <small class="d-block text-muted">End: <?= date('M d, Y h:i A', strtotime($event['end_datetime'])) ?></small>
+                                        <small class="d-block text-muted">Start: <?= isset($event['start_datetime']) ? date('M d, Y h:i A', strtotime($event['start_datetime'])) : '' ?></small>
+                                        <small class="d-block text-muted">End: <?= isset($event['end_datetime']) ? date('M d, Y h:i A', strtotime($event['end_datetime'])) : '' ?></small>
                                     </td>
-                                    <td><?= htmlspecialchars($event['capacity']) ?></td>
+                                    <td><?= htmlspecialchars($event['capacity'] ?? 0) ?></td>
                                     <td>
-                                        <span class="badge bg-<?= $event['status'] === 'Upcoming' ? 'success' : 'secondary' ?>">
-                                            <?= htmlspecialchars($event['status']) ?>
+                                        <span class="badge bg-<?= ($event['status'] ?? '') === 'Upcoming' ? 'success' : 'secondary' ?>">
+                                            <?= htmlspecialchars($event['status'] ?? 'Upcoming') ?>
                                         </span>
                                     </td>
                                     <td>
