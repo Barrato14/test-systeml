@@ -18,26 +18,31 @@ $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
 
-if (empty($eventId) || empty($participantId) || empty($photoDataUrl)) {
+if (empty($eventId) || empty($participantId)) {
     echo json_encode(['success' => false, 'message' => 'Missing required check-in data.']);
     exit;
 }
 
-// Optional: Decode base64 photo for storage or log verification
-// For now, we package the attendance record to insert into Supabase
+// Ensure coordinates are properly formatted as floats or null
+$latitude = ($latitude !== null) ? floatval($latitude) : null;
+$longitude = ($longitude !== null) ? floatval($longitude) : null;
+
+// Adjust these keys to match your exact Supabase 'attendance' table column names
 $payload = [
     'event_id' => $eventId,
-    'participant_id' => $participantId,
+    'participant_id' => $participantId, // Change to 'user_id' if your table uses user_id
     'latitude' => $latitude,
     'longitude' => $longitude,
-    'check_in_time' => date('c'), // ISO 8601 timestamp
+    'check_in_time' => date('c'),     // Change to 'created_at' or similar if your timestamp column has a different name
     'status' => 'Present'
 ];
 
 $response = supabaseRequest('attendance', 'POST', $payload);
 
 if ($response['code'] >= 400) {
-    echo json_encode(['success' => false, 'message' => 'Database error recording check-in. HTTP code: ' . $response['code']]);
+    // Return the actual Supabase error message back to the frontend for easy debugging
+    $errorDetails = is_array($response['data']) ? json_encode($response['data']) : 'Unknown database error';
+    echo json_encode(['success' => false, 'message' => 'Supabase Error (HTTP ' . $response['code'] . '): ' . $errorDetails]);
     exit;
 }
 
