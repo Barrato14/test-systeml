@@ -134,6 +134,7 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                 <th>Course & Section</th>
                                 <th>Event ID</th>
                                 <th>Check-in Time</th>
+                                <th>Time Out</th>
                                 <th>Status</th>
                                 <th>GPS Location</th>
                             </tr>
@@ -141,7 +142,7 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                         <tbody>
                             <?php if (empty($attendanceLogs)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
+                                    <td colspan="8" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($attendanceLogs as $log): 
@@ -159,7 +160,7 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <div><strong><?= htmlspecialchars($profile['name'] ?? 'Participant') ?></strong></div>
+                                            <div><strong><?= htmlspecialchars(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? 'Participant')) ?></strong></div>
                                             <code class="small text-muted"><?= htmlspecialchars($pid) ?></code>
                                         </td>
                                         <td>
@@ -167,7 +168,14 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                             <span class="badge bg-secondary"><?= htmlspecialchars(strtoupper($sectionName)) ?></span>
                                         </td>
                                         <td><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></td>
-                                        <td><?= date('M j, Y, g:i A', strtotime($log['check_in_time'])) ?></td>
+                                        <td><?= !empty($log['check_in_time']) ? date('M j, Y, g:i A', strtotime($log['check_in_time'])) : 'N/A' ?></td>
+                                        <td>
+                                            <?php if (!empty($log['time_out'])): ?>
+                                                <span class="text-success fw-bold"><?= date('M j, Y, g:i A', strtotime($log['time_out'])) ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark">Active / Not Timed Out</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <span class="badge bg-success"><?= htmlspecialchars($log['status'] ?? 'Present') ?></span>
                                         </td>

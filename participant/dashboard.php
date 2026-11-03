@@ -57,6 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id']))
 $regResponse = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id, 'GET');
 $registrations = ($regResponse['code'] < 400 && is_array($regResponse['data'])) ? $regResponse['data'] : [];
 
+// Fetch existing attendance logs for this participant to track check-in and time-out states
+$attendanceRes = supabaseRequest('attendance?participant_id=eq.' . $participant_id . '&select=event_id,check_in_time,time_out', 'GET');
+$participantAttendance = [];
+if ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) {
+    foreach ($attendanceRes['data'] as $att) {
+        $participantAttendance[$att['event_id']] = $att;
+    }
+}
+
 // 2. Fetch ALL events so we can map them cleanly
 $allEventsResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
 $allEvents = ($allEventsResponse['code'] < 400 && is_array($allEventsResponse['data'])) ? $allEventsResponse['data'] : [];
@@ -105,7 +114,7 @@ foreach ($registrations as $reg) {
     <div class="row mb-4">
         <div class="col">
             <h2 class="h4">My Approved Events & Check-In</h2>
-            <p class="text-muted">Perform your secure face-scan and GPS check-in for approved events here.</p>
+            <p class="text-muted">Perform your secure face-scan and GPS check-in/time-out for approved events here.</p>
         </div>
     </div>
 
@@ -127,6 +136,11 @@ foreach ($registrations as $reg) {
                 $status = $reg['status'] ?? 'Approved';
                 $dateObj = new DateTime($event['start_datetime']);
                 $formattedDate = $dateObj->format('F j, Y, g:i a');
+
+                // Determine attendance state for this event
+                $attRecord = $participantAttendance[$eventId] ?? null;
+                $hasCheckedIn = !empty($attRecord['check_in_time']);
+                $hasTimedOut = !empty($attRecord['time_out']);
             ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 shadow-sm border-0">
@@ -141,13 +155,21 @@ foreach ($registrations as $reg) {
                             
                             <div class="mt-auto">
                                 <hr>
-                                <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <span class="badge bg-success"><?= htmlspecialchars($status) ?></span>
 
-                                    <!-- Direct Check-In Button -->
-                                    <a href="check-in.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-primary fw-bold">
-                                        <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
-                                    </a>
+                                    <!-- Dynamic Attendance Action Button -->
+                                    <?php if (!$hasCheckedIn): ?>
+                                        <a href="check-in.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-primary fw-bold">
+                                            <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
+                                        </a>
+                                    <?php elseif ($hasCheckedIn && !$hasTimedOut): ?>
+                                        <button onclick="handleTimeOut('<?= $eventId ?>')" class="btn btn-sm btn-warning fw-bold text-dark">
+                                            <i class="bi bi-box-arrow-left me-1"></i> Time Out
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Attendance Completed</span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -203,5 +225,27 @@ foreach ($registrations as $reg) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+async function handleTimeOut(eventId) {
+    if (!confirm('Are you sure you want to time out of this event?')) return;
+
+    try {
+        const response = await fetch('process-time-out.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event_id: eventId })
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (err) {
+        alert('Network error while processing time out.');
+    }
+}
+</script>
 </body>
 </html>
