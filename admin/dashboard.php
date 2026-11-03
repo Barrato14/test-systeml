@@ -3,18 +3,24 @@ session_start();
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure user is logged in as an Admin
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admin') {
+// Ensure user is logged in and is an Administrator
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'administrator') {
     header("Location: ../login.php");
     exit;
 }
 
-// Fetch counts for dashboard stats from Supabase
-$eventsRes = supabaseRequest('events?select=id', 'GET');
-$totalEvents = ($eventsRes['code'] === 200 && is_array($eventsRes['data'])) ? count($eventsRes['data']) : 0;
+// Fetch overview statistics from Supabase safely
+$totalUsersResponse = supabaseRequest('profiles?select=id', 'GET');
+$totalUsers = (is_array($totalUsersResponse) && isset($totalUsersResponse['data'])) ? count($totalUsersResponse['data']) : 0;
 
-$attendanceRes = supabaseRequest('attendance?select=id', 'GET');
-$totalCheckIns = ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) ? count($attendanceRes['data']) : 0;
+$eventsResponse = supabaseRequest('events?select=id', 'GET');
+$activeEvents = (is_array($eventsResponse) && isset($eventsResponse['data'])) ? count($eventsResponse['data']) : 0;
+
+// Fetch total attendance count for quick insights
+$attendanceResponse = supabaseRequest('attendance?select=id', 'GET');
+$activeQueues = (is_array($attendanceResponse) && isset($attendanceResponse['data'])) ? count($attendanceResponse['data']) : 0;
+
+$pendingEquipment = 0; 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -25,80 +31,126 @@ $totalCheckIns = ($attendanceRes['code'] === 200 && is_array($attendanceRes['dat
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .sidebar { min-height: 100vh; background: #343a40; color: white; }
-        .sidebar a { color: #cfd2d6; text-decoration: none; display: block; padding: 10px 15px; border-radius: 4px; margin-bottom: 5px; }
-        .sidebar a:hover, .sidebar a.active { background: #495057; color: white; }
-        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .stat-card:hover { transform: translateY(-3px); }
+        .sidebar { min-height: 100vh; background-color: #343a40; color: white; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; padding: 12px 20px; display: block; }
+        .sidebar a:hover, .sidebar a.active { background-color: #495057; color: white; border-left: 4px solid #0d6efd; }
+        .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
+        .stat-card { border-left: 5px solid #0d6efd; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-            <h4 class="text-white mb-4"><i class="bi bi-shield-lock me-2"></i>Admin Panel</h4>
-            <ul class="list-unstyled">
-                <li><a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                <li><a href="events.php"><i class="bi bi-calendar-event me-2"></i> Manage Events</a></li>
-                <li><a href="attendance-logs.php"><i class="bi bi-clipboard-check me-2"></i> Attendance Logs</a></li>
-                <li><hr class="text-secondary"></li>
-                <li><a href="../logout.php" class="text-danger"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
-            </ul>
+<div class="d-flex">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar flex-shrink-0" style="width: 250px;">
+        <div class="p-4 text-center border-bottom border-secondary">
+            <h4 class="mb-0">EMIS Admin</h4>
+            <small class="text-muted">Command Center</small>
+        </div>
+        <nav class="mt-3">
+            <a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="events.php"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
+            <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
+            <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
+            <a href="reports.php"><i class="bi bi-bar-chart me-2"></i> Reports & Audits</a>
+            <a href="attendance-logs.php"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
+            <a href="../logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content-area flex-grow-1">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Dashboard Overview</h2>
+            <div class="d-flex align-items-center">
+                <span class="me-3">Welcome, <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong></span>
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="../logout.php">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-speedometer2 text-primary me-2"></i> Welcome, Admin</h2>
-                <span class="text-muted small"><?= date('F j, Y') ?></span>
-            </div>
-
-            <!-- Stats Row -->
-            <div class="row g-4 mb-5">
-                <div class="col-md-6">
-                    <div class="card stat-card bg-white p-4">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-bold">Total Events</h6>
-                                <h2 class="fw-bold mb-0 text-primary"><?= $totalEvents ?></h2>
-                            </div>
-                            <div class="fs-1 text-primary opacity-50"><i class="bi bi-calendar-event"></i></div>
-                        </div>
-                        <div class="mt-3">
-                            <a href="events.php" class="text-decoration-none small fw-bold">Manage Events &rarr;</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card stat-card bg-white p-4">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted text-uppercase small fw-bold">Total Check-Ins</h6>
-                                <h2 class="fw-bold mb-0 text-success"><?= $totalCheckIns ?></h2>
-                            </div>
-                            <div class="fs-1 text-success opacity-50"><i class="bi bi-clipboard-check"></i></div>
-                        </div>
-                        <div class="mt-3">
-                            <a href="attendance-logs.php" class="text-decoration-none small fw-bold text-success">View Face Scans & Logs &rarr;</a>
-                        </div>
+        <!-- Metric Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Total Users</h6>
+                        <h2 class="mb-0"><?= $totalUsers ?></h2>
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Actions Section -->
-            <div class="card border-0 shadow-sm p-4 rounded-3">
-                <h5 class="mb-3"><i class="bi bi-lightning-charge text-warning me-2"></i> Quick System Overview</h5>
-                <p class="text-muted mb-0">
-                    Your participant face-scan check-in system is fully operational. Participants can check in using their camera and GPS coordinates, storing records instantly into Supabase with live photo snapshots and location mapping. Use the sidebar to inspect logs or set up new events.
-                </p>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #198754;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Active Events</h6>
+                        <h2 class="mb-0"><?= $activeEvents ?></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #ffc107;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6>
+                        <h2 class="mb-0"><?= $pendingEquipment ?></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #dc3545;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2">Total Check-Ins</h6>
+                        <h2 class="mb-0"><?= $activeQueues ?></h2>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Quick Actions & Recent Activity -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Recent System Activity</h5>
+                    </div>
+                    <div class="card-body text-center text-muted py-5">
+                        <i class="bi bi-activity display-4 d-block mb-3"></i>
+                        <p>No recent activity logs found. As you create events and participants check in, logs will appear here.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-3">
+                            <a href="events.php?action=new" class="btn btn-outline-primary text-start">
+                                <i class="bi bi-plus-circle me-2"></i> Create New Event
+                            </a>
+                            <a href="attendance-logs.php" class="btn btn-outline-success text-start">
+                                <i class="bi bi-person-bounding-box me-2"></i> View Face & GPS Attendance
+                            </a>
+                            <a href="equipment.php?action=approve" class="btn btn-outline-warning text-start">
+                                <i class="bi bi-tools me-2"></i> Review Borrowing Requests
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
