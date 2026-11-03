@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     curl_close($ch);
 
     if ($httpCode >= 400) {
-        $errorMsg = "Failed to create event. Please check your database connection.";
+        $errorMsg = "Failed to create event. Error code: $httpCode. Supabase says: " . htmlspecialchars($response);
     } else {
         $successMsg = "Event created successfully!";
     }
