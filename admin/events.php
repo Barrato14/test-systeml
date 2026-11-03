@@ -9,13 +9,38 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admi
     exit;
 }
 
-$supabaseUrl = getenv('SUPABASE_URL') ?: $_ENV['SUPABASE_URL'] ?? '';
-$supabaseKey = getenv('SUPABASE_KEY') ?: $_ENV['SUPABASE_KEY'] ?? '';
+// Credential Fallback (Pulls from environment or uses your direct project credentials)
+$supabaseUrl = getenv('SUPABASE_URL') ?: ($_ENV['SUPABASE_URL'] ?? 'https://tnvrgvcijqccqucwxqyr.supabase.co');
+$supabaseKey = getenv('SUPABASE_KEY') ?: ($_ENV['SUPABASE_KEY'] ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRudnJndmNpanFjY3F1Y3d4cXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjkzNTE4OTMsImV4cCI6MjA0NDkyNzg5M30.YOUR_ANON_KEY_HERE'); 
+// (Make sure to paste your actual Supabase anon key above if your environment variables aren't loading locally)
 
 $successMsg = '';
 $errorMsg = '';
 
-// Handle Create Event Form Submission
+// --- HANDLE DELETE EVENT ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
+    $deleteId = $_POST['event_id'];
+    
+    $chDel = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/events?id=eq.' . $deleteId);
+    curl_setopt($chDel, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($chDel, CURLOPT_CUSTOMREQUEST, 'DELETE');
+    curl_setopt($chDel, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $supabaseKey,
+        'apikey: ' . $supabaseKey
+    ]);
+    
+    $delResponse = curl_exec($chDel);
+    $delHttpCode = curl_getinfo($chDel, CURLINFO_HTTP_CODE);
+    curl_close($chDel);
+
+    if ($delHttpCode >= 400) {
+        $errorMsg = "Failed to delete event. It may be linked to existing attendance records.";
+    } else {
+        $successMsg = "Event deleted successfully!";
+    }
+}
+
+// --- HANDLE CREATE EVENT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create') {
     $payload = json_encode([
         'title' => trim($_POST['title']),
@@ -43,13 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     curl_close($ch);
 
     if ($httpCode >= 400) {
-        $errorMsg = "Failed to create event. Error code: $httpCode. Supabase says: " . htmlspecialchars($response);
+        $errorMsg = "Failed to create event. HTTP Code: $httpCode. Details: " . htmlspecialchars($response);
     } else {
         $successMsg = "Event created successfully!";
     }
 }
 
-// Fetch All Events to display in the table
+// --- FETCH ALL EVENTS ---
 $chGet = curl_init(rtrim($supabaseUrl, '/') . '/rest/v1/events?order=start_datetime.asc');
 curl_setopt($chGet, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($chGet, CURLOPT_HTTPHEADER, [
@@ -61,7 +86,7 @@ curl_close($chGet);
 
 $events = json_decode($eventsResponse, true);
 if (!is_array($events) || isset($events['message'])) {
-    $events = []; // Fallback if API fails or returns an error object
+    $events = []; 
 }
 ?>
 <!DOCTYPE html>
@@ -101,7 +126,6 @@ if (!is_array($events) || isset($events['message'])) {
     <div class="content-area flex-grow-1">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">Event Management</h2>
-            <!-- Button to trigger Create Event Modal -->
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createEventModal">
                 <i class="bi bi-plus-circle me-2"></i> Create Event
             </button>
@@ -113,15 +137,15 @@ if (!is_array($events) || isset($events['message'])) {
         <!-- Events Table -->
         <div class="card shadow-sm">
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
                             <th>Title</th>
                             <th>Venue</th>
-                            <th>Start Date & Time</th>
+                            <th>Date & Time</th>
                             <th>Capacity</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -132,7 +156,10 @@ if (!is_array($events) || isset($events['message'])) {
                                 <tr>
                                     <td class="fw-bold"><?= htmlspecialchars($event['title']) ?></td>
                                     <td><?= htmlspecialchars($event['venue']) ?></td>
-                                    <td><?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?></td>
+                                    <td>
+                                        <small class="d-block text-muted">Start: <?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?></small>
+                                        <small class="d-block text-muted">End: <?= date('M d, Y h:i A', strtotime($event['end_datetime'])) ?></small>
+                                    </td>
                                     <td><?= htmlspecialchars($event['capacity']) ?></td>
                                     <td>
                                         <span class="badge bg-<?= $event['status'] === 'Upcoming' ? 'success' : 'secondary' ?>">
@@ -140,10 +167,20 @@ if (!is_array($events) || isset($events['message'])) {
                                         </span>
                                     </td>
                                     <td>
-                                        <!-- Note: This ID is what we will use to test the camera check-in! -->
-                                        <button class="btn btn-sm btn-outline-primary" onclick="alert('Event ID for Camera Testing: \n<?= $event['id'] ?>')">
-                                            <i class="bi bi-camera"></i> Get Check-in ID
-                                        </button>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="alert('Use this ID for Participant Camera Test: \n<?= $event['id'] ?>')" title="Get Event ID">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                            
+                                            <!-- Delete Button Form -->
+                                            <form method="POST" onsubmit="return confirm('Are you sure you want to delete this event?');">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="event_id" value="<?= htmlspecialchars($event['id']) ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Event">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -152,7 +189,6 @@ if (!is_array($events) || isset($events['message'])) {
                 </table>
             </div>
         </div>
-
     </div>
 </div>
 
