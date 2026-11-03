@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila'); // Sets it to Philippine time
 header('Content-Type: application/json');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
