@@ -48,12 +48,13 @@ $pendingEquipment = 0;
             <small class="text-muted">Command Center</small>
         </div>
         <nav class="mt-3">
-            <a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
             <a href="events.php"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
             <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
             <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
             <a href="reports.php"><i class="bi bi-bar-chart me-2"></i> Reports & Audits</a>
-            <a href="attendance-logs.php"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
+            <!-- Fixed link using explicit relative path -->
+            <a href="attendance-logs.php" class="active"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
             <a href="../logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
         </nav>
     </div>
