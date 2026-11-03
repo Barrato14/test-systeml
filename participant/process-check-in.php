@@ -23,57 +23,17 @@ if (empty($eventId) || empty($participantId) || empty($photoDataUrl)) {
     exit;
 }
 
-// 1. Process the Base64 image data
-list($type, $photoDataUrl) = explode(';', $photoDataUrl);
-list(, $photoDataUrl)      = explode(',', $photoDataUrl);
-$decodedPhoto = base64_decode($photoDataUrl);
-
-if ($decodedPhoto === false) {
-    echo json_encode(['success' => false, 'message' => 'Failed to decode check-in photo.']);
-    exit;
-}
-
-// 2. Upload photo to Supabase Storage bucket (Bucket name assumed to be 'attendance-photos')
-global $supabaseUrl, $apiKey;
-$fileName = 'attendance_' . $participantId . '_' . $eventId . '_' . time() . '.jpg';
-$storageUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/attendance-photos/' . $fileName;
-
-$headers = [
-    "apikey: $apiKey",
-    "Authorization: Bearer $apiKey",
-    "Content-Type: image/jpeg",
-    "x-upsert: true"
-];
-
-$ch = curl_init($storageUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-curl_setopt($ch, CURLOPT_POSTFIELDS, $decodedPhoto);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-$storageResponse = curl_exec($ch);
-$storageHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($storageHttpCode >= 400) {
-    echo json_encode(['success' => false, 'message' => 'Failed to upload photo to storage. HTTP code: ' . $storageHttpCode]);
-    exit;
-}
-
-// Construct the public URL for the uploaded photo
-$publicPhotoUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/attendance-photos/' . $fileName;
-
 // Ensure coordinates are properly formatted as floats or null
 $latitude = ($latitude !== null) ? floatval($latitude) : null;
 $longitude = ($longitude !== null) ? floatval($longitude) : null;
 
-// 3. Insert attendance record including the photo URL
+// Insert attendance record directly using the Base64 photo string
 $payload = [
     'event_id' => $eventId,
     'participant_id' => $participantId,
     'latitude' => $latitude,
     'longitude' => $longitude,
-    'photo_url' => $publicPhotoUrl,
+    'photo_url' => $photoDataUrl, // Saves the snapshot image data directly
     'check_in_time' => date('c'),
     'status' => 'Present'
 ];
