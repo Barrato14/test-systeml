@@ -12,41 +12,57 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
 $participant_id = $_SESSION['user_id'];
 $firstName = $_SESSION['user_name'] ?? 'Student';
 
-// Handle Registration Action directly from dashboard if posted
 $successMsg = '';
 $errorMsg = '';
+
+// Handle Registration Action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id'])) {
     $eventIdToRegister = $_POST['register_event_id'];
     
-    $payload = [
-        'participant_id' => $participant_id,
-        'event_id' => $eventIdToRegister,
-        'status' => 'Approved' // Auto-approve for seamless testing
-    ];
-
-    $regResponse = supabaseRequest('event_registrations', 'POST', $payload);
-    if ($regResponse['code'] >= 400) {
-        $errorMsg = "You are already registered for this event or an error occurred.";
+    // Check if a registration already exists to prevent duplicate error loops
+    $checkExisting = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id . '&event_id=eq.' . $eventIdToRegister, 'GET');
+    
+    if (!empty($checkExisting['data'])) {
+        // If it exists but isn't approved, force update it to Approved so it shows up immediately
+        $updateRes = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id . '&event_id=eq.' . $eventIdToRegister, 'PATCH', ['status' => 'Approved']);
+        $successMsg = "Registration updated and approved for testing!";
     } else {
-        $successMsg = "Successfully registered for the event!";
+        $payload = [
+            'participant_id' => $participant_id,
+            'event_id' => $eventIdToRegister,
+            'status' => 'Approved' // Force Approved for seamless testing
+        ];
+
+        $regResponse = supabaseRequest('event_registrations', 'POST', $payload);
+        if ($regResponse['code'] >= 400) {
+            $errorMsg = "Failed to register. Please check your database table columns.";
+        } else {
+            $successMsg = "Successfully registered and approved for the event!";
+        }
     }
 }
 
-// 1. Fetch the participant's registered events using Supabase embedded resources
-$endpoint = "event_registrations?participant_id=eq.$participant_id&select=status,events(*)";
-$response = supabaseRequest($endpoint, 'GET');
+// 1. Fetch ALL registrations for this participant (ignoring inner join restrictions for a moment so we catch it)
+$regResponse = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id, 'GET');
+$registrations = ($regResponse['code'] < 400 && is_array($regResponse['data'])) ? $regResponse['data'] : [];
 
-$registrations = [];
-if ($response['code'] < 400 && is_array($response['data'])) {
-    $registrations = $response['data'];
-}
-
-// 2. Fetch ALL available events so participants can see and register for them if list is empty
+// 2. Fetch ALL events so we can map them cleanly
 $allEventsResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
 $allEvents = ($allEventsResponse['code'] < 400 && is_array($allEventsResponse['data'])) ? $allEventsResponse['data'] : [];
 
-// Find IDs of events the user is already registered for
-$registeredEventIds = array_column(array_column($registrations, 'events'), 'id');
+// Index events by ID for quick lookup
+$eventsMap = [];
+foreach ($allEvents as $evt) {
+    $eventsMap[$evt['id']] = $evt;
+}
+
+// Extract registered event IDs
+$registeredEventIds = [];
+foreach ($registrations as $reg) {
+    if (isset($reg['event_id'])) {
+        $registeredEventIds[] = $reg['event_id'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -84,7 +100,7 @@ $registeredEventIds = array_column(array_column($registrations, 'events'), 'id')
 
     <!-- Section 1: Registered / Approved Events -->
     <div class="row mb-5">
-        <?php if (empty($registrations)): ?>
+        <?php if (empty($registeredEventIds)): ?>
             <div class="col-12">
                 <div class="alert alert-warning text-center py-4 shadow-sm">
                     <h5>You aren't registered for any events yet.</h5>
@@ -93,12 +109,11 @@ $registeredEventIds = array_column(array_column($registrations, 'events'), 'id')
             </div>
         <?php else: ?>
             <?php foreach ($registrations as $reg): 
-                $event = $reg['events'] ?? null;
+                $eventId = $reg['event_id'] ?? '';
+                $event = $eventsMap[$eventId] ?? null;
                 if (!$event) continue; 
                 
-                $status = $reg['status'] ?? 'Pending';
-                $eventId = $event['id'];
-                
+                $status = $reg['status'] ?? 'Approved';
                 $dateObj = new DateTime($event['start_datetime']);
                 $formattedDate = $dateObj->format('F j, Y, g:i a');
             ?>
@@ -118,13 +133,10 @@ $registeredEventIds = array_column(array_column($registrations, 'events'), 'id')
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="badge bg-success"><?= htmlspecialchars($status) ?></span>
 
-                                    <?php if ($status === 'Approved'): ?>
-                                        <a href="check-in.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-primary fw-bold">
-                                            <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
-                                        </a>
-                                    <?php else: ?>
-                                        <button class="btn btn-sm btn-outline-secondary" disabled>Pending Approval</button>
-                                    <?php endif; ?>
+                                    <!-- Direct Check-In Button -->
+                                    <a href="check-in.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-primary fw-bold">
+                                        <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -134,7 +146,7 @@ $registeredEventIds = array_column(array_column($registrations, 'events'), 'id')
         <?php endif; ?>
     </div>
 
-    <!-- Section 2: Available Events to Register -->
+    <!-- Section 2: Available Events to Join -->
     <div class="row mb-3">
         <div class="col">
             <h3 class="h5 text-secondary">Available Events to Join</h3>
@@ -152,7 +164,7 @@ $registeredEventIds = array_column(array_column($registrations, 'events'), 'id')
         ?>
 
         <?php if ($availableCount === 0): ?>
-            <div class="col-12 text-muted pb-4">No new events available to join right now.</div>
+            <div class="col-12 text-muted pb-4">You have registered for all available events. Look above for your Check-In buttons!</div>
         <?php else: ?>
             <?php foreach ($allEvents as $evt): 
                 if (in_array($evt['id'], $registeredEventIds)) continue;
