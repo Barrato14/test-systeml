@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
@@ -9,8 +10,20 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
     exit;
 }
 
+$userId = $_SESSION['user_id'];
+
+// Check if Google/OAuth user has completed their profile (Course & Section)
+$profileRes = supabaseRequest('profiles?id=eq.' . $userId . '&select=course,section', 'GET');
+if ($profileRes['code'] === 200 && !empty($profileRes['data'])) {
+    $profile = $profileRes['data'][0];
+    if (empty($profile['course']) || empty($profile['section'])) {
+        header("Location: complete-profile.php");
+        exit;
+    }
+}
+
 $eventId = $_GET['event_id'] ?? '';
-$participantId = $_SESSION['user_id'];
+$participantId = $userId;
 
 if (empty($eventId)) {
     die("Error: No event specified for check-in.");
@@ -148,7 +161,7 @@ captureBtn.addEventListener('click', async () => {
 
         if (result.success) {
             statusAlert.className = 'alert alert-success text-center';
-            statusAlert.innerHTML = '<strong>Check-in Successful!</strong> Redirecting to logs...';
+            statusAlert.innerHTML = '<strong>Check-in Successful!</strong> Redirecting to dashboard...';
             setTimeout(() => {
                 window.location.href = 'dashboard.php';
             }, 2000);

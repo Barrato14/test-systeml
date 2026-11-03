@@ -1,5 +1,6 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
@@ -11,6 +12,16 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
 
 $participant_id = $_SESSION['user_id'];
 $firstName = $_SESSION['user_name'] ?? 'Student';
+
+// Guard: Check if user (especially Google / OAuth users) has completed course and section
+$profileRes = supabaseRequest('profiles?id=eq.' . $participant_id . '&select=course,section', 'GET');
+if ($profileRes['code'] === 200 && !empty($profileRes['data'])) {
+    $profile = $profileRes['data'][0];
+    if (empty($profile['course']) || empty($profile['section'])) {
+        header("Location: complete-profile.php");
+        exit();
+    }
+}
 
 $successMsg = '';
 $errorMsg = '';
@@ -42,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id']))
     }
 }
 
-// 1. Fetch ALL registrations for this participant (ignoring inner join restrictions for a moment so we catch it)
+// 1. Fetch ALL registrations for this participant
 $regResponse = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id, 'GET');
 $registrations = ($regResponse['code'] < 400 && is_array($regResponse['data'])) ? $regResponse['data'] : [];
 
