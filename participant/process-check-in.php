@@ -18,29 +18,69 @@ $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
 
-if (empty($eventId) || empty($participantId)) {
-    echo json_encode(['success' => false, 'message' => 'Missing required check-in data.']);
+if (empty($eventId) || empty($participantId) || empty($photoDataUrl)) {
+    echo json_encode(['success' => false, 'message' => 'Missing required check-in data or photo.']);
     exit;
 }
+
+// 1. Process the Base64 image data
+list($type, $photoDataUrl) = explode(';', $photoDataUrl);
+list(, $photoDataUrl)      = explode(',', $photoDataUrl);
+$decodedPhoto = base64_decode($photoDataUrl);
+
+if ($decodedPhoto === false) {
+    echo json_encode(['success' => false, 'message' => 'Failed to decode check-in photo.']);
+    exit;
+}
+
+// 2. Upload photo to Supabase Storage bucket (Bucket name assumed to be 'attendance-photos')
+global $supabaseUrl, $apiKey;
+$fileName = 'attendance_' . $participantId . '_' . $eventId . '_' . time() . '.jpg';
+$storageUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/attendance-photos/' . $fileName;
+
+$headers = [
+    "apikey: $apiKey",
+    "Authorization: Bearer $apiKey",
+    "Content-Type: image/jpeg",
+    "x-upsert: true"
+];
+
+$ch = curl_init($storageUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+curl_setopt($ch, CURLOPT_POSTFIELDS, $decodedPhoto);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+$storageResponse = curl_exec($ch);
+$storageHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($storageHttpCode >= 400) {
+    echo json_encode(['success' => false, 'message' => 'Failed to upload photo to storage. HTTP code: ' . $storageHttpCode]);
+    exit;
+}
+
+// Construct the public URL for the uploaded photo
+$publicPhotoUrl = rtrim($supabaseUrl, '/') . '/storage/v1/object/public/attendance-photos/' . $fileName;
 
 // Ensure coordinates are properly formatted as floats or null
 $latitude = ($latitude !== null) ? floatval($latitude) : null;
 $longitude = ($longitude !== null) ? floatval($longitude) : null;
 
-// Adjust these keys to match your exact Supabase 'attendance' table column names
+// 3. Insert attendance record including the photo URL
 $payload = [
     'event_id' => $eventId,
-    'participant_id' => $participantId, // Change to 'user_id' if your table uses user_id
+    'participant_id' => $participantId,
     'latitude' => $latitude,
     'longitude' => $longitude,
-    'check_in_time' => date('c'),     // Change to 'created_at' or similar if your timestamp column has a different name
+    'photo_url' => $publicPhotoUrl,
+    'check_in_time' => date('c'),
     'status' => 'Present'
 ];
 
 $response = supabaseRequest('attendance', 'POST', $payload);
 
 if ($response['code'] >= 400) {
-    // Return the actual Supabase error message back to the frontend for easy debugging
     $errorDetails = is_array($response['data']) ? json_encode($response['data']) : 'Unknown database error';
     echo json_encode(['success' => false, 'message' => 'Supabase Error (HTTP ' . $response['code'] . '): ' . $errorDetails]);
     exit;
