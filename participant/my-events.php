@@ -11,38 +11,35 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
 
 $participantId = $_SESSION['user_id'];
 
-// Fetch user's registered events using embedded Supabase query
-$response = supabaseRequest('event_registrations?participant_id=eq.' . $participantId . '&select=status,registered_at,events(id,title,start_datetime,venue)', 'GET');
+// 1. Fetch user's event registrations
+$regResponse = supabaseRequest('event_registrations?participant_id=eq.' . $participantId, 'GET');
+$registrations = ($regResponse['code'] < 400 && is_array($regResponse['data'])) ? $regResponse['data'] : [];
 
-// Fallback if data structure returns differently or empty
-$registrations = [];
-if ($response['code'] < 400) {
-    if (isset($response['data']) && is_array($response['data'])) {
-        $registrations = $response['data'];
-    } elseif (is_array($response)) {
-        $registrations = $response;
-    }
+// 2. Fetch all events to map details cleanly
+$allEventsResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
+$allEvents = ($allEventsResponse['code'] < 400 && is_array($allEventsResponse['data'])) ? $allEventsResponse['data'] : [];
+
+$eventsMap = [];
+foreach ($allEvents as $evt) {
+    $eventsMap[$evt['id']] = $evt;
 }
 
 $myEvents = [];
-foreach ($registrations as $row) {
-    // Handle potential nested data differences from Supabase API responses
-    $eventData = $row['events'] ?? [];
-    if (empty($eventData) && isset($row['title'])) {
-        $eventData = $row; // Fallback if data is flat
-    }
-
+foreach ($registrations as $reg) {
+    $eventId = $reg['event_id'] ?? '';
+    $eventData = $eventsMap[$eventId] ?? [];
+    
     $myEvents[] = [
-        'event_id' => $eventData['id'] ?? $row['event_id'] ?? '',
-        'title' => $eventData['title'] ?? 'N/A',
+        'event_id' => $eventId,
+        'title' => $eventData['title'] ?? 'Unknown Event',
         'start_datetime' => $eventData['start_datetime'] ?? '',
         'venue' => $eventData['venue'] ?? 'N/A',
-        'registration_status' => $row['status'] ?? 'Approved',
-        'registered_at' => $row['registered_at'] ?? date('Y-m-d')
+        'registration_status' => $reg['status'] ?? 'Approved',
+        'registered_at' => $reg['registered_at'] ?? date('Y-m-d')
     ];
 }
 
-// Sort by start date if available
+// Sort by start date ascending
 usort($myEvents, function($a, $b) {
     if (empty($a['start_datetime'])) return 1;
     if (empty($b['start_datetime'])) return -1;
