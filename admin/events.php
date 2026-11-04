@@ -81,7 +81,7 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
             <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
             <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
             <a href="reports.php"><i class="bi bi-bar-chart me-2"></i> Reports & Audits</a>
-            <a href="attendance-logs.php" class="active"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
+            <a href="attendance-logs.php"><i class="bi bi-person-bounding-box me-2"></i> Attendance Logs</a>
             <a href="../logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
         </nav>
     </div>
