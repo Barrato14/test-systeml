@@ -76,7 +76,7 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
             <h4 class="mb-0">EMIS Admin</h4>
         </div>
         <nav class="mt-3">
-            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
             <a href="events.php"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
             <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
             <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
