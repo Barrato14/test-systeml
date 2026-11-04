@@ -57,7 +57,7 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Management - EMIS</title>
+    <title>Admin Dashboard - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
@@ -65,19 +65,21 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
         .sidebar a { color: #cfd8dc; text-decoration: none; padding: 12px 20px; display: block; }
         .sidebar a:hover, .sidebar a.active { background-color: #495057; color: white; border-left: 4px solid #0d6efd; }
         .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
+        .stat-card { border-left: 5px solid #0d6efd; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
-    <!-- Sidebar -->
+    <!-- Sidebar Navigation -->
     <div class="sidebar flex-shrink-0" style="width: 250px;">
         <div class="p-4 text-center border-bottom border-secondary">
             <h4 class="mb-0">EMIS Admin</h4>
+            <small class="text-muted">Command Center</small>
         </div>
         <nav class="mt-3">
-            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-            <a href="events.php" class="active"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
+            <a href="dashboard.php" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+            <a href="events.php"><i class="bi bi-calendar-event me-2"></i> Event Management</a>
             <a href="equipment.php"><i class="bi bi-tools me-2"></i> Equipment & Services</a>
             <a href="users.php"><i class="bi bi-people me-2"></i> Users & Roles</a>
             <a href="reports.php"><i class="bi bi-bar-chart me-2"></i> Reports & Audits</a>
