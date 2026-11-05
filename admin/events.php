@@ -16,6 +16,18 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles)) {
 $successMsg = '';
 $errorMsg = '';
 
+// Helper function to format UTC datetimes from Supabase into Philippine Time
+function formatManilaTime($utcString) {
+    if (empty($utcString)) return 'N/A';
+    try {
+        $date = new DateTime($utcString);
+        $date->setTimezone(new DateTimeZone('Asia/Manila'));
+        return $date->format('M d, Y g:i A');
+    } catch (Exception $e) {
+        return 'Invalid Date';
+    }
+}
+
 // --- HANDLE DELETE EVENT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
     if (in_array($currentRole, ['administrator', 'event organizer'])) {
@@ -39,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'title' => trim($_POST['title']),
         'description' => trim($_POST['description']),
         'venue' => trim($_POST['venue']),
-        'start_datetime' => $_POST['start_datetime'],
-        'end_datetime' => $_POST['end_datetime'],
+        'start_datetime' => !empty($_POST['start_datetime']) ? date('c', strtotime($_POST['start_datetime'] . ' +0800')) : null,
+        'end_datetime' => !empty($_POST['end_datetime']) ? date('c', strtotime($_POST['end_datetime'] . ' +0800')) : null,
         'capacity' => (int)$_POST['capacity'],
         'status' => $_POST['status'] ?? 'Upcoming',
         'image_url' => trim($_POST['image_url'] ?? ''),
@@ -66,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'title' => trim($_POST['title']),
             'description' => trim($_POST['description']),
             'venue' => trim($_POST['venue']),
-            'start_datetime' => $_POST['start_datetime'],
-            'end_datetime' => $_POST['end_datetime'],
+            'start_datetime' => !empty($_POST['start_datetime']) ? date('c', strtotime($_POST['start_datetime'] . ' +0800')) : null,
+            'end_datetime' => !empty($_POST['end_datetime']) ? date('c', strtotime($_POST['end_datetime'] . ' +0800')) : null,
             'capacity' => (int)$_POST['capacity'],
             'status' => $_POST['status'],
             'image_url' => trim($_POST['image_url'] ?? ''),
@@ -147,7 +159,7 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                             <tr>
                                 <th>Title</th>
                                 <th>Venue</th>
-                                <th>Date & Time</th>
+                                <th>Date & Time (PHT)</th>
                                 <th>Capacity</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -161,8 +173,11 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                     $eTitle = htmlspecialchars($event['title'] ?? '');
                                     $eDesc = htmlspecialchars($event['description'] ?? '');
                                     $eVenue = htmlspecialchars($event['venue'] ?? '');
-                                    $eStart = date('Y-m-d\TH:i', strtotime($event['start_datetime']));
-                                    $eEnd = date('Y-m-d\TH:i', strtotime($event['end_datetime']));
+                                    
+                                    // Parse for modal edit values in Manila time
+                                    $eStart = !empty($event['start_datetime']) ? (new DateTime($event['start_datetime']))->setTimezone(new DateTimeZone('Asia/Manila'))->format('Y-m-d\TH:i') : '';
+                                    $eEnd = !empty($event['end_datetime']) ? (new DateTime($event['end_datetime']))->setTimezone(new DateTimeZone('Asia/Manila'))->format('Y-m-d\TH:i') : '';
+                                    
                                     $eCap = htmlspecialchars($event['capacity'] ?? 100);
                                     $eStatus = htmlspecialchars($event['status'] ?? 'Upcoming');
                                     $eImage = htmlspecialchars($event['image_url'] ?? '');
@@ -173,8 +188,8 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                         <td class="fw-bold text-primary"><?= $eTitle ?></td>
                                         <td><?= $eVenue ?></td>
                                         <td>
-                                            <small class="d-block text-muted">Start: <?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?></small>
-                                            <small class="d-block text-muted">End: <?= date('M d, Y h:i A', strtotime($event['end_datetime'])) ?></small>
+                                            <small class="d-block text-muted">Start: <?= formatManilaTime($event['start_datetime'] ?? '') ?></small>
+                                            <small class="d-block text-muted">End: <?= formatManilaTime($event['end_datetime'] ?? '') ?></small>
                                         </td>
                                         <td><?= $eCap ?></td>
                                         <td>
@@ -253,7 +268,6 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                     <div class="mb-3">
                         <label class="form-label fw-bold text-primary">Cover Image URL (Optional)</label>
                         <input type="url" name="image_url" class="form-control" placeholder="https://example.com/image.jpg">
-                        <div class="form-text">Provide a direct link to an image to show on the participant dashboard.</div>
                     </div>
 
                     <div class="row">
@@ -270,7 +284,6 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                     <div class="row bg-light p-2 rounded mb-3 mx-0 border">
                         <div class="col-12 mb-2">
                             <label class="form-label fw-bold text-danger"><i class="bi bi-geo-alt-fill me-1"></i> Google Maps Pin (Optional)</label>
-                            <div class="form-text mt-0 mb-2">To drop a pin on the dashboard, open Google Maps, right-click the location, and paste the Latitude and Longitude here.</div>
                         </div>
                         <div class="col-md-6 mb-2">
                             <input type="text" name="latitude" class="form-control" placeholder="Latitude (e.g. 15.1432)">
@@ -290,11 +303,11 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                             </select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Start Date & Time</label>
+                            <label class="form-label fw-bold">Start Date & Time (PHT)</label>
                             <input type="datetime-local" name="start_datetime" class="form-control" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">End Date & Time</label>
+                            <label class="form-label fw-bold">End Date & Time (PHT)</label>
                             <input type="datetime-local" name="end_datetime" class="form-control" required>
                         </div>
                     </div>
@@ -369,11 +382,11 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                             </select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Start Date & Time</label>
+                            <label class="form-label fw-bold">Start Date & Time (PHT)</label>
                             <input type="datetime-local" name="start_datetime" id="edit-start" class="form-control" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">End Date & Time</label>
+                            <label class="form-label fw-bold">End Date & Time (PHT)</label>
                             <input type="datetime-local" name="end_datetime" id="edit-end" class="form-control" required>
                         </div>
                     </div>

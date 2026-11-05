@@ -40,6 +40,18 @@ if (!empty($filterCourse) || !empty($filterSection)) {
         return true;
     });
 }
+
+// Helper function to safely format UTC strings to Manila Time
+function formatManilaTime($utcString) {
+    if (empty($utcString)) return 'N/A';
+    try {
+        $date = new DateTime($utcString);
+        $date->setTimezone(new DateTimeZone('Asia/Manila'));
+        return $date->format('M j, g:i A');
+    } catch (Exception $e) {
+        return 'Invalid Date';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -170,7 +182,7 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                                     <span class="text-muted small">No photo</span>
                                                 <?php endif; ?>
                                                 <div>
-                                                    <div class="small fw-bold"><?= !empty($log['check_in_time']) ? date('M j, g:i A', strtotime($log['check_in_time'])) : 'N/A' ?></div>
+                                                    <div class="small fw-bold"><?= formatManilaTime($log['check_in_time'] ?? '') ?></div>
                                                     <?php if (!empty($log['latitude']) && !empty($log['longitude'])): ?>
                                                         <a href="https://www.google.com/maps?q=<?= $log['latitude'] ?>,<?= $log['longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
                                                             <i class="bi bi-geo-alt-fill"></i> Map In
@@ -186,7 +198,7 @@ if (!empty($filterCourse) || !empty($filterSection)) {
                                                 <?php if (!empty($log['timeout_photo_url'])): ?>
                                                     <img src="<?= htmlspecialchars($log['timeout_photo_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
                                                     <div>
-                                                        <div class="small fw-bold text-success"><?= date('M j, g:i A', strtotime($log['time_out'])) ?></div>
+                                                        <div class="small fw-bold text-success"><?= formatManilaTime($log['time_out'] ?? '') ?></div>
                                                         <?php if (!empty($log['timeout_latitude']) && !empty($log['timeout_longitude'])): ?>
                                                             <a href="https://www.google.com/maps?q=<?= $log['timeout_latitude'] ?>,<?= $log['timeout_longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
                                                                 <i class="bi bi-geo-alt-fill"></i> Map Out
