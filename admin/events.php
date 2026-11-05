@@ -18,7 +18,6 @@ $errorMsg = '';
 
 // --- HANDLE DELETE EVENT ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
-    // Only Administrators and Event Organizers can delete
     if (in_array($currentRole, ['administrator', 'event organizer'])) {
         $deleteId = $_POST['event_id'] ?? '';
         if (!empty($deleteId)) {
@@ -43,7 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'start_datetime' => $_POST['start_datetime'],
         'end_datetime' => $_POST['end_datetime'],
         'capacity' => (int)$_POST['capacity'],
-        'status' => $_POST['status'] ?? 'Upcoming'
+        'status' => $_POST['status'] ?? 'Upcoming',
+        'image_url' => trim($_POST['image_url'] ?? ''),
+        'latitude' => !empty($_POST['latitude']) ? (float)$_POST['latitude'] : null,
+        'longitude' => !empty($_POST['longitude']) ? (float)$_POST['longitude'] : null
     ];
 
     $response = supabaseRequest('events', 'POST', $payload);
@@ -67,7 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'start_datetime' => $_POST['start_datetime'],
             'end_datetime' => $_POST['end_datetime'],
             'capacity' => (int)$_POST['capacity'],
-            'status' => $_POST['status']
+            'status' => $_POST['status'],
+            'image_url' => trim($_POST['image_url'] ?? ''),
+            'latitude' => !empty($_POST['latitude']) ? (float)$_POST['latitude'] : null,
+            'longitude' => !empty($_POST['longitude']) ? (float)$_POST['longitude'] : null
         ];
 
         $response = supabaseRequest("events?id=eq.{$updateId}", 'PATCH', $payload);
@@ -153,7 +158,6 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                 <tr><td colspan="6" class="text-center py-4 text-muted">No events found. Create one above!</td></tr>
                             <?php else: ?>
                                 <?php foreach ($events as $event): 
-                                    // Parse for HTML attributes
                                     $eTitle = htmlspecialchars($event['title'] ?? '');
                                     $eDesc = htmlspecialchars($event['description'] ?? '');
                                     $eVenue = htmlspecialchars($event['venue'] ?? '');
@@ -161,6 +165,9 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                     $eEnd = date('Y-m-d\TH:i', strtotime($event['end_datetime']));
                                     $eCap = htmlspecialchars($event['capacity'] ?? 100);
                                     $eStatus = htmlspecialchars($event['status'] ?? 'Upcoming');
+                                    $eImage = htmlspecialchars($event['image_url'] ?? '');
+                                    $eLat = htmlspecialchars($event['latitude'] ?? '');
+                                    $eLng = htmlspecialchars($event['longitude'] ?? '');
                                 ?>
                                     <tr>
                                         <td class="fw-bold text-primary"><?= $eTitle ?></td>
@@ -177,12 +184,10 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <!-- Copy ID -->
                                                 <button class="btn btn-sm btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText('<?= $event['id'] ?>'); alert('Event ID copied!');" title="Copy Event ID">
                                                     <i class="bi bi-clipboard"></i>
                                                 </button>
                                                 
-                                                <!-- Edit Button (Opens Modal) -->
                                                 <button class="btn btn-sm btn-outline-primary" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#editEventModal"
@@ -194,11 +199,13 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                                                     data-end="<?= $eEnd ?>"
                                                     data-cap="<?= $eCap ?>"
                                                     data-status="<?= $eStatus ?>"
+                                                    data-image="<?= $eImage ?>"
+                                                    data-lat="<?= $eLat ?>"
+                                                    data-lng="<?= $eLng ?>"
                                                     title="Edit Event">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                                 
-                                                <!-- Delete Button -->
                                                 <?php if (in_array($currentRole, ['administrator', 'event organizer'])): ?>
                                                     <form method="POST" class="mb-0" onsubmit="return confirm('Delete this event?');">
                                                         <input type="hidden" name="action" value="delete">
@@ -242,15 +249,34 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                         <label class="form-label fw-bold">Description</label>
                         <textarea name="description" class="form-control" rows="3" required></textarea>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Cover Image URL (Optional)</label>
+                        <input type="url" name="image_url" class="form-control" placeholder="https://example.com/image.jpg">
+                        <div class="form-text">Provide a direct link to an image to show on the participant dashboard.</div>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Venue</label>
+                            <label class="form-label fw-bold">Venue Name</label>
                             <input type="text" name="venue" class="form-control" required placeholder="e.g., Main Auditorium">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Participant Capacity</label>
                             <input type="number" name="capacity" class="form-control" required min="1" value="100">
+                        </div>
+                    </div>
+                    
+                    <div class="row bg-light p-2 rounded mb-3 mx-0 border">
+                        <div class="col-12 mb-2">
+                            <label class="form-label fw-bold text-danger"><i class="bi bi-geo-alt-fill me-1"></i> Google Maps Pin (Optional)</label>
+                            <div class="form-text mt-0 mb-2">To drop a pin on the dashboard, open Google Maps, right-click the location, and paste the Latitude and Longitude here.</div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="latitude" class="form-control" placeholder="Latitude (e.g. 15.1432)">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="longitude" class="form-control" placeholder="Longitude (e.g. 120.5843)">
                         </div>
                     </div>
 
@@ -304,15 +330,32 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
                         <label class="form-label fw-bold">Description</label>
                         <textarea name="description" id="edit-desc" class="form-control" rows="3" required></textarea>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Cover Image URL (Optional)</label>
+                        <input type="url" name="image_url" id="edit-image" class="form-control" placeholder="https://example.com/image.jpg">
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Venue</label>
+                            <label class="form-label fw-bold">Venue Name</label>
                             <input type="text" name="venue" id="edit-venue" class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Participant Capacity</label>
                             <input type="number" name="capacity" id="edit-cap" class="form-control" required min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="row bg-light p-2 rounded mb-3 mx-0 border">
+                        <div class="col-12 mb-2">
+                            <label class="form-label fw-bold text-danger"><i class="bi bi-geo-alt-fill me-1"></i> Google Maps Pin (Optional)</label>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="latitude" id="edit-lat" class="form-control" placeholder="Latitude">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" name="longitude" id="edit-lng" class="form-control" placeholder="Longitude">
                         </div>
                     </div>
 
@@ -346,7 +389,6 @@ $events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getR
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Script to populate the Edit Modal dynamically when the edit button is clicked
 const editModal = document.getElementById('editEventModal');
 if(editModal) {
     editModal.addEventListener('show.bs.modal', event => {
@@ -360,6 +402,9 @@ if(editModal) {
         document.getElementById('edit-end').value = button.getAttribute('data-end');
         document.getElementById('edit-cap').value = button.getAttribute('data-cap');
         document.getElementById('edit-status').value = button.getAttribute('data-status');
+        document.getElementById('edit-image').value = button.getAttribute('data-image');
+        document.getElementById('edit-lat').value = button.getAttribute('data-lat');
+        document.getElementById('edit-lng').value = button.getAttribute('data-lng');
     });
 }
 </script>
