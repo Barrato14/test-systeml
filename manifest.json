@@ -1,20 +1,25 @@
 {
-  "name": "Student Services System",
+  "name": "Student Services and School Activity Management System",
   "short_name": "Student Services",
-  "start_url": "/",
+  "description": "A web-based student services and school activity management system.",
+  "start_url": "/login.php",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
-"icons": [
-  {
-    "src": "/pwa-icons/icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  },
-  {
-    "src": "/pwa-icons/icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png"
-  }
+  "icons": [
+    {
+      "src": "/pwa-icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
