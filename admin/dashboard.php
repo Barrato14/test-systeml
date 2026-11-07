@@ -1,25 +1,66 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
+
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
 // Ensure user is logged in and is an Administrator
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'administrator') {
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
     header("Location: ../login.php");
     exit;
 }
 
-// Fetch overview statistics from Supabase safely
+// Fetch total users
 $totalUsersResponse = supabaseRequest('profiles?select=id', 'GET');
-$totalUsers = (is_array($totalUsersResponse) && isset($totalUsersResponse['data'])) ? count($totalUsersResponse['data']) : 0;
+$totalUsers = (
+    is_array($totalUsersResponse) &&
+    isset($totalUsersResponse['data']) &&
+    is_array($totalUsersResponse['data'])
+) ? count($totalUsersResponse['data']) : 0;
 
-$eventsResponse = supabaseRequest('events?select=id', 'GET');
-$activeEvents = (is_array($eventsResponse) && isset($eventsResponse['data'])) ? count($eventsResponse['data']) : 0;
+// Fetch event dates so we can count only events that have not ended.
+$eventsResponse = supabaseRequest('events?select=start_datetime,end_datetime', 'GET');
+$activeEvents = 0;
 
+if (
+    is_array($eventsResponse) &&
+    isset($eventsResponse['data']) &&
+    is_array($eventsResponse['data'])
+) {
+    $manilaTimezone = new DateTimeZone('Asia/Manila');
+    $now = new DateTime('now', $manilaTimezone);
+
+    foreach ($eventsResponse['data'] as $event) {
+        if (empty($event['end_datetime'])) {
+            // Cannot determine whether an event is still active without its end date.
+            continue;
+        }
+
+        try {
+            $eventEnd = new DateTime($event['end_datetime']);
+            $eventEnd->setTimezone($manilaTimezone);
+
+            // Count upcoming and ongoing events; exclude events that have ended.
+            if ($eventEnd >= $now) {
+                $activeEvents++;
+            }
+        } catch (Exception $e) {
+            // Ignore records with invalid end_datetime values.
+            continue;
+        }
+    }
+}
+
+// Fetch total attendance check-ins
 $attendanceResponse = supabaseRequest('attendance?select=id', 'GET');
-$totalCheckIns = (is_array($attendanceResponse) && isset($attendanceResponse['data'])) ? count($attendanceResponse['data']) : 0;
+$totalCheckIns = (
+    is_array($attendanceResponse) &&
+    isset($attendanceResponse['data']) &&
+    is_array($attendanceResponse['data'])
+) ? count($attendanceResponse['data']) : 0;
 
-$pendingEquipment = 0; 
+$pendingEquipment = 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,7 +100,7 @@ $pendingEquipment = 0;
 
     <!-- Main Content Area -->
     <div class="content-area flex-grow-1">
-        
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0">Dashboard Overview</h2>
             <div class="d-flex align-items-center">
@@ -124,7 +165,7 @@ $pendingEquipment = 0;
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
