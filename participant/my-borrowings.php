@@ -102,6 +102,7 @@ function statusClass($status) {
                             <th class="ps-4">Equipment</th>
                             <th>Quantity</th>
                             <th>Borrow / Return</th>
+                            <th>Pickup / Return Location</th>
                             <th>Purpose</th>
                             <th>Status</th>
                             <th class="pe-4">Requested</th>
@@ -110,7 +111,7 @@ function statusClass($status) {
                     <tbody>
                     <?php if (!$requests): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-5">
+                            <td colspan="7" class="text-center text-muted py-5">
                                 <i class="bi bi-inbox display-6 d-block mb-2"></i>
                                 You haven't submitted any borrowing requests yet.
                             </td>
@@ -150,6 +151,28 @@ function statusClass($status) {
                                     <?= h($request['borrow_date'] ?? '—') ?><br>
                                     <span class="text-muted">to <?= h($request['expected_return_date'] ?? '—') ?></span>
                                 </td>
+                                <td style="min-width:210px;white-space:normal">
+                                    <div class="small">
+                                        <div class="fw-semibold"><i class="bi bi-box-arrow-in-down text-success me-1"></i>Pickup</div>
+                                        <?= h($request['pickup_location'] ?? 'Will be provided after approval') ?>
+                                        <div class="fw-semibold mt-2"><i class="bi bi-box-arrow-up text-primary me-1"></i>Return</div>
+                                        <?= h($request['return_location'] ?? 'Will be provided after approval') ?>
+                                        <?php if (!empty($request['pickup_instructions'])): ?>
+                                            <div class="text-muted mt-2"><i class="bi bi-info-circle me-1"></i><?= nl2br(h($request['pickup_instructions'])) ?></div>
+                                        <?php endif; ?>
+                                        <?php if ($status === 'Returned' && !empty($request['returned_at'])):
+                                            try {
+                                                $returnedDate = new DateTime($request['returned_at']);
+                                                $returnedDate->setTimezone(new DateTimeZone('Asia/Manila'));
+                                                $returnedLabel = $returnedDate->format('M d, Y g:i A');
+                                            } catch (Exception $e) { $returnedLabel = 'Recorded'; }
+                                        ?>
+                                            <div class="text-success fw-semibold mt-2"><i class="bi bi-check-circle-fill me-1"></i>Return confirmed: <?= h($returnedLabel) ?></div>
+                                        <?php elseif ($status === 'Approved'): ?>
+                                            <div class="text-warning fw-semibold mt-2"><i class="bi bi-hourglass-split me-1"></i>Awaiting return confirmation</div>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
                                 <td style="min-width:180px;max-width:260px;white-space:normal"><?= h($request['purpose'] ?? '—') ?></td>
                                 <td>
                                     <span class="badge status-pill bg-<?= h(statusClass($status)) ?>"><?= h($status) ?></span>
@@ -166,7 +189,7 @@ function statusClass($status) {
 
     <p class="text-muted small mt-3">
         <i class="bi bi-info-circle me-1"></i>
-        Approved requests are not final until the equipment is handed over. Please coordinate with the equipment administrator or staff.
+        Once approved, check the pickup and return room details above. Staff will mark the item as returned after physically receiving it, and you will see the confirmation here.
     </p>
 </main>
 </body>
