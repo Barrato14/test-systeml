@@ -2,50 +2,103 @@
 session_start();
 date_default_timezone_set('Asia/Manila');
 header('Content-Type: application/json');
+
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'participant') {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
+function respond($success, $message) {
+    echo json_encode(['success' => $success, 'message' => $message]);
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'participant') {
+    respond(false, 'Unauthorized access.');
+}
+
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
+
 $eventId = $input['event_id'] ?? '';
-$participantId = $_SESSION['user_id'];
+$participantId = $_SESSION['user_id']; // Use the authenticated session.
 $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
 
-if (empty($eventId) || empty($photoDataUrl)) {
-    echo json_encode(['success' => false, 'message' => 'Missing required data or photo.']);
-    exit;
+if ($eventId === '' || $photoDataUrl === '') {
+    respond(false, 'Missing required time-out data or photo.');
 }
 
-// Find existing check-in record ID
-$checkExisting = supabaseRequest("attendance?event_id=eq.{$eventId}&participant_id=eq.{$participantId}&select=id,time_out", 'GET');
-if ($checkExisting['code'] !== 200 || empty($checkExisting['data'])) {
-    echo json_encode(['success' => false, 'message' => 'No active check-in found.']);
-    exit;
+// Fetch event and validate its end time on the server.
+$eventResponse = supabaseRequest(
+    'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime',
+    'GET'
+);
+
+if (($eventResponse['code'] ?? 500) >= 400 || empty($eventResponse['data'])) {
+    respond(false, 'Event not found. Time-out cannot be processed.');
 }
 
-$recordId = $checkExisting['data'][0]['id'];
+$event = $eventResponse['data'][0];
 
-// Update with time out details
+if (empty($event['start_datetime']) || empty($event['end_datetime'])) {
+    respond(false, 'This event has an incomplete schedule. Please contact the event organizer.');
+}
+
+try {
+    $manila = new DateTimeZone('Asia/Manila');
+    $now = new DateTimeImmutable('now', $manila);
+    $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manila);
+    $eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manila);
+} catch (Exception $e) {
+    respond(false, 'The event schedule is invalid. Please contact the event organizer.');
+}
+
+if ($eventEnd <= $eventStart) {
+    respond(false, 'The event has an invalid schedule. Please contact the event organizer.');
+}
+
+if ($now < $eventStart) {
+    respond(false, 'Time-out is not available before the event starts.');
+}
+
+if ($now >= $eventEnd) {
+    respond(false, 'Time-out is closed. This event ended on ' . $eventEnd->format('F j, Y, g:i A') . ' (PHT).');
+}
+
+// Find the participant's attendance record.
+$checkExisting = supabaseRequest(
+    'attendance?event_id=eq.' . rawurlencode($eventId) .
+    '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out',
+    'GET'
+);
+
+if (($checkExisting['code'] ?? 500) >= 400 || empty($checkExisting['data'])) {
+    respond(false, 'No check-in record was found. You must check in first.');
+}
+
+$attendance = $checkExisting['data'][0];
+
+if (!empty($attendance['time_out'])) {
+    respond(false, 'You have already timed out for this event.');
+}
+
+$recordId = $attendance['id'];
+
 $payload = [
-    'time_out' => date('c'),
+    'time_out' => $now->format('c'),
     'timeout_photo_url' => $photoDataUrl,
-    'timeout_latitude' => $latitude !== null ? floatval($latitude) : null,
-    'timeout_longitude' => $longitude !== null ? floatval($longitude) : null
+    'timeout_latitude' => $latitude !== null ? (float)$latitude : null,
+    'timeout_longitude' => $longitude !== null ? (float)$longitude : null
 ];
 
-$response = supabaseRequest("attendance?id=eq.{$recordId}", 'PATCH', $payload);
+$response = supabaseRequest(
+    'attendance?id=eq.' . rawurlencode((string)$recordId),
+    'PATCH',
+    $payload
+);
 
-if ($response['code'] >= 400) {
-    echo json_encode(['success' => false, 'message' => 'Failed to record time out in database.']);
-    exit;
+if (($response['code'] ?? 500) >= 400) {
+    respond(false, 'Failed to record time-out in the database.');
 }
 
-echo json_encode(['success' => true, 'message' => 'Time out recorded successfully!']);
-exit;
+respond(true, 'Time-out recorded successfully!');
 ?>
