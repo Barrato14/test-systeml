@@ -21,17 +21,14 @@ function h($value) {
 }
 
 function equipmentStorageUpload($file) {
-    global $supabaseUrl;
+    // Reuse the same Supabase URL and API key loaded by config/database.php.
+    // This follows the existing EMIS configuration instead of requiring a
+    // separate SUPABASE_SERVICE_ROLE_KEY environment variable.
+    global $supabaseUrl, $apiKey;
 
-    // Keep the service-role key on the server only. Never place it in HTML or JavaScript.
-    $storageKey = getenv('SUPABASE_SERVICE_ROLE_KEY');
+    $storageKey = $apiKey ?? '';
     if (!$storageKey) {
-        $localEnvPath = __DIR__ . '/../.env';
-        $localEnv = file_exists($localEnvPath) ? parse_ini_file($localEnvPath) : [];
-        $storageKey = $localEnv['SUPABASE_SERVICE_ROLE_KEY'] ?? '';
-    }
-    if (!$storageKey) {
-        throw new Exception('Image upload is not configured yet. Add SUPABASE_SERVICE_ROLE_KEY to your server environment.');
+        throw new Exception('Supabase API key is missing. Check the existing SUPABASE_KEY / SUPABASE_ANON_KEY setting in Render.');
     }
 
     if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
