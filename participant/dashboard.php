@@ -82,6 +82,55 @@ foreach ($registrations as $reg) {
         $registeredEventIds[] = $reg['event_id'];
     }
 }
+
+// Prepare upcoming and ongoing events for the read-only participant calendar.
+$calendarEvents = [];
+$now = new DateTime('now', new DateTimeZone('Asia/Manila'));
+
+foreach ($allEvents as $evt) {
+    if (empty($evt['start_datetime']) || empty($evt['end_datetime'])) {
+        continue;
+    }
+
+    try {
+        $eventStart = new DateTime($evt['start_datetime']);
+        $eventEnd = new DateTime($evt['end_datetime']);
+        $eventStart->setTimezone(new DateTimeZone('Asia/Manila'));
+        $eventEnd->setTimezone(new DateTimeZone('Asia/Manila'));
+
+        // Do not show events that have already ended.
+        if ($eventEnd < $now) {
+            continue;
+        }
+
+        $eventStatus = ($now < $eventStart) ? 'Upcoming' : 'Ongoing';
+        $eventColor = ($eventStatus === 'Ongoing') ? '#0f9d75' : '#4f46e5';
+
+        $calendarEvents[] = [
+            'id' => (string)($evt['id'] ?? ''),
+            'title' => $evt['title'] ?? 'Untitled Event',
+            'start' => $evt['start_datetime'],
+            'end' => $evt['end_datetime'],
+            'backgroundColor' => $eventColor,
+            'borderColor' => $eventColor,
+            'extendedProps' => [
+                'description' => $evt['description'] ?? '',
+                'venue' => $evt['venue'] ?? 'Not specified',
+                'image_url' => $evt['image_url'] ?? '',
+                'latitude' => $evt['latitude'] ?? null,
+                'longitude' => $evt['longitude'] ?? null,
+                'status' => $eventStatus
+            ]
+        ];
+    } catch (Exception $e) {
+        continue;
+    }
+}
+
+$calendarJson = json_encode(
+    $calendarEvents,
+    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -90,7 +139,7 @@ foreach ($registrations as $reg) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Participant Dashboard - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">\n    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css" rel="stylesheet">\n    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
     <style>
         .event-card-img {
             height: 180px;
@@ -104,6 +153,75 @@ foreach ($registrations as $reg) {
         .map-badge:hover {
             background-color: #e9ecef !important;
             transform: scale(1.05);
+        }
+        .calendar-launch-card {
+            border: 1px solid #e7eaf0;
+            border-radius: 14px;
+            background: #fff;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .calendar-launch-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+        }
+        .calendar-launch-button {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 16px;
+        }
+        #participantCalendar {
+            background: #fff;
+            padding: 14px;
+            border-radius: 12px;
+        }
+        #participantCalendar .fc-toolbar-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #participantCalendar .fc-button-primary {
+            background: #fff;
+            color: #475569;
+            border: 1px solid #dce3ed;
+            box-shadow: none;
+        }
+        #participantCalendar .fc-button-primary:hover,
+        #participantCalendar .fc-button-primary:focus {
+            background: #eef2ff;
+            color: #4338ca;
+            border-color: #c7d2fe;
+        }
+        #participantCalendar .fc-day-today {
+            background: #eef2ff !important;
+        }
+        #participantCalendar .fc-event {
+            cursor: pointer;
+            border: 0;
+            border-radius: 5px;
+            padding: 2px 4px;
+        }
+        .calendar-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            color: #64748b;
+            font-size: .85rem;
+            margin-bottom: 14px;
+        }
+        .calendar-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .calendar-legend i {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        @media (max-width: 576px) {
+            #participantCalendar { padding: 4px; }
+            #participantCalendar .fc-toolbar { flex-direction: column; gap: 8px; }
+            #participantCalendar .fc-toolbar-title { font-size: 1.05rem; }
         }
     </style>
 </head>
@@ -129,6 +247,102 @@ foreach ($registrations as $reg) {
         <div class="col">
             <h2 class="h4">My Approved Events & Check-In</h2>
             <p class="text-muted">Perform your secure face-scan and GPS check-in/time-out for approved events here.</p>
+        </div>
+    </div>
+
+    <!-- Clickable calendar launcher: participants can view events, but cannot manage them. -->
+    <div class="calendar-launch-card p-3 p-md-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
+                     style="width:52px;height:52px;flex-shrink:0;">
+                    <i class="bi bi-calendar3 fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1 fw-bold">Event Calendar</h5>
+                    <p class="text-muted mb-0 small">Browse upcoming and ongoing events by date.</p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary calendar-launch-button"
+                    data-bs-toggle="modal" data-bs-target="#participantCalendarModal">
+                <i class="bi bi-calendar-week me-2"></i>View Calendar
+            </button>
+        </div>
+    </div>
+
+    <!-- Read-only calendar modal -->
+    <div class="modal fade" id="participantCalendarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-dark text-white">
+                    <div>
+                        <h5 class="modal-title text-white mb-1">Upcoming Event Calendar</h5>
+                        <small class="text-white-50">Select an event to view its details.</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4">
+                    <div class="calendar-legend">
+                        <span><i style="background:#4f46e5"></i> Upcoming</span>
+                        <span><i style="background:#0f9d75"></i> Ongoing</span>
+                    </div>
+                    <div id="participantCalendar"></div>
+                    <div id="noCalendarEvents" class="alert alert-light border text-center mt-3 mb-0" style="display:none;">
+                        No upcoming or ongoing events are scheduled at the moment.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event details modal (view-only) -->
+    <div class="modal fade" id="participantEventDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <div>
+                        <span class="badge bg-light text-primary" id="participantEventStatus">Upcoming</span>
+                        <h5 class="modal-title text-white mt-2 mb-0" id="participantEventTitle">Event Details</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <img id="participantEventImage" src="" alt="Event cover"
+                         class="img-fluid rounded mb-3 w-100"
+                         style="display:none;max-height:260px;object-fit:cover;">
+                    <p id="participantEventDescription" class="text-muted"></p>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block fw-bold">START</small>
+                                <strong id="participantEventStart"></strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <small class="text-muted d-block fw-bold">END</small>
+                                <strong id="participantEventEnd"></strong>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <small class="text-muted d-block fw-bold">VENUE</small>
+                                <strong id="participantEventVenue"></strong>
+                            </div>
+                        </div>
+                    </div>
+                    <iframe id="participantEventMap" title="Event location map"
+                            class="w-100 rounded" style="height:220px;border:0;display:none;"
+                            loading="lazy"></iframe>
+                    <a id="participantEventMapLink" href="#" target="_blank" rel="noopener"
+                       class="btn btn-outline-primary btn-sm mt-2" style="display:none;">
+                        <i class="bi bi-geo-alt me-1"></i>Open in Google Maps
+                    </a>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -271,5 +485,109 @@ foreach ($registrations as $reg) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const participantCalendarEvents = <?= $calendarJson ?: '[]' ?>;
+
+document.addEventListener('DOMContentLoaded', function () {
+    const calendarModalElement = document.getElementById('participantCalendarModal');
+    const detailsModalElement = document.getElementById('participantEventDetailsModal');
+    const calendarModal = bootstrap.Modal.getOrCreateInstance(calendarModalElement);
+    const detailsModal = bootstrap.Modal.getOrCreateInstance(detailsModalElement);
+    let calendar = null;
+    let reopenCalendarAfterDetails = false;
+
+    function formatPHT(date) {
+        if (!date) return 'Not specified';
+        return new Intl.DateTimeFormat('en-PH', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        }).format(date);
+    }
+
+    function showParticipantEvent(event) {
+        const props = event.extendedProps;
+
+        document.getElementById('participantEventTitle').textContent = event.title;
+        document.getElementById('participantEventStatus').textContent = props.status || 'Upcoming';
+        document.getElementById('participantEventDescription').textContent =
+            props.description || 'No description provided.';
+        document.getElementById('participantEventStart').textContent = formatPHT(event.start);
+        document.getElementById('participantEventEnd').textContent = formatPHT(event.end);
+        document.getElementById('participantEventVenue').textContent = props.venue || 'Not specified';
+
+        const image = document.getElementById('participantEventImage');
+        if (props.image_url) {
+            image.src = props.image_url;
+            image.style.display = 'block';
+            image.onerror = function () { image.style.display = 'none'; };
+        } else {
+            image.removeAttribute('src');
+            image.style.display = 'none';
+        }
+
+        const map = document.getElementById('participantEventMap');
+        const mapLink = document.getElementById('participantEventMapLink');
+        if (props.latitude !== null && props.latitude !== '' &&
+            props.longitude !== null && props.longitude !== '') {
+            const coordinates = props.latitude + ',' + props.longitude;
+            map.src = 'https://maps.google.com/maps?q=' +
+                encodeURIComponent(coordinates) + '&z=15&output=embed';
+            map.style.display = 'block';
+            mapLink.href = 'https://www.google.com/maps?q=' +
+                encodeURIComponent(coordinates);
+            mapLink.style.display = 'inline-block';
+        } else {
+            map.removeAttribute('src');
+            map.style.display = 'none';
+            mapLink.style.display = 'none';
+        }
+
+        // Hide the calendar first, then show the details modal.
+        reopenCalendarAfterDetails = true;
+        calendarModal.hide();
+    }
+
+    calendarModalElement.addEventListener('shown.bs.modal', function () {
+        if (!calendar) {
+            calendar = new FullCalendar.Calendar(
+                document.getElementById('participantCalendar'),
+                {
+                    initialView: 'dayGridMonth',
+                    timeZone: 'Asia/Manila',
+                    height: 'auto',
+                    fixedWeekCount: false,
+                    dayMaxEvents: true,
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: ''
+                    },
+                    events: participantCalendarEvents,
+                    eventClick: function (info) {
+                        info.jsEvent.preventDefault();
+                        showParticipantEvent(info.event);
+                    }
+                }
+            );
+        }
+
+        calendar.render();
+        calendar.updateSize();
+        document.getElementById('noCalendarEvents').style.display =
+            participantCalendarEvents.length === 0 ? 'block' : 'none';
+    });
+
+    detailsModalElement.addEventListener('hidden.bs.modal', function () {
+        if (reopenCalendarAfterDetails) {
+            reopenCalendarAfterDetails = false;
+            calendarModal.show();
+        }
+    });
+});
+</script>
 </body>
 </html>
