@@ -45,6 +45,35 @@ function toManilaDateTimeInput($value) {
     }
 }
 
+// Calculate status from the event's schedule using Philippine time.
+function getEventStatus($startValue, $endValue, $savedStatus = 'Upcoming') {
+    if (empty($startValue) || empty($endValue)) {
+        return $savedStatus ?: 'Upcoming';
+    }
+
+    try {
+        $timezone = new DateTimeZone('Asia/Manila');
+        $now = new DateTime('now', $timezone);
+        $start = new DateTime($startValue);
+        $end = new DateTime($endValue);
+
+        $start->setTimezone($timezone);
+        $end->setTimezone($timezone);
+
+        if ($now < $start) {
+            return 'Upcoming';
+        }
+
+        if ($now <= $end) {
+            return 'Ongoing';
+        }
+
+        return 'Completed';
+    } catch (Exception $e) {
+        return $savedStatus ?: 'Upcoming';
+    }
+}
+
 // Convert the datetime-local value (Philippine local time) to an ISO value
 // with an explicit +08:00 offset for Supabase.
 function toSupabaseDateTime($value) {
@@ -157,7 +186,11 @@ $events = (($getResponse['code'] ?? 500) < 400 && is_array($getResponse['data'] 
 
 $calendarEvents = [];
 foreach ($events as $event) {
-    $status = $event['status'] ?? 'Upcoming';
+    $status = getEventStatus(
+        $event['start_datetime'] ?? '',
+        $event['end_datetime'] ?? '',
+        $event['status'] ?? 'Upcoming'
+    );
 
     $color = '#4f46e5';
     if ($status === 'Ongoing') $color = '#0f9d75';
@@ -391,7 +424,11 @@ $calendarJson = json_encode(
                     <?php else: ?>
                         <?php foreach ($events as $event):
                             $eventId = (string)($event['id'] ?? '');
-                            $status = $event['status'] ?? 'Upcoming';
+                            $status = getEventStatus(
+                                $event['start_datetime'] ?? '',
+                                $event['end_datetime'] ?? '',
+                                $event['status'] ?? 'Upcoming'
+                            );
                             $badgeClass = $status === 'Upcoming' ? 'success' : ($status === 'Ongoing' ? 'warning text-dark' : 'secondary');
                         ?>
                             <tr class="event-table-row"
@@ -644,6 +681,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
+            right: ''
         },
         events: emisEvents,
         eventClick: function (info) {
