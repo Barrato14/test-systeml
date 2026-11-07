@@ -21,26 +21,39 @@ function h($value) {
 }
 
 function equipmentStorageUpload($file) {
-    // Reuse the same Supabase URL and API key loaded by config/database.php.
-    // This follows the existing EMIS configuration instead of requiring a
-    // separate SUPABASE_SERVICE_ROLE_KEY environment variable.
-    global $supabaseUrl, $apiKey;
+    global $supabaseUrl, $env;
 
-    $storageKey = $apiKey ?? '';
-    if (!$storageKey) {
-        throw new Exception('Supabase API key is missing. Check the existing SUPABASE_KEY / SUPABASE_ANON_KEY setting in Render.');
+    // Use the dedicated server-side Storage key from Render.
+    $storageKey = getenv('SUPABASE_SERVICE_ROLE_KEY')
+        ?: ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
+
+    if (empty($storageKey)) {
+        throw new Exception('Storage key is missing. Add SUPABASE_SERVICE_ROLE_KEY to Render Environment Variables.');
+    }
+
+    if (empty($supabaseUrl)) {
+        throw new Exception('Supabase URL is not configured.');
     }
 
     if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
         throw new Exception('Please choose a valid image to upload.');
     }
 
+    if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        throw new Exception('Invalid uploaded image.');
+    }
+
     if (($file['size'] ?? 0) > 5 * 1024 * 1024) {
         throw new Exception('The image must be 5 MB or smaller.');
     }
 
+    if (!class_exists('finfo')) {
+        throw new Exception('PHP Fileinfo extension is not enabled.');
+    }
+
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
+
     $extensions = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -51,15 +64,24 @@ function equipmentStorageUpload($file) {
         throw new Exception('Only JPG, PNG, and WEBP images are allowed.');
     }
 
+    $imageData = file_get_contents($file['tmp_name']);
+    if ($imageData === false) {
+        throw new Exception('Unable to read the uploaded image.');
+    }
+
     $fileName = bin2hex(random_bytes(16)) . '.' . $extensions[$mime];
     $objectPath = 'equipment/' . date('Y/m') . '/' . $fileName;
     $url = rtrim($supabaseUrl, '/') . '/storage/v1/object/equipment-images/' . $objectPath;
 
     $ch = curl_init($url);
+    if ($ch === false) {
+        throw new Exception('Unable to initialize image upload.');
+    }
+
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => file_get_contents($file['tmp_name']),
+        CURLOPT_POSTFIELDS => $imageData,
         CURLOPT_HTTPHEADER => [
             'apikey: ' . $storageKey,
             'Authorization: Bearer ' . $storageKey,
@@ -76,7 +98,7 @@ function equipmentStorageUpload($file) {
 
     if ($responseBody === false || $httpCode < 200 || $httpCode >= 300) {
         error_log('EMIS equipment image upload failed: HTTP ' . $httpCode . ' ' . $curlError . ' ' . (string)$responseBody);
-        throw new Exception('Image upload failed. Check the equipment-images bucket and server storage key.');
+        throw new Exception('Image upload failed. Check the equipment-images bucket, its permissions, and your Storage key.');
     }
 
     return rtrim($supabaseUrl, '/') . '/storage/v1/object/public/equipment-images/' . $objectPath;
@@ -209,8 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $approvedResponse = equipmentRequest(
-                    'equipment_borrow_requests?equipment_id=eq.' . rawurlencode($borrowRequest['equipment_id']) .
-                    '&status=eq.Approved&select=quantity',
+                    'equipment_borrow_requests?equipment_id=eq.' . rawurlencode($borrowRequest['equipment_id']) . '&status=eq.Approved&select=quantity',
                     'GET'
                 );
                 $borrowedQty = 0;
@@ -445,9 +466,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <table class="table align-middle">
                         <thead><tr><th>Equipment ID</th><th>Participant ID</th><th>Quantity</th><th>Borrow / Return</th><th>Purpose</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
-                        <?php
-                        $pendingRows = array_filter($requests, fn($r) => ($r['status'] ?? '') === 'Pending');
-                        ?>
+                        <?php $pendingRows = array_filter($requests, fn($r) => ($r['status'] ?? '') === 'Pending'); ?>
                         <?php if (!$pendingRows): ?><tr><td colspan="7" class="text-center text-muted py-5">There are no pending borrowing requests.</td></tr><?php endif; ?>
                         <?php foreach ($pendingRows as $request): ?>
                             <tr>
@@ -476,9 +495,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <table class="table align-middle">
                         <thead><tr><th>Equipment ID</th><th>Participant ID</th><th>Quantity</th><th>Borrow / Return</th><th>Purpose</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
-                        <?php
-                        $historyRows = array_filter($requests, fn($r) => in_array(($r['status'] ?? ''), ['Approved','Rejected','Returned'], true));
-                        ?>
+                        <?php $historyRows = array_filter($requests, fn($r) => in_array(($r['status'] ?? ''), ['Approved','Rejected','Returned'], true)); ?>
                         <?php if (!$historyRows): ?><tr><td colspan="7" class="text-center text-muted py-5">No borrowing history yet.</td></tr><?php endif; ?>
                         <?php foreach ($historyRows as $request):
                             $status = $request['status'] ?? '';
@@ -550,6 +567,7 @@ function prepareAddEquipment() {
     document.getElementById('equipment_condition').value = 'Available';
     document.getElementById('equipmentImagePreview').style.display = 'none';
 }
+
 document.querySelectorAll('.edit-equipment').forEach(button => {
     button.addEventListener('click', () => {
         const item = JSON.parse(button.dataset.item);
@@ -561,11 +579,16 @@ document.querySelectorAll('.edit-equipment').forEach(button => {
         document.getElementById('equipment_quantity').value = item.quantity || 1;
         document.getElementById('equipment_condition').value = item.condition_status || 'Available';
         const preview = document.getElementById('equipmentImagePreview');
-        if (item.image_url) { preview.src = item.image_url; preview.style.display = 'block'; }
-        else { preview.style.display = 'none'; }
+        if (item.image_url) {
+            preview.src = item.image_url;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
         bootstrap.Modal.getOrCreateInstance(document.getElementById('equipmentModal')).show();
     });
 });
+
 document.querySelectorAll('.condition-button').forEach(button => {
     button.addEventListener('click', () => {
         document.getElementById('condition_equipment_id').value = button.dataset.id;
@@ -573,8 +596,10 @@ document.querySelectorAll('.condition-button').forEach(button => {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('conditionModal')).show();
     });
 });
+
 document.getElementById('equipmentSearch')?.addEventListener('input', filterEquipment);
 document.getElementById('availabilityFilter')?.addEventListener('change', filterEquipment);
+
 function filterEquipment() {
     const query = (document.getElementById('equipmentSearch')?.value || '').toLowerCase();
     const status = document.getElementById('availabilityFilter')?.value || '';
@@ -582,15 +607,18 @@ function filterEquipment() {
         row.style.display = row.dataset.search.includes(query) && (!status || row.dataset.status === status) ? '' : 'none';
     });
 }
+
 document.querySelector('input[name="equipment_image"]')?.addEventListener('change', function () {
     const file = this.files?.[0];
     const preview = document.getElementById('equipmentImagePreview');
     if (!file) return;
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
         alert('Choose a JPG, PNG, or WEBP image up to 5 MB.');
         this.value = '';
         return;
     }
+
     preview.src = URL.createObjectURL(file);
     preview.style.display = 'block';
 });
