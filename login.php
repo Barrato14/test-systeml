@@ -97,5 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+<script src="/js/pwa.js"></script>
 </body>
 </html>
