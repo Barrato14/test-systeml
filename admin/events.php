@@ -4,6 +4,7 @@ date_default_timezone_set('Asia/Manila');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/mail.php';
 
 // Keep the same EMIS roles and permissions.
 $allowedRoles = ['administrator', 'event organizer', 'staff'];
@@ -154,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Confirm the event exists before sending anything.
             $eventCheck = supabaseRequest(
-                'events?id=eq.' . rawurlencode($notifyEventId) . '&select=id,title',
+                'events?id=eq.' . rawurlencode($notifyEventId) . '&select=id,title,venue,start_datetime',
                 'GET'
             );
 
@@ -185,10 +186,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('There are no approved participants registered for this event.');
             }
 
-            $sentCount = 0;
-            $failedCount = 0;
+            $inAppSentCount = 0;
+            $inAppFailedCount = 0;
+            $emailSentCount = 0;
+            $emailFailedCount = 0;
+            $emailSkippedCount = 0;
 
-            // Send individually to avoid relying on bulk-insert behavior in supabaseRequest().
+            $selectedEvent = $eventCheck['data'][0];
+            $eventTitleForEmail = (string)($selectedEvent['title'] ?? 'EMIS Event');
+            $eventVenueForEmail = (string)($selectedEvent['venue'] ?? '');
+            $eventStartForEmail = formatManilaTime($selectedEvent['start_datetime'] ?? '');
+
+            // Send an in-app notification and a Brevo email to each approved participant.
             foreach (array_keys($recipientIds) as $recipientId) {
                 $notificationPayload = [
                     'participant_id' => $recipientId,
@@ -201,19 +210,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sendResponse = supabaseRequest('notifications', 'POST', $notificationPayload);
 
                 if (($sendResponse['code'] ?? 500) < 400) {
-                    $sentCount++;
+                    $inAppSentCount++;
                 } else {
-                    $failedCount++;
+                    $inAppFailedCount++;
+                }
+
+                // The profile ID matches the participant_id used by registrations.
+                // Select only email so this does not depend on unverified profile columns.
+                $profileResponse = supabaseRequest(
+                    'profiles?id=eq.' . rawurlencode($recipientId) . '&select=email',
+                    'GET'
+                );
+
+                $profile = (
+                    ($profileResponse['code'] ?? 500) < 400 &&
+                    is_array($profileResponse['data'] ?? null) &&
+                    !empty($profileResponse['data'])
+                ) ? $profileResponse['data'][0] : [];
+
+                $recipientEmail = trim((string)($profile['email'] ?? ''));
+                if ($recipientEmail === '' || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                    $emailSkippedCount++;
+                    continue;
+                }
+
+                $safeTitle = h($notificationTitle);
+                $safeEventTitle = h($eventTitleForEmail);
+                $safeMessage = nl2br(h($notificationMessage));
+                $safeVenue = h($eventVenueForEmail);
+                $safeStart = h($eventStartForEmail);
+
+                $emailHtml = '
+                    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#273449;line-height:1.6;">
+                        <div style="background:#343a40;color:#ffffff;padding:22px 26px;border-radius:10px 10px 0 0;">
+                            <h2 style="margin:0;color:#ffffff;">EMIS Event Notification</h2>
+                        </div>
+                        <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
+                            <h3 style="color:#198754;">' . $safeTitle . '</h3>
+                            <p>' . $safeMessage . '</p>
+                            <hr style="border:0;border-top:1px solid #e8edf4;margin:22px 0;">
+                            <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
+                            ' . ($safeVenue !== '' ? '<p><strong>Venue:</strong> ' . $safeVenue . '</p>' : '') . '
+                            ' . ($safeStart !== 'N/A' ? '<p><strong>Starts:</strong> ' . $safeStart . '</p>' : '') . '
+                            <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the EMIS Event System. Please do not reply to this email.</p>
+                        </div>
+                    </div>';
+
+                // sendSystemEmail returns true on success, otherwise an error string.
+                $emailResult = sendSystemEmail(
+                    $recipientEmail,
+                    'Participant',
+                    $notificationTitle . ' - EMIS Event Notification',
+                    $emailHtml
+                );
+
+                if ($emailResult === true) {
+                    $emailSentCount++;
+                } else {
+                    $emailFailedCount++;
+                    error_log('EMIS Brevo notification failed for participant ' . $recipientId . ': ' . (string)$emailResult);
                 }
             }
 
-            if ($sentCount === 0) {
-                throw new Exception('Notification delivery failed for all approved participants.');
-            }
+            $successMsg = "In-app: {$inAppSentCount} sent, {$inAppFailedCount} failed. ";
+            $successMsg .= "Email: {$emailSentCount} sent, {$emailFailedCount} failed, {$emailSkippedCount} skipped (missing/invalid email).";
 
-            $successMsg = "Notification sent to {$sentCount} approved participant(s).";
-            if ($failedCount > 0) {
-                $successMsg .= " {$failedCount} notification(s) could not be sent.";
+            if ($inAppSentCount === 0 && $emailSentCount === 0) {
+                throw new Exception('No notifications or emails were delivered. Check your Supabase profile email values and the server error log for Brevo details.');
             }
         } elseif ($action === 'create') {
             $payload = buildEventPayload();
@@ -636,7 +699,7 @@ $calendarJson = json_encode(
                     </div>
                     <div class="alert alert-info small mb-0">
                         <i class="bi bi-info-circle me-1"></i>
-                        This will create an in-app notification for every participant with an Approved registration for this event.
+                        This will create an in-app notification and send an email through Brevo to every participant with an Approved registration and a valid email address.
                     </div>
                 </div>
                 <div class="modal-footer">
