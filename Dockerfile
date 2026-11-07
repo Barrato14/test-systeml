@@ -32,9 +32,10 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Diagnose PWA files during build
 RUN echo "===== PWA FILE CHECK =====" \
-    && ls -lah /var/www/html/icons/ \
+    && ls -lah /var/www/html/pwa-icons/ \
     && ls -lah /var/www/html/manifest.json \
     && ls -lah /var/www/html/sw.js \
+    && ls -lah /var/www/html/js/pwa.js \
     && echo "===== END CHECK ====="
 
 # Set correct permissions
