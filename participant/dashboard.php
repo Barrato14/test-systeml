@@ -438,7 +438,7 @@ $calendarJson = json_encode(
         </div>
     </div>
 
-    <!-- Section 1: Registered / Approved Events -->
+    <!-- Section 1: Registered / Approved Events (ended events are hidden) -->
     <div class="row mb-5">
         <?php if (empty($registeredEventIds)): ?>
             <div class="col-12">
@@ -452,6 +452,11 @@ $calendarJson = json_encode(
                 $eventId = (string)($reg['event_id'] ?? '');
                 $event = $eventsMap[$eventId] ?? null;
                 if (!$event) continue;
+
+                // Completely remove ended events from the participant dashboard.
+                if (eventHasEnded($event, $manilaTimezone)) {
+                    continue;
+                }
 
                 $status = $reg['status'] ?? 'Approved';
                 $dateObj = new DateTime($event['start_datetime']);
