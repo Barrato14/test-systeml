@@ -139,6 +139,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $successMsg = 'Event deleted successfully!';
+        } elseif ($action === 'send_notification') {
+            if (!in_array($currentRole, ['administrator', 'event organizer'], true)) {
+                throw new Exception('Permission denied. Only administrators and event organizers can notify participants.');
+            }
+
+            $notifyEventId = trim((string)($_POST['event_id'] ?? ''));
+            $notificationTitle = trim((string)($_POST['notification_title'] ?? ''));
+            $notificationMessage = trim((string)($_POST['notification_message'] ?? ''));
+
+            if ($notifyEventId === '' || $notificationTitle === '' || $notificationMessage === '') {
+                throw new Exception('Please provide a notification title and message.');
+            }
+
+            // Confirm the event exists before sending anything.
+            $eventCheck = supabaseRequest(
+                'events?id=eq.' . rawurlencode($notifyEventId) . '&select=id,title',
+                'GET'
+            );
+
+            if (($eventCheck['code'] ?? 500) >= 400 || empty($eventCheck['data'])) {
+                throw new Exception('The selected event could not be found.');
+            }
+
+            // Only participants with an Approved registration receive this announcement.
+            $recipientsResponse = supabaseRequest(
+                'event_registrations?event_id=eq.' . rawurlencode($notifyEventId) .
+                '&status=eq.Approved&select=participant_id',
+                'GET'
+            );
+
+            if (($recipientsResponse['code'] ?? 500) >= 400 || !is_array($recipientsResponse['data'] ?? null)) {
+                throw new Exception('Unable to retrieve approved participants. No notifications were sent.');
+            }
+
+            $recipientIds = [];
+            foreach ($recipientsResponse['data'] as $recipient) {
+                $recipientId = trim((string)($recipient['participant_id'] ?? ''));
+                if ($recipientId !== '') {
+                    $recipientIds[$recipientId] = true;
+                }
+            }
+
+            if (empty($recipientIds)) {
+                throw new Exception('There are no approved participants registered for this event.');
+            }
+
+            $sentCount = 0;
+            $failedCount = 0;
+
+            // Send individually to avoid relying on bulk-insert behavior in supabaseRequest().
+            foreach (array_keys($recipientIds) as $recipientId) {
+                $notificationPayload = [
+                    'participant_id' => $recipientId,
+                    'event_id' => $notifyEventId,
+                    'title' => $notificationTitle,
+                    'message' => $notificationMessage,
+                    'is_read' => false
+                ];
+
+                $sendResponse = supabaseRequest('notifications', 'POST', $notificationPayload);
+
+                if (($sendResponse['code'] ?? 500) < 400) {
+                    $sentCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($sentCount === 0) {
+                throw new Exception('Notification delivery failed for all approved participants.');
+            }
+
+            $successMsg = "Notification sent to {$sentCount} approved participant(s).";
+            if ($failedCount > 0) {
+                $successMsg .= " {$failedCount} notification(s) could not be sent.";
+            }
         } elseif ($action === 'create') {
             $payload = buildEventPayload();
 
@@ -443,6 +519,15 @@ $calendarJson = json_encode(
                                 <td><span class="badge bg-<?= h($badgeClass) ?>"><?= h($status) ?></span></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
+                                        <?php if (in_array($currentRole, ['administrator', 'event organizer'], true)): ?>
+                                            <button class="btn btn-sm btn-outline-success notify-event-button" type="button"
+                                                data-bs-toggle="modal" data-bs-target="#notifyParticipantsModal"
+                                                data-id="<?= h($eventId) ?>"
+                                                data-title="<?= h($event['title'] ?? '') ?>"
+                                                title="Notify Approved Participants">
+                                                <i class="bi bi-bell"></i>
+                                            </button>
+                                        <?php endif; ?>
                                         <button class="btn btn-sm btn-outline-secondary copy-event-id" type="button" data-id="<?= h($eventId) ?>" title="Copy Event ID">
                                             <i class="bi bi-clipboard"></i>
                                         </button>
@@ -516,6 +601,51 @@ $calendarJson = json_encode(
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send notification to approved participants -->
+<div class="modal fade" id="notifyParticipantsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <div>
+                    <h5 class="modal-title text-white mb-1"><i class="bi bi-bell me-2"></i>Notify Participants</h5>
+                    <small class="text-white-50">Send an in-app announcement to approved registrants.</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="send_notification">
+                    <input type="hidden" name="event_id" id="notify-event-id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Event</label>
+                        <input type="text" id="notify-event-title" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notification Title</label>
+                        <input type="text" name="notification_title" class="form-control" maxlength="150"
+                               required placeholder="e.g., Important Event Update">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Message</label>
+                        <textarea name="notification_message" class="form-control" rows="4" maxlength="3000"
+                                  required placeholder="Write your announcement here..."></textarea>
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        This will create an in-app notification for every participant with an Approved registration for this event.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send me-1"></i> Send Notification
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -788,6 +918,14 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit-image').value = event.image_url ?? '';
             document.getElementById('edit-lat').value = event.latitude ?? '';
             document.getElementById('edit-lng').value = event.longitude ?? '';
+        });
+    });
+
+    // Populate the notification modal with the selected event.
+    document.querySelectorAll('.notify-event-button').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.getElementById('notify-event-id').value = this.dataset.id || '';
+            document.getElementById('notify-event-title').value = this.dataset.title || 'Selected event';
         });
     });
 
