@@ -1,11 +1,12 @@
 <?php
 session_start();
 date_default_timezone_set('Asia/Manila');
+
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure the user is logged in and is a Participant
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'participant') {
+// Ensure the user is logged in and is a Participant.
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'participant') {
     header('Location: ../login.php');
     exit();
 }
@@ -13,12 +14,39 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'part
 $participant_id = $_SESSION['user_id'];
 $firstName = $_SESSION['user_name'] ?? 'Student';
 
-// Guard: Check if user (especially Google / OAuth users) has completed course and section
-$profileRes = supabaseRequest('profiles?id=eq.' . $participant_id . '&select=course,section', 'GET');
-if ($profileRes['code'] === 200 && !empty($profileRes['data'])) {
+$manilaTimezone = new DateTimeZone('Asia/Manila');
+
+/**
+ * Returns true when an event has ended or has an invalid/missing end time.
+ * The comparison is performed using Philippine time.
+ */
+function eventHasEnded($event, $timezone) {
+    if (empty($event['end_datetime'])) {
+        return true;
+    }
+
+    try {
+        $eventEnd = new DateTimeImmutable($event['end_datetime']);
+        $eventEnd = $eventEnd->setTimezone($timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+
+        return $eventEnd <= $now;
+    } catch (Exception $e) {
+        return true;
+    }
+}
+
+// Guard: Check if user (especially Google / OAuth users) has completed course and section.
+$profileRes = supabaseRequest(
+    'profiles?id=eq.' . rawurlencode((string)$participant_id) . '&select=course,section',
+    'GET'
+);
+
+if (($profileRes['code'] ?? 500) === 200 && !empty($profileRes['data'])) {
     $profile = $profileRes['data'][0];
+
     if (empty($profile['course']) || empty($profile['section'])) {
-        header("Location: complete-profile.php");
+        header('Location: complete-profile.php');
         exit();
     }
 }
@@ -26,66 +54,130 @@ if ($profileRes['code'] === 200 && !empty($profileRes['data'])) {
 $successMsg = '';
 $errorMsg = '';
 
-// Handle Registration Action
+// Handle registration. The event schedule is checked on the server
+// before either creating a registration or updating an existing one.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id'])) {
-    $eventIdToRegister = $_POST['register_event_id'];
-    
-    // Check if a registration already exists to prevent duplicate error loops
-    $checkExisting = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id . '&event_id=eq.' . $eventIdToRegister, 'GET');
-    
-    if (!empty($checkExisting['data'])) {
-        $updateRes = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id . '&event_id=eq.' . $eventIdToRegister, 'PATCH', ['status' => 'Approved']);
-        $successMsg = "Registration updated and approved for testing!";
-    } else {
-        $payload = [
-            'participant_id' => $participant_id,
-            'event_id' => $eventIdToRegister,
-            'status' => 'Approved' 
-        ];
+    $eventIdToRegister = trim((string)$_POST['register_event_id']);
 
-        $regResponse = supabaseRequest('event_registrations', 'POST', $payload);
-        if ($regResponse['code'] >= 400) {
-            $errorMsg = "Failed to register. Please check your database table columns.";
+    if ($eventIdToRegister === '') {
+        $errorMsg = 'Invalid event selected.';
+    } else {
+        $eventCheck = supabaseRequest(
+            'events?id=eq.' . rawurlencode($eventIdToRegister) . '&select=id,title,start_datetime,end_datetime',
+            'GET'
+        );
+
+        if (($eventCheck['code'] ?? 500) >= 400 || empty($eventCheck['data'])) {
+            $errorMsg = 'Event not found. Registration is unavailable.';
         } else {
-            $successMsg = "Successfully registered and approved for the event!";
+            $targetEvent = $eventCheck['data'][0];
+
+            if (eventHasEnded($targetEvent, $manilaTimezone)) {
+                $errorMsg = 'Registration is closed. This event has already ended.';
+            } elseif (empty($targetEvent['start_datetime'])) {
+                $errorMsg = 'This event has an incomplete schedule. Registration is unavailable.';
+            } else {
+                try {
+                    $eventStart = new DateTimeImmutable($targetEvent['start_datetime']);
+                    $eventStart = $eventStart->setTimezone($manilaTimezone);
+                    $now = new DateTimeImmutable('now', $manilaTimezone);
+
+                    if ($now < $eventStart) {
+                        // Upcoming event: registration is allowed.
+                    } else {
+                        // Ongoing event: registration remains allowed, as requested.
+                    }
+
+                    $checkExisting = supabaseRequest(
+                        'event_registrations?participant_id=eq.' . rawurlencode((string)$participant_id) .
+                        '&event_id=eq.' . rawurlencode($eventIdToRegister),
+                        'GET'
+                    );
+
+                    if (($checkExisting['code'] ?? 500) >= 400) {
+                        $errorMsg = 'Unable to verify your existing registration. Please try again.';
+                    } elseif (!empty($checkExisting['data'])) {
+                        $updateRes = supabaseRequest(
+                            'event_registrations?participant_id=eq.' . rawurlencode((string)$participant_id) .
+                            '&event_id=eq.' . rawurlencode($eventIdToRegister),
+                            'PATCH',
+                            ['status' => 'Approved']
+                        );
+
+                        if (($updateRes['code'] ?? 500) >= 400) {
+                            $errorMsg = 'Failed to update your registration. Please try again.';
+                        } else {
+                            $successMsg = 'Registration updated and approved for testing!';
+                        }
+                    } else {
+                        $payload = [
+                            'participant_id' => $participant_id,
+                            'event_id' => $eventIdToRegister,
+                            'status' => 'Approved'
+                        ];
+
+                        $regResponse = supabaseRequest('event_registrations', 'POST', $payload);
+
+                        if (($regResponse['code'] ?? 500) >= 400) {
+                            $errorMsg = 'Failed to register. Please check your database table columns.';
+                        } else {
+                            $successMsg = 'Successfully registered and approved for the event!';
+                        }
+                    }
+                } catch (Exception $e) {
+                    $errorMsg = 'The event schedule is invalid. Registration is unavailable.';
+                }
+            }
         }
     }
 }
 
-// 1. Fetch ALL registrations for this participant
-$regResponse = supabaseRequest('event_registrations?participant_id=eq.' . $participant_id, 'GET');
-$registrations = ($regResponse['code'] < 400 && is_array($regResponse['data'])) ? $regResponse['data'] : [];
+// Fetch all registrations for this participant.
+$regResponse = supabaseRequest(
+    'event_registrations?participant_id=eq.' . rawurlencode((string)$participant_id),
+    'GET'
+);
+$registrations = (($regResponse['code'] ?? 500) < 400 && is_array($regResponse['data'] ?? null))
+    ? $regResponse['data'] : [];
 
-// Fetch existing attendance logs
-$attendanceRes = supabaseRequest('attendance?participant_id=eq.' . $participant_id . '&select=event_id,check_in_time,time_out', 'GET');
+// Fetch existing attendance logs.
+$attendanceRes = supabaseRequest(
+    'attendance?participant_id=eq.' . rawurlencode((string)$participant_id) .
+    '&select=event_id,check_in_time,time_out',
+    'GET'
+);
+
 $participantAttendance = [];
-if ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) {
+if (($attendanceRes['code'] ?? 500) === 200 && is_array($attendanceRes['data'] ?? null)) {
     foreach ($attendanceRes['data'] as $att) {
         $participantAttendance[$att['event_id']] = $att;
     }
 }
 
-// 2. Fetch ALL events
+// Fetch all events.
 $allEventsResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
-$allEvents = ($allEventsResponse['code'] < 400 && is_array($allEventsResponse['data'])) ? $allEventsResponse['data'] : [];
+$allEvents = (($allEventsResponse['code'] ?? 500) < 400 && is_array($allEventsResponse['data'] ?? null))
+    ? $allEventsResponse['data'] : [];
 
-// Index events by ID
+// Index events by ID.
 $eventsMap = [];
 foreach ($allEvents as $evt) {
-    $eventsMap[$evt['id']] = $evt;
+    if (isset($evt['id'])) {
+        $eventsMap[$evt['id']] = $evt;
+    }
 }
 
-// Extract registered event IDs
+// Extract registered event IDs.
 $registeredEventIds = [];
 foreach ($registrations as $reg) {
     if (isset($reg['event_id'])) {
-        $registeredEventIds[] = $reg['event_id'];
+        $registeredEventIds[] = (string)$reg['event_id'];
     }
 }
 
 // Prepare upcoming and ongoing events for the read-only participant calendar.
 $calendarEvents = [];
-$now = new DateTime('now', new DateTimeZone('Asia/Manila'));
+$now = new DateTimeImmutable('now', $manilaTimezone);
 
 foreach ($allEvents as $evt) {
     if (empty($evt['start_datetime']) || empty($evt['end_datetime'])) {
@@ -93,13 +185,11 @@ foreach ($allEvents as $evt) {
     }
 
     try {
-        $eventStart = new DateTime($evt['start_datetime']);
-        $eventEnd = new DateTime($evt['end_datetime']);
-        $eventStart->setTimezone(new DateTimeZone('Asia/Manila'));
-        $eventEnd->setTimezone(new DateTimeZone('Asia/Manila'));
+        $eventStart = (new DateTimeImmutable($evt['start_datetime']))->setTimezone($manilaTimezone);
+        $eventEnd = (new DateTimeImmutable($evt['end_datetime']))->setTimezone($manilaTimezone);
 
-        // Do not show events that have already ended.
-        if ($eventEnd < $now) {
+        // Events disappear from the calendar at the exact end time.
+        if ($eventEnd <= $now) {
             continue;
         }
 
@@ -149,9 +239,7 @@ $calendarJson = json_encode(
             border-top-left-radius: calc(.25rem - 1px);
             border-top-right-radius: calc(.25rem - 1px);
         }
-        .map-badge {
-            transition: all 0.2s ease;
-        }
+        .map-badge { transition: all 0.2s ease; }
         .map-badge:hover {
             background-color: #e9ecef !important;
             transform: scale(1.05);
@@ -192,9 +280,7 @@ $calendarJson = json_encode(
             color: #4338ca;
             border-color: #c7d2fe;
         }
-        #participantCalendar .fc-day-today {
-            background: #eef2ff !important;
-        }
+        #participantCalendar .fc-day-today { background: #eef2ff !important; }
         #participantCalendar .fc-event {
             cursor: pointer;
             border: 0;
@@ -242,8 +328,12 @@ $calendarJson = json_encode(
 </nav>
 
 <div class="container">
-    <?php if ($successMsg): ?><div class="alert alert-success"><?= $successMsg ?></div><?php endif; ?>
-    <?php if ($errorMsg): ?><div class="alert alert-danger"><?= $errorMsg ?></div><?php endif; ?>
+    <?php if ($successMsg): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($successMsg) ?></div>
+    <?php endif; ?>
+    <?php if ($errorMsg): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($errorMsg) ?></div>
+    <?php endif; ?>
 
     <div class="row mb-4">
         <div class="col">
@@ -358,65 +448,79 @@ $calendarJson = json_encode(
                 </div>
             </div>
         <?php else: ?>
-            <?php foreach ($registrations as $reg): 
-                $eventId = $reg['event_id'] ?? '';
+            <?php foreach ($registrations as $reg):
+                $eventId = (string)($reg['event_id'] ?? '');
                 $event = $eventsMap[$eventId] ?? null;
-                if (!$event) continue; 
-                
+                if (!$event) continue;
+
                 $status = $reg['status'] ?? 'Approved';
                 $dateObj = new DateTime($event['start_datetime']);
+                $dateObj->setTimezone($manilaTimezone);
                 $formattedDate = $dateObj->format('F j, Y, g:i a');
 
-                // Dynamic UI Variables
-                $eventImg = !empty($event['image_url']) ? htmlspecialchars($event['image_url']) : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
+                $eventImg = !empty($event['image_url'])
+                    ? htmlspecialchars($event['image_url'])
+                    : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
+
                 $lat = $event['latitude'] ?? null;
                 $lng = $event['longitude'] ?? null;
 
-                // Determine attendance state
                 $attRecord = $participantAttendance[$eventId] ?? null;
                 $hasCheckedIn = !empty($attRecord['check_in_time']);
                 $hasTimedOut = !empty($attRecord['time_out']);
+                $eventEnded = eventHasEnded($event, $manilaTimezone);
             ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 shadow-sm border-0">
-                        <!-- Event Cover Image -->
                         <img src="<?= $eventImg ?>" class="card-img-top event-card-img" alt="Event Image">
-                        
+
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-primary fw-bold"><?= htmlspecialchars($event['title']) ?></h5>
-                            
-                            <!-- Venue & Map Pin -->
+                            <h5 class="card-title text-primary fw-bold"><?= htmlspecialchars($event['title'] ?? 'Untitled Event') ?></h5>
+
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-geo-alt-fill text-danger me-2"></i>
                                 <span class="text-muted fw-semibold me-2"><?= htmlspecialchars($event['venue'] ?? 'General Venue') ?></span>
                                 <?php if ($lat && $lng): ?>
-                                    <a href="https://www.google.com/maps?q=<?= $lat ?>,<?= $lng ?>" target="_blank" class="badge bg-light text-primary border text-decoration-none map-badge">
+                                    <a href="https://www.google.com/maps?q=<?= rawurlencode($lat . ',' . $lng) ?>"
+                                       target="_blank" rel="noopener"
+                                       class="badge bg-light text-primary border text-decoration-none map-badge">
                                         <i class="bi bi-map me-1"></i>Map
                                     </a>
                                 <?php endif; ?>
                             </div>
-                            
+
                             <p class="card-text small mb-3">
-                                <strong><i class="bi bi-calendar-event me-1"></i> Date:</strong> <?= $formattedDate ?><br>
+                                <strong><i class="bi bi-calendar-event me-1"></i> Date:</strong> <?= htmlspecialchars($formattedDate) ?><br>
                                 <span class="text-muted"><?= htmlspecialchars(substr($event['description'] ?? '', 0, 90)) ?>...</span>
                             </p>
-                            
+
                             <div class="mt-auto">
                                 <hr>
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <span class="badge bg-success"><?= htmlspecialchars($status) ?></span>
+                                    <?php if ($eventEnded): ?>
+                                        <span class="badge bg-secondary">Event Ended</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success"><?= htmlspecialchars($status) ?></span>
+                                    <?php endif; ?>
 
-                                    <!-- Dynamic Attendance Action Button -->
-                                    <?php if (!$hasCheckedIn): ?>
-                                        <a href="check-in.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-primary fw-bold">
+                                    <?php if ($eventEnded): ?>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-calendar-x me-1"></i>Attendance Closed
+                                        </span>
+                                    <?php elseif (!$hasCheckedIn): ?>
+                                        <a href="check-in.php?event_id=<?= rawurlencode($eventId) ?>"
+                                           class="btn btn-sm btn-primary fw-bold">
                                             <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
                                         </a>
-                                    <?php elseif ($hasCheckedIn && !$hasTimedOut): ?>
-                                        <a href="time-out.php?event_id=<?= $eventId ?>" class="btn btn-sm btn-warning fw-bold text-dark">
+                                    <?php elseif (!$hasTimedOut): ?>
+                                        <a href="time-out.php?event_id=<?= rawurlencode($eventId) ?>"
+                                           class="btn btn-sm btn-warning fw-bold text-dark">
                                             <i class="bi bi-box-arrow-left me-1"></i> Time Out (Face/GPS)
                                         </a>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary"><i class="bi bi-check-circle me-1"></i> Completed</span>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-check-circle me-1"></i>Completed
+                                        </span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -435,47 +539,79 @@ $calendarJson = json_encode(
         </div>
     </div>
 
-    <div class="row">
-        <?php 
-        $availableCount = 0;
-        foreach ($allEvents as $evt) {
-            if (in_array($evt['id'], $registeredEventIds)) continue;
-            $availableCount++;
-        }
-        ?>
+    <?php
+    // Only show events that have not ended and that this participant has not registered for.
+    $availableEvents = [];
 
-        <?php if ($availableCount === 0): ?>
-            <div class="col-12 text-muted pb-4">You have registered for all available events. Look above for your Check-In buttons!</div>
+    foreach ($allEvents as $evt) {
+        $evtId = (string)($evt['id'] ?? '');
+
+        if ($evtId === '' || in_array($evtId, $registeredEventIds, true)) {
+            continue;
+        }
+
+        if (eventHasEnded($evt, $manilaTimezone)) {
+            continue;
+        }
+
+        $availableEvents[] = $evt;
+    }
+    ?>
+
+    <div class="row">
+        <?php if (empty($availableEvents)): ?>
+            <div class="col-12 text-muted pb-4">
+                There are currently no available events to register for.
+            </div>
         <?php else: ?>
-            <?php foreach ($allEvents as $evt): 
-                if (in_array($evt['id'], $registeredEventIds)) continue;
-                $evtImg = !empty($evt['image_url']) ? htmlspecialchars($evt['image_url']) : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
+            <?php foreach ($availableEvents as $evt):
+                $evtImg = !empty($evt['image_url'])
+                    ? htmlspecialchars($evt['image_url'])
+                    : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
+
                 $eLat = $evt['latitude'] ?? null;
                 $eLng = $evt['longitude'] ?? null;
+
+                $startDate = '';
+                if (!empty($evt['start_datetime'])) {
+                    try {
+                        $startObj = new DateTime($evt['start_datetime']);
+                        $startObj->setTimezone($manilaTimezone);
+                        $startDate = $startObj->format('M d, Y h:i A');
+                    } catch (Exception $e) {
+                        $startDate = 'Schedule not available';
+                    }
+                }
             ?>
                 <div class="col-md-4 mb-4">
                     <div class="card h-100 shadow-sm border-light">
                         <img src="<?= $evtImg ?>" class="card-img-top event-card-img" alt="Event Image" style="filter: brightness(0.9);">
+
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-dark fw-bold"><?= htmlspecialchars($evt['title']) ?></h5>
-                            
+                            <h5 class="card-title text-dark fw-bold"><?= htmlspecialchars($evt['title'] ?? 'Untitled Event') ?></h5>
+
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-geo-alt text-danger me-2"></i>
-                                <span class="text-muted fw-semibold me-2"><?= htmlspecialchars($evt['venue']) ?></span>
-                                <?php if ($eLat && $eLng): ?>
-                                    <a href="https://www.google.com/maps?q=<?= $eLat ?>,<?= $eLng ?>" target="_blank" class="badge bg-light text-primary border text-decoration-none map-badge">
+                                <span class="text-muted fw-semibold me-2"><?= htmlspecialchars($evt['venue'] ?? 'Not specified') ?></span>
+                                <?php if ($eLat !== null && $eLat !== '' && $eLng !== null && $eLng !== ''): ?>
+                                    <a href="https://www.google.com/maps?q=<?= rawurlencode($eLat . ',' . $eLng) ?>"
+                                       target="_blank" rel="noopener"
+                                       class="badge bg-light text-primary border text-decoration-none map-badge">
                                         <i class="bi bi-map me-1"></i>Map
                                     </a>
                                 <?php endif; ?>
                             </div>
 
                             <p class="card-text small mb-3">
-                                <strong><i class="bi bi-clock me-1"></i> Start:</strong> <?= date('M d, Y h:i A', strtotime($evt['start_datetime'])) ?><br>
+                                <strong><i class="bi bi-clock me-1"></i> Start:</strong> <?= htmlspecialchars($startDate) ?><br>
                                 <span class="text-muted"><?= htmlspecialchars(substr($evt['description'] ?? '', 0, 80)) ?>...</span>
                             </p>
+
                             <form method="POST" class="mt-auto">
-                                <input type="hidden" name="register_event_id" value="<?= htmlspecialchars($evt['id']) ?>">
-                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-bold">Register For Event</button>
+                                <input type="hidden" name="register_event_id" value="<?= htmlspecialchars((string)$evt['id']) ?>">
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-bold">
+                                    Register For Event
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -483,7 +619,6 @@ $calendarJson = json_encode(
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -495,11 +630,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailsModalElement = document.getElementById('participantEventDetailsModal');
     const calendarModal = bootstrap.Modal.getOrCreateInstance(calendarModalElement);
     const detailsModal = bootstrap.Modal.getOrCreateInstance(detailsModalElement);
+
     let calendar = null;
     let reopenCalendarAfterDetails = false;
 
     function formatPHT(date) {
         if (!date) return 'Not specified';
+
         return new Intl.DateTimeFormat('en-PH', {
             timeZone: 'Asia/Manila',
             year: 'numeric',
@@ -522,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('participantEventVenue').textContent = props.venue || 'Not specified';
 
         const image = document.getElementById('participantEventImage');
+
         if (props.image_url) {
             image.src = props.image_url;
             image.style.display = 'block';
@@ -533,12 +671,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const map = document.getElementById('participantEventMap');
         const mapLink = document.getElementById('participantEventMapLink');
+
         if (props.latitude !== null && props.latitude !== '' &&
             props.longitude !== null && props.longitude !== '') {
             const coordinates = props.latitude + ',' + props.longitude;
+
             map.src = 'https://maps.google.com/maps?q=' +
                 encodeURIComponent(coordinates) + '&z=15&output=embed';
             map.style.display = 'block';
+
             mapLink.href = 'https://www.google.com/maps?q=' +
                 encodeURIComponent(coordinates);
             mapLink.style.display = 'inline-block';
@@ -548,7 +689,6 @@ document.addEventListener('DOMContentLoaded', function () {
             mapLink.style.display = 'none';
         }
 
-        // Hide the calendar first, then show the details modal.
         reopenCalendarAfterDetails = true;
         calendarModal.hide();
     }
@@ -579,6 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         calendar.render();
         calendar.updateSize();
+
         document.getElementById('noCalendarEvents').style.display =
             participantCalendarEvents.length === 0 ? 'block' : 'none';
     });
