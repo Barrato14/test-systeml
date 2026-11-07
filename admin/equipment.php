@@ -204,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $requestCheck = equipmentRequest(
-                'equipment_borrow_requests?id=eq.' . rawurlencode($requestId) . '&select=id,equipment_id,quantity,status',
+                'equipment_borrow_requests?id=eq.' . rawurlencode($requestId) . '&select=id,equipment_id,quantity,status,participant_id',
                 'GET'
             );
             if (empty($requestCheck['data'])) {
@@ -245,11 +245,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            equipmentRequest('equipment_borrow_requests?id=eq.' . rawurlencode($requestId), 'PATCH', [
+            $reviewPayload = [
                 'status' => $decision,
                 'reviewed_by' => (string)$_SESSION['user_id'],
                 'reviewed_at' => date('c')
-            ]);
+            ];
+
+            $pickupLocation = '';
+            $returnLocation = '';
+            $pickupInstructions = '';
+
+            if ($decision === 'Approved') {
+                $pickupLocation = trim((string)($_POST['pickup_location'] ?? ''));
+                $returnLocation = trim((string)($_POST['return_location'] ?? ''));
+                $pickupInstructions = trim((string)($_POST['pickup_instructions'] ?? ''));
+
+                if ($pickupLocation === '' || $returnLocation === '') {
+                    throw new Exception('Enter both the pickup location and return location before approving.');
+                }
+
+                $reviewPayload['pickup_location'] = $pickupLocation;
+                $reviewPayload['return_location'] = $returnLocation;
+                $reviewPayload['pickup_instructions'] = $pickupInstructions;
+            }
+
+            equipmentRequest('equipment_borrow_requests?id=eq.' . rawurlencode($requestId), 'PATCH', $reviewPayload);
+
+            // Send a participant notification without undoing a successful approval if notification fails.
+            try {
+                $noticeTitle = $decision === 'Approved' ? 'Equipment Request Approved' : 'Equipment Request Rejected';
+                $noticeMessage = $decision === 'Approved'
+                    ? 'Your equipment borrowing request was approved. Pickup location: ' . $pickupLocation .
+                      '. Return location: ' . $returnLocation .
+                      ($pickupInstructions !== '' ? '. Instructions: ' . $pickupInstructions : '')
+                    : 'Your equipment borrowing request was rejected. Please contact the equipment office if you need more information.';
+
+                equipmentRequest('notifications', 'POST', [
+                    'participant_id' => (string)($borrowRequest['participant_id'] ?? ''),
+                    'event_id' => null,
+                    'title' => $noticeTitle,
+                    'message' => $noticeMessage,
+                    'is_read' => false
+                ]);
+            } catch (Exception $notificationError) {
+                error_log('EMIS equipment review notification failed: ' . $notificationError->getMessage());
+            }
+
             $successMsg = 'Borrowing request ' . strtolower($decision) . '.';
         } elseif ($action === 'mark_returned') {
             if (!in_array($currentRole, ['administrator', 'event organizer', 'staff'], true)) {
@@ -262,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $check = equipmentRequest(
-                'equipment_borrow_requests?id=eq.' . rawurlencode($requestId) . '&select=id,status',
+                'equipment_borrow_requests?id=eq.' . rawurlencode($requestId) . '&select=id,status,participant_id,equipment_id',
                 'GET'
             );
             if (empty($check['data']) || ($check['data'][0]['status'] ?? '') !== 'Approved') {
@@ -273,7 +314,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'status' => 'Returned',
                 'returned_at' => date('c')
             ]);
-            $successMsg = 'Equipment return recorded.';
+
+            // Notify the participant that staff has physically received the item.
+            try {
+                $itemForNotice = equipmentRequest(
+                    'equipment_items?id=eq.' . rawurlencode((string)$check['data'][0]['equipment_id']) . '&select=name',
+                    'GET'
+                );
+                $returnedItemName = $itemForNotice['data'][0]['name'] ?? 'Your borrowed equipment';
+
+                equipmentRequest('notifications', 'POST', [
+                    'participant_id' => (string)$check['data'][0]['participant_id'],
+                    'event_id' => null,
+                    'title' => 'Equipment Return Confirmed',
+                    'message' => $returnedItemName . ' has been checked in and marked as returned. Thank you.',
+                    'is_read' => false
+                ]);
+            } catch (Exception $notificationError) {
+                error_log('EMIS equipment return notification failed: ' . $notificationError->getMessage());
+            }
+
+            $successMsg = 'Equipment return recorded and participant notified.';
         }
     } catch (Exception $e) {
         $errorMsg = $e->getMessage();
@@ -478,8 +539,19 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                 <td><span class="badge bg-warning text-dark">Pending</span></td>
                                 <td class="text-nowrap">
                                     <?php if (in_array($currentRole, ['administrator', 'event organizer'], true)): ?>
-                                    <form method="POST" class="d-inline"><input type="hidden" name="action" value="review_request"><input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>"><input type="hidden" name="decision" value="Approved"><button class="btn btn-sm btn-success" title="Approve"><i class="bi bi-check-lg"></i></button></form>
-                                    <form method="POST" class="d-inline"><input type="hidden" name="action" value="review_request"><input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>"><input type="hidden" name="decision" value="Rejected"><button class="btn btn-sm btn-outline-danger" title="Reject"><i class="bi bi-x-lg"></i></button></form>
+                                    <button type="button" class="btn btn-sm btn-success approve-request-button"
+                                            data-request-id="<?= h($request['id'] ?? '') ?>"
+                                            data-participant-id="<?= h($request['participant_id'] ?? '') ?>"
+                                            data-equipment-id="<?= h($request['equipment_id'] ?? '') ?>"
+                                            data-bs-toggle="modal" data-bs-target="#approveRequestModal">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </button>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Reject this borrowing request?')">
+                                        <input type="hidden" name="action" value="review_request">
+                                        <input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>">
+                                        <input type="hidden" name="decision" value="Rejected">
+                                        <button class="btn btn-sm btn-outline-danger" title="Reject"><i class="bi bi-x-lg"></i></button>
+                                    </form>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -487,7 +559,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                         </tbody>
                     </table>
                 </div>
-                <div class="alert alert-info small mb-0"><i class="bi bi-info-circle me-1"></i> Participant borrowing requests will appear here once the participant-side request form is connected to this module.</div>
+                <div class="alert alert-info small mb-0"><i class="bi bi-info-circle me-1"></i> Before approving, enter where the participant must pick up and return the equipment. The participant will see these details in My Borrowings.</div>
 
             <?php else: ?>
                 <h5 class="fw-bold mb-3">Borrowing History</h5>
@@ -518,6 +590,45 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         </div>
         <p class="text-muted small mt-3 mb-0">Availability is calculated from total quantity minus approved, not-yet-returned borrowing requests.</p>
     </main>
+</div>
+
+<!-- Approve request and set pickup / return locations -->
+<div class="modal fade" id="approveRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <form method="POST">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Approve Borrowing Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" name="action" value="review_request">
+                    <input type="hidden" name="decision" value="Approved">
+                    <input type="hidden" name="request_id" id="approve_request_id">
+                    <div class="alert alert-light border small">
+                        <div><strong>Participant ID:</strong> <span id="approve_participant_id"></span></div>
+                        <div><strong>Equipment ID:</strong> <span id="approve_equipment_id"></span></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pickup location / room <span class="text-danger">*</span></label>
+                        <input type="text" name="pickup_location" class="form-control" maxlength="200" required placeholder="e.g. Equipment Office, Room 204">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Return location / room <span class="text-danger">*</span></label>
+                        <input type="text" name="return_location" class="form-control" maxlength="200" required placeholder="e.g. Property Office, Room 105">
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Pickup / return instructions (optional)</label>
+                        <textarea name="pickup_instructions" class="form-control" rows="3" maxlength="1000" placeholder="Who to approach, office hours, or other instructions"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Confirm Approval</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Add / Edit Equipment -->
@@ -557,6 +668,14 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+document.querySelectorAll('.approve-request-button').forEach(button => {
+    button.addEventListener('click', () => {
+        document.getElementById('approve_request_id').value = button.dataset.requestId || '';
+        document.getElementById('approve_participant_id').textContent = button.dataset.participantId || '';
+        document.getElementById('approve_equipment_id').textContent = button.dataset.equipmentId || '';
+    });
+});
+
 function prepareAddEquipment() {
     document.getElementById('equipmentModalTitle').textContent = 'Add Equipment';
     document.getElementById('equipment_id').value = '';
