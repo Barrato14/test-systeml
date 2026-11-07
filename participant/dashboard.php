@@ -226,8 +226,6 @@ $calendarJson = json_encode(
     </style>
 </head>
 <body class="bg-light">
-
-<!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
     <div class="container">
         <a class="navbar-brand" href="#">EMIS Participant Portal</a>
