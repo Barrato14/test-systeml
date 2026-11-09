@@ -767,3 +767,41 @@ body.participant-page {
  .participant-page #participantCalendar .fc-toolbar{flex-direction:column;gap:8px}
  .participant-page #participantCalendar .fc-toolbar-title{font-size:1.05rem}
 }
+
+/* Participant portal visual refinement */
+.participant-page{background:#0d0916!important}
+.participant-topbar{background:#151020;border-bottom-color:#302440;box-shadow:0 8px 26px rgba(0,0,0,.22)}
+.participant-topbar-inner{max-width:1480px;min-height:80px;padding-inline:clamp(16px,3vw,38px)}
+.participant-brand-mark{width:44px;height:44px;border-radius:14px;background:#241735;border-color:#493263;color:#d8c4ff}
+.participant-nav-link{padding:10px 13px;font-size:13px;transition:background .18s ease,color .18s ease}
+.participant-nav-link.is-active{background:#2b1d40;box-shadow:inset 0 0 0 1px #4a3565;color:#eee4ff!important}
+.participant-page>.container,.participant-page main.container{padding-top:38px;padding-bottom:56px}
+.participant-page .container> .row:first-child h1,.participant-page .container> .row:first-child h2,.participant-page main> .d-flex:first-child h1,.participant-page main> .d-flex:first-child h2{font-weight:780;letter-spacing:-.04em}
+.participant-page .card,.participant-page .modal-content{border-color:#352747!important;border-radius:18px;background:#191326;box-shadow:0 14px 38px rgba(0,0,0,.22)!important}
+.participant-page .card:hover{border-color:#594174!important}
+.participant-page .card-body{padding:22px}
+.participant-page .card-title{font-weight:750;letter-spacing:-.02em}
+.participant-page .btn{min-height:40px;padding:9px 15px;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease}
+.participant-page .btn-primary{background:#7944c7;border-color:#7944c7}
+.participant-page .btn-primary:hover{background:#8954d7;border-color:#8954d7}
+.participant-page .btn-outline-primary{border-color:#775a9b;color:#d3bdff}
+.participant-page .form-control,.participant-page .form-select{min-height:46px;background:#100c18;border-color:#40304f}
+.participant-page .table-responsive{border:1px solid #352747;border-radius:15px;overflow-x:auto}
+.participant-page .table thead th{padding-block:15px;background:#211832!important}
+.participant-page .alert{padding:15px 18px}
+.participant-page .event-card-img{height:205px}
+.participant-page .equipment-photo,.participant-page .equipment-placeholder{height:220px}
+.participant-page .scanner-container{border-radius:22px;background:#191326}
+.participant-page .calendar-launch-card{background:#191326;border-color:#352747}
+.participant-page .modal-header{padding:18px 22px}
+.participant-page .modal-body{padding:22px}
+.participant-page .modal-footer{padding:14px 22px}
+@media(max-width:820px){
+ .participant-page>.container,.participant-page main.container{padding-top:26px;padding-bottom:42px}
+ .participant-page .card-body{padding:18px}
+}
+@media(max-width:575px){
+ .participant-page>.container,.participant-page main.container{padding:22px 14px 36px}
+ .participant-page .event-card-img{height:180px}
+ .participant-page .modal-body{padding:16px}
+}
