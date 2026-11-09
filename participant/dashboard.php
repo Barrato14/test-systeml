@@ -827,6 +827,15 @@ document.addEventListener('DOMContentLoaded', function () {
             participantCalendarEvents.length === 0 ? 'block' : 'none';
     });
 
+    const notificationParams = new URLSearchParams(window.location.search);
+    if (notificationParams.get('open_notifications') === '1') {
+        const notificationModalElement = document.getElementById('notificationsModal');
+        if (notificationModalElement) {
+            bootstrap.Modal.getOrCreateInstance(notificationModalElement).show();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
     detailsModalElement.addEventListener('hidden.bs.modal', function () {
         if (reopenCalendarAfterDetails) {
             reopenCalendarAfterDetails = false;
