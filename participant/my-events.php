@@ -24,11 +24,28 @@ foreach ($allEvents as $evt) {
     $eventsMap[$evt['id']] = $evt;
 }
 
+$manilaTimezone = new DateTimeZone('Asia/Manila');
+$now = new DateTimeImmutable('now', $manilaTimezone);
+
 $myEvents = [];
 foreach ($registrations as $reg) {
     $eventId = $reg['event_id'] ?? '';
     $eventData = $eventsMap[$eventId] ?? [];
-    
+
+    // Keep completed events out of My Events, matching the event availability rules.
+    if (empty($eventData['end_datetime'])) {
+        continue;
+    }
+
+    try {
+        $eventEnd = new DateTimeImmutable($eventData['end_datetime']);
+        if ($eventEnd->setTimezone($manilaTimezone) <= $now) {
+            continue;
+        }
+    } catch (Exception $e) {
+        continue;
+    }
+
     $myEvents[] = [
         'event_id' => $eventId,
         'title' => $eventData['title'] ?? 'Unknown Event',
