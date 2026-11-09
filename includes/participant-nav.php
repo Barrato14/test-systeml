@@ -66,7 +66,7 @@ $participantNavItems = [
    <div class="participant-settings-panel">
     <div class="participant-settings-heading">Settings</div>
     <div class="participant-settings-appearance"><span><i class="bi bi-circle-half"></i> Appearance</span><button type="button" class="participant-theme-toggle" data-theme-toggle aria-pressed="false"><i class="bi bi-moon-stars"></i><span>Dark mode</span></button></div>
-    <a href="../logout.php" class="participant-settings-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    <a href="../logout.php" class="participant-settings-logout"><i class="bi bi-box-arrow-right"></i>Sign out</a>
    </div>
   </details>
   <details class="participant-mobile-menu">
