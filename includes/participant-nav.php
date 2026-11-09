@@ -31,7 +31,14 @@ $participantNavItems = [
     </button>
    <?php endif; ?>
    <div class="participant-sidebar-profile"><i class="bi bi-person-circle"></i><span><?= htmlspecialchars((string)$participantName) ?></span></div>
-   <a href="../logout.php" class="participant-sidebar-link participant-sidebar-logout" title="Logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></a>
+   <details class="participant-settings">
+    <summary class="participant-sidebar-link" title="Settings"><i class="bi bi-gear"></i><span>Settings</span></summary>
+    <div class="participant-settings-panel">
+     <div class="participant-settings-heading">Settings</div>
+     <div class="participant-settings-appearance"><span><i class="bi bi-circle-half"></i> Appearance</span><button type="button" class="participant-theme-toggle" data-theme-toggle aria-pressed="false"><i class="bi bi-moon-stars"></i><span>Dark mode</span></button></div>
+     <a href="../logout.php" class="participant-settings-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+    </div>
+   </details>
   </div>
  </div>
 </aside>
@@ -48,6 +55,14 @@ $participantNavItems = [
     <?php if (!empty($unreadNotificationCount)): ?><span class="participant-notification-count"><?= (int)$unreadNotificationCount ?></span><?php endif; ?>
    </button>
   <?php endif; ?>
+  <details class="participant-settings participant-mobile-settings">
+   <summary aria-label="Open settings"><i class="bi bi-gear"></i></summary>
+   <div class="participant-settings-panel">
+    <div class="participant-settings-heading">Settings</div>
+    <div class="participant-settings-appearance"><span><i class="bi bi-circle-half"></i> Appearance</span><button type="button" class="participant-theme-toggle" data-theme-toggle aria-pressed="false"><i class="bi bi-moon-stars"></i><span>Dark mode</span></button></div>
+    <a href="../logout.php" class="participant-settings-logout"><i class="bi bi-box-arrow-right"></i>Logout</a>
+   </div>
+  </details>
   <details class="participant-mobile-menu">
    <summary aria-label="Open navigation menu"><i class="bi bi-list"></i></summary>
    <div class="participant-mobile-menu-panel">
@@ -59,3 +74,54 @@ $participantNavItems = [
   </details>
  </div>
 </header>
+
+<script>
+(function () {
+    const root = document.documentElement;
+    const storageKey = 'emis-participant-theme';
+
+    function applyTheme(theme) {
+        const selectedTheme = theme === 'light' ? 'light' : 'dark';
+        root.setAttribute('data-participant-theme', selectedTheme);
+
+        document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
+            const isLight = selectedTheme === 'light';
+            button.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+            button.innerHTML = isLight
+                ? '<i class="bi bi-sun"></i><span>Light mode</span>'
+                : '<i class="bi bi-moon-stars"></i><span>Dark mode</span>';
+        });
+    }
+
+    let savedTheme = 'dark';
+    try {
+        savedTheme = localStorage.getItem(storageKey) || 'dark';
+    } catch (error) {
+        savedTheme = 'dark';
+    }
+
+    applyTheme(savedTheme);
+
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const nextTheme = root.getAttribute('data-participant-theme') === 'light' ? 'dark' : 'light';
+            applyTheme(nextTheme);
+            try {
+                localStorage.setItem(storageKey, nextTheme);
+            } catch (error) {
+                // Theme remains active for the current page if storage is unavailable.
+            }
+        });
+    });
+
+    document.querySelectorAll('.participant-settings').forEach(function (settings) {
+        settings.addEventListener('toggle', function () {
+            if (settings.open) {
+                document.querySelectorAll('.participant-settings').forEach(function (other) {
+                    if (other !== settings) other.open = false;
+                });
+            }
+        });
+    });
+})();
+</script>
