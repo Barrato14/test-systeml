@@ -1185,3 +1185,21 @@ html[data-participant-theme="light"] .participant-notification-item{border-color
 
 /* Keep the notification badge completely hidden when there are no unread notifications. */
 .participant-notification-count[hidden]{display:none!important}
+
+
+/* Registration page shares the login page authentication design. */
+.auth-register-page .auth-register-wrapper{justify-content:flex-start;overflow-y:auto}
+.auth-register-page .auth-register-container{max-width:520px;margin:auto}
+.auth-register-page .auth-register-container .form-header{margin-bottom:1.45rem}
+.auth-register-page .auth-register-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}
+.auth-register-page .auth-register-grid .input-group{min-width:0;margin-bottom:1rem}
+.auth-register-page .auth-register-full{grid-column:1/-1}
+.auth-register-page .input-wrapper select{width:100%;min-height:52px;padding:.875rem 2.6rem .875rem 3rem;border:1px solid var(--border-color);border-radius:var(--radius-md);background-color:var(--bg-input);color:var(--text-main);font:inherit;font-size:.9rem;appearance:none;cursor:pointer}
+.auth-register-page .input-wrapper select:focus{outline:none;border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(168,85,247,.2)}
+.auth-register-page .input-wrapper select option,.auth-register-page .input-wrapper select optgroup{background:#1c0f35;color:#fff}
+.auth-register-page .auth-register-submit{margin-top:.25rem}
+.auth-register-page .auth-success{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1.5rem;padding:1rem;border:1px solid rgba(52,211,153,.3);border-radius:var(--radius-md);background:rgba(52,211,153,.1);color:#86efac;font-size:.875rem}
+.auth-register-page .auth-success i{font-size:1.25rem;flex:0 0 auto}
+.auth-register-page .auth-footer{max-width:520px;margin-top:1.5rem}
+@media(max-width:1023px){.auth-register-page .auth-register-wrapper{padding-top:2rem}}
+@media(max-width:600px){.auth-register-page .auth-register-grid{grid-template-columns:1fr}.auth-register-page .auth-register-full{grid-column:auto}.auth-register-page .auth-register-wrapper{padding:1.5rem 1.25rem}.auth-register-page .auth-footer{flex-direction:column;gap:.75rem;text-align:center}}
