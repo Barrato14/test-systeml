@@ -1203,3 +1203,14 @@ html[data-participant-theme="light"] .participant-notification-item{border-color
 .auth-register-page .auth-footer{max-width:520px;margin-top:1.5rem}
 @media(max-width:1023px){.auth-register-page .auth-register-wrapper{padding-top:2rem}}
 @media(max-width:600px){.auth-register-page .auth-register-grid{grid-template-columns:1fr}.auth-register-page .auth-register-full{grid-column:auto}.auth-register-page .auth-register-wrapper{padding:1.5rem 1.25rem}.auth-register-page .auth-footer{flex-direction:column;gap:.75rem;text-align:center}}
+
+
+/* Participant dashboard and form layout gutters */
+body.participant-page .container{padding-left:20px;padding-right:20px}
+body.participant-page .container>.row{row-gap:18px}
+body.participant-page .container>.row>[class*="col-"]{padding-left:10px;padding-right:10px}
+body.participant-page .card>.card-body{padding:22px}
+@media(max-width:575px){
+body.participant-page .container{padding-left:13px;padding-right:13px}
+body.participant-page .card>.card-body{padding:16px}
+}
