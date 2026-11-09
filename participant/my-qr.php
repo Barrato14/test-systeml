@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
                 <button type="submit" name="send_email" class="btn btn-success w-100 mb-2">Email Me a Copy</button>
             </form>
             
-            <a href="dashboard.php" class="btn btn-outline-secondary w-100">Back to Dashboard</a>
+            
         </div>
     </div>
 </div>
