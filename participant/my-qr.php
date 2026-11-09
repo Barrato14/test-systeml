@@ -95,7 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="bg-light participant-page">
-<?php include '../includes/participant-nav.php'; ?>
 
 <div class="container mt-5">
     <div class="card shadow-sm mx-auto" style="max-width: 400px;">
