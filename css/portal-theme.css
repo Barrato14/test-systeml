@@ -1029,3 +1029,26 @@ body.participant-page .my-events-main,body.participant-page .borrowings-main{wid
 body.participant-page main.container{padding:18px 12px 26px!important}
 body.participant-page .my-events-main,body.participant-page .borrowings-main{width:calc(100% - 24px)}
 }
+
+
+/* Admin dashboard Recent Activity styles moved out of dashboard.php */
+.admin-activity-card{overflow:hidden}.admin-activity-card>.card-header{gap:16px}.admin-activity-tabs{display:flex;flex-wrap:wrap;gap:7px}
+.admin-activity-tab{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #49365e;border-radius:10px;background:transparent;color:#bba9cf;font-size:11px;font-weight:750;cursor:pointer}
+.admin-activity-tab span{min-width:20px;padding:2px 6px;border-radius:20px;background:#30213f;color:#e7d8fa;text-align:center;font-size:10px}.admin-activity-tab.is-active{background:#38264f;border-color:#8e65ba;color:#fff}.admin-activity-tab.is-active span{background:#8b5cf6;color:#fff}
+.admin-activity-body{min-height:280px}.admin-activity-panel[hidden]{display:none!important}.admin-activity-list{display:grid}.admin-activity-item{display:flex;align-items:center;gap:13px;padding:13px 2px;border-bottom:1px solid rgba(145,115,170,.2)}.admin-activity-item:last-child{border-bottom:0}
+.admin-activity-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:12px;font-size:17px}.admin-activity-icon.event{background:rgba(139,92,246,.16);color:#c4a5ff}.admin-activity-icon.attendance{background:rgba(16,185,129,.14);color:#6ee7b7}
+.admin-activity-copy{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}.admin-activity-copy strong,.admin-activity-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.admin-activity-copy strong{color:inherit;font-size:12px}.admin-activity-copy span{color:#b4a6c4;font-size:11px}.admin-activity-copy small{color:#93849f;font-size:10px}
+.admin-live-label,.admin-attendance-label{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;color:#6ee7b7;font-size:10px;font-weight:800}.admin-live-label>span{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.12)}.admin-attendance-label{padding:5px 8px;border-radius:20px;background:rgba(16,185,129,.12)}
+.admin-activity-empty{min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#a99ab9}.admin-activity-empty>i{font-size:28px;color:#9b7ac0}.admin-activity-empty strong{color:inherit;font-size:13px}.admin-activity-empty span{font-size:11px}
+.admin-activity-footer{display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid rgba(145,115,170,.2)}.admin-activity-footer a{color:#c4a5ff;text-decoration:none;font-size:11px;font-weight:750}
+html[data-admin-theme="light"] .admin-activity-tab{border-color:#e3d6ed;color:#725c83}html[data-admin-theme="light"] .admin-activity-tab span{background:#f0e8f7;color:#644b79}html[data-admin-theme="light"] .admin-activity-tab.is-active{background:#eee4f8;border-color:#b99bd3;color:#593a75}html[data-admin-theme="light"] .admin-activity-copy span{color:#766985}html[data-admin-theme="light"] .admin-activity-copy small{color:#8d8198}html[data-admin-theme="light"] .admin-activity-footer{border-color:#eee6f3}html[data-admin-theme="light"] .admin-activity-footer a{color:#70449b}
+@media(max-width:600px){.admin-activity-card>.card-header{align-items:flex-start!important}.admin-activity-tabs{width:100%}.admin-activity-tab{flex:1;justify-content:center;padding:8px 6px;font-size:10px}.admin-activity-item{gap:9px}.admin-live-label,.admin-attendance-label{font-size:9px}}
+
+/* Explicit inner spacing for Recent Activity header and content. */
+body.admin-portal .admin-activity-card > .card-header{padding:22px 26px!important;display:flex;align-items:center;justify-content:space-between;gap:18px;}
+body.admin-portal .admin-activity-card > .card-header > div:first-child{min-width:0;padding:2px 0;}
+body.admin-portal .admin-activity-card > .card-header h5{margin:0 0 7px!important;line-height:1.4;}
+body.admin-portal .admin-activity-card > .card-header p{margin:0!important;line-height:1.5;}
+body.admin-portal .admin-activity-card > .card-body{padding:26px!important;}
+body.admin-portal .admin-activity-card .admin-activity-empty{padding:34px 20px;}
+@media(max-width:700px){body.admin-portal .admin-activity-card > .card-header{padding:18px!important;align-items:flex-start;flex-direction:column;}body.admin-portal .admin-activity-card > .card-body{padding:18px!important;}}
