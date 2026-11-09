@@ -77,8 +77,9 @@ if (!empty($response['data']) && is_array($response['data'])) {
     <meta charset="UTF-8">
     <title>Manage Events - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body class="bg-light">
+<body class="bg-light organizer-portal">
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Manage Events</h2>
