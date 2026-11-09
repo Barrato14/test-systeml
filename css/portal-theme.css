@@ -711,3 +711,132 @@ html[data-admin-theme="light"] .admin-sidebar-link.is-active:not(:hover) {
 html[data-admin-theme="light"] .admin-sidebar-link.is-active:not(:hover)::before {
     display: none;
 }
+
+
+/* ==========================================================================
+   Admin Portal - Unified dark-purple component system
+   Bootstrap's visual stylesheet is intentionally not required here.
+   Bootstrap's JS bundle remains on pages that use modal interactions.
+   ========================================================================== */
+.admin-portal{--admin-bg:#100a1c;--admin-panel:#1a1328;--admin-panel-raised:#211832;--admin-border:#382b50;--admin-text:#f4efff;--admin-muted:#aa9dbd;--admin-accent:#9b6be8;--admin-accent-strong:#7c3aed;background:var(--admin-bg)!important;color:var(--admin-text)!important}
+.admin-portal *{box-sizing:border-box}
+.admin-portal .admin-main-content{display:block;flex:1;min-width:0;width:auto;max-width:none;padding:clamp(20px,3vw,42px)!important;background:var(--admin-bg)!important;color:var(--admin-text)!important}
+.admin-portal .content-area{background:var(--admin-bg)!important;color:var(--admin-text)!important}
+.admin-portal h1,.admin-portal h2,.admin-portal h3,.admin-portal h4,.admin-portal h5,.admin-portal h6{color:#f7f2ff}
+.admin-portal p,.admin-portal label,.admin-portal strong{color:inherit}
+.admin-portal .text-muted,.admin-portal .text-secondary{color:var(--admin-muted)!important}
+.admin-portal .text-primary{color:#c4a5ff!important}
+.admin-portal .text-success{color:#6ee7b7!important}
+.admin-portal .text-danger{color:#fda4af!important}
+.admin-portal .text-warning{color:#fcd34d!important}
+.admin-portal .text-info{color:#7dd3fc!important}
+.admin-portal .text-dark{color:#f4efff!important}
+.admin-portal .text-white,.admin-portal .text-white-50{color:#f4efff!important}
+.admin-portal .bg-light,.admin-portal .bg-white,.admin-portal .alert-light,.admin-portal .table-light{background:#211832!important;color:#eee6fa!important}
+.admin-portal .bg-dark{background:#120d1d!important;color:#f4efff!important}
+.admin-portal .bg-secondary{background:#49375e!important;color:#f4efff!important}
+.admin-portal .bg-primary{background:#6d3bb5!important;color:#fff!important}
+.admin-portal .bg-success{background:#176b55!important;color:#eafff7!important}
+.admin-portal .bg-warning{background:#76551c!important;color:#fff4d6!important}
+.admin-portal .bg-danger{background:#7f3047!important;color:#fff!important}
+.admin-portal .border,.admin-portal .border-bottom,.admin-portal .border-top{border-color:var(--admin-border)!important}
+.admin-portal .page-card,.admin-portal .card,.admin-portal .stat-card{background:var(--admin-panel)!important;color:var(--admin-text)!important;border:1px solid var(--admin-border)!important;border-radius:15px;box-shadow:0 12px 32px rgba(0,0,0,.18)!important}
+.admin-portal .card-header,.admin-portal .card-footer{background:var(--admin-panel-raised)!important;color:var(--admin-text)!important;border-color:var(--admin-border)!important}
+.admin-portal .card-body{background:transparent;color:#e9e1f4}
+.admin-portal .page-card>.border-bottom{border-color:var(--admin-border)!important}
+.admin-portal .stat-card{border-left:4px solid var(--admin-accent)!important}
+.admin-portal .stat-card .text-muted{color:var(--admin-muted)!important}
+.admin-portal .table-responsive{width:100%;overflow-x:auto;border-radius:10px}
+.admin-portal .table{width:100%;margin:0;border-collapse:collapse;color:#e9e1f4;background:transparent}
+.admin-portal .table th,.admin-portal .table td{padding:13px 15px;border-bottom:1px solid var(--admin-border);background:transparent!important;color:#e9e1f4;vertical-align:middle}
+.admin-portal .table thead th,.admin-portal .table-light th{background:#211832!important;color:#cbb8f2!important;font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.admin-portal .table tbody tr:hover td{background:rgba(139,92,246,.08)!important;color:#fff}
+.admin-portal .table code,.admin-portal code{color:#c4a5ff}
+.admin-portal .form-control,.admin-portal .form-select,.admin-portal input:not([type=checkbox]):not([type=radio]):not([type=file]),.admin-portal select,.admin-portal textarea{width:100%;min-height:42px;padding:10px 12px;background:#120d1d!important;color:#f4efff!important;border:1px solid #423254!important;border-radius:10px!important;box-shadow:none}
+.admin-portal select option,.admin-portal select optgroup{background:#1a1328;color:#f4efff}
+.admin-portal .form-control:focus,.admin-portal .form-select:focus,.admin-portal input:focus,.admin-portal select:focus,.admin-portal textarea:focus{background:#120d1d!important;color:#fff!important;border-color:#a78bfa!important;outline:0;box-shadow:0 0 0 3px rgba(139,92,246,.18)!important}
+.admin-portal input::placeholder,.admin-portal textarea::placeholder{color:#81758f!important}
+.admin-portal input[type=checkbox],.admin-portal input[type=radio]{accent-color:#9b6be8}
+.admin-portal .form-label,.admin-portal label{color:#e7def3}
+.admin-portal .form-text{color:var(--admin-muted)}
+.admin-portal .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;border:1px solid transparent;border-radius:10px;font-weight:650;text-decoration:none;line-height:1.35;cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease}
+.admin-portal .btn-primary{background:#7c3aed!important;border-color:#7c3aed!important;color:#fff!important}
+.admin-portal .btn-primary:hover{background:#6d28d9!important;border-color:#6d28d9!important}
+.admin-portal .btn-secondary,.admin-portal .btn-light{background:#2a203a!important;border-color:#49375e!important;color:#eee6fa!important}
+.admin-portal .btn-success{background:#176b55!important;border-color:#25866c!important;color:#eafff7!important}
+.admin-portal .btn-warning{background:#76551c!important;border-color:#98702a!important;color:#fff4d6!important}
+.admin-portal .btn-danger{background:#7f3047!important;border-color:#a84360!important;color:#fff!important}
+.admin-portal .btn-outline-primary{background:transparent!important;color:#c4b5fd!important;border-color:#8060b3!important}
+.admin-portal .btn-outline-primary:hover{background:#7c3aed!important;color:#fff!important}
+.admin-portal .btn-outline-secondary{background:transparent!important;color:#c4b5d5!important;border-color:#57466b!important}
+.admin-portal .btn-outline-success{background:transparent!important;color:#6ee7b7!important;border-color:#287b65!important}
+.admin-portal .btn-outline-warning{background:transparent!important;color:#fcd34d!important;border-color:#876326!important}
+.admin-portal .btn-outline-danger{background:transparent!important;color:#fda4af!important;border-color:#91445b!important}
+.admin-portal .btn-outline-secondary:hover,.admin-portal .btn-outline-success:hover,.admin-portal .btn-outline-warning:hover,.admin-portal .btn-outline-danger:hover{background:#30213f!important;color:#fff!important}
+.admin-portal .btn-sm{padding:6px 10px;font-size:12px}
+.admin-portal .badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:750}
+.admin-portal .alert{padding:13px 16px;border:1px solid var(--admin-border);border-radius:12px;background:#211832;color:#eee6fa}
+.admin-portal .alert-success{background:#12382f;color:#baf7df;border-color:#23634f}
+.admin-portal .alert-danger{background:#421d2b;color:#ffd4dc;border-color:#77364a}
+.admin-portal .alert-warning{background:#3d2e16;color:#ffedc2;border-color:#745622}
+.admin-portal .alert-info{background:#162f43;color:#c7eaff;border-color:#28516e}
+.admin-portal .btn-close{width:1.2em;height:1.2em;padding:0;border:0;background:transparent;color:#eee6fa;opacity:.8}
+.admin-portal .btn-close:before{content:"×";font-size:23px;line-height:1}
+.admin-portal .nav-pills{display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:0;list-style:none}
+.admin-portal .nav-pills .nav-link{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border-radius:9px;color:#bba9cf;text-decoration:none;font-weight:650}
+.admin-portal .nav-pills .nav-link.active{background:#38264f!important;color:#fff!important}
+.admin-portal .dropdown-menu{min-width:170px;padding:6px;background:#211832;border:1px solid #423254;border-radius:11px;box-shadow:0 16px 35px rgba(0,0,0,.3)}
+.admin-portal .dropdown-item{display:block;padding:9px 12px;border-radius:7px;color:#e9e1f4;text-decoration:none}
+.admin-portal .dropdown-item:hover{background:rgba(139,92,246,.16);color:#fff}
+.admin-portal .modal{position:fixed;inset:0;z-index:1055;display:none;overflow-x:hidden;overflow-y:auto;padding:24px;background:rgba(5,3,10,.72)}
+.admin-portal .modal.show{display:block}
+.admin-portal .modal-dialog{position:relative;width:auto;max-width:560px;margin:28px auto;pointer-events:none}
+.admin-portal .modal-dialog.modal-lg{max-width:850px}
+.admin-portal .modal-dialog.modal-sm{max-width:380px}
+.admin-portal .modal-dialog-centered{min-height:calc(100% - 56px);display:flex;align-items:center}
+.admin-portal .modal-content{width:100%;pointer-events:auto;background:#1a1328!important;color:#f4efff!important;border:1px solid #49375e!important;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.5);overflow:hidden}
+.admin-portal .modal-header,.admin-portal .modal-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:#211832!important;border-color:#49375e!important}
+.admin-portal .modal-body{padding:20px;background:#1a1328!important;color:#e9e1f4!important}
+.admin-portal .modal-title{color:#fff!important;font-weight:750}
+.admin-portal .modal-backdrop{position:fixed;inset:0;z-index:1050;background:#05030a;opacity:.72}
+.admin-portal .modal-backdrop.show{opacity:.72}
+.admin-portal .event-description,.admin-portal .event-info-item,.admin-portal #calendar,.admin-portal .calendar-legend{background:#1a1328!important;color:#e9e1f4!important;border-color:var(--admin-border)!important}
+.admin-portal .event-description{white-space:pre-wrap}
+.admin-portal .event-info-item strong{color:#f4efff!important}
+.admin-portal .calendar-legend .legend-item{color:var(--admin-muted)!important}
+.admin-portal #calendar .fc-toolbar-title,.admin-portal #calendar .fc-col-header-cell-cushion,.admin-portal #calendar .fc-daygrid-day-number{color:#e9e1f4!important}
+.admin-portal #calendar .fc-col-header-cell{background:#211832!important}
+.admin-portal #calendar .fc-theme-standard td,.admin-portal #calendar .fc-theme-standard th,.admin-portal #calendar .fc-theme-standard .fc-scrollgrid{border-color:var(--admin-border)!important}
+.admin-portal #calendar .fc-day-today{background:rgba(139,92,246,.13)!important}
+.admin-portal #calendar .fc-day-other .fc-daygrid-day-number{color:#665a75!important}
+.admin-portal #calendar .fc-button-primary{background:#2a203a!important;border:1px solid #57466b!important;color:#eee6fa!important}
+.admin-portal #calendar .fc-button-primary:hover,.admin-portal #calendar .fc-button-primary.fc-button-active{background:#6d3bb5!important;border-color:#8b5cf6!important;color:#fff!important}
+.admin-portal .equipment-image{background:#211832!important;border:1px solid var(--admin-border)}
+/* Minimal layout utilities used by the existing PHP templates. */
+.admin-portal .d-flex{display:flex!important}.admin-portal .d-grid{display:grid!important}.admin-portal .d-block{display:block!important}.admin-portal .d-inline{display:inline!important}
+.admin-portal .flex-wrap{flex-wrap:wrap!important}.admin-portal .flex-column{flex-direction:column!important}.admin-portal .flex-grow-1{flex-grow:1!important}
+.admin-portal .justify-content-between{justify-content:space-between!important}.admin-portal .justify-content-center{justify-content:center!important}.admin-portal .justify-content-end{justify-content:flex-end!important}
+.admin-portal .align-items-center{align-items:center!important}.admin-portal .align-items-end{align-items:flex-end!important}.admin-portal .text-start{text-align:left!important}.admin-portal .text-end{text-align:right!important}.admin-portal .text-center{text-align:center!important}
+.admin-portal .row{display:flex;flex-wrap:wrap;margin:0 -10px}.admin-portal .row>*{min-width:0;padding:0 10px}
+.admin-portal .col-12{width:100%}.admin-portal .col-md-3,.admin-portal .col-md-4,.admin-portal .col-md-6,.admin-portal .col-md-7,.admin-portal .col-md-8,.admin-portal .col-sm-6,.admin-portal .col-lg-4,.admin-portal .col-lg-8,.admin-portal .col-xl-3{width:100%}
+.admin-portal .gap-1{gap:4px!important}.admin-portal .gap-2{gap:8px!important}.admin-portal .gap-3{gap:12px!important}
+.admin-portal .mb-0{margin-bottom:0!important}.admin-portal .mb-1{margin-bottom:4px!important}.admin-portal .mb-2{margin-bottom:8px!important}.admin-portal .mb-3{margin-bottom:12px!important}.admin-portal .mb-4{margin-bottom:20px!important}
+.admin-portal .mt-2{margin-top:8px!important}.admin-portal .mt-3{margin-top:12px!important}.admin-portal .p-2{padding:8px!important}.admin-portal .p-3{padding:12px!important}.admin-portal .p-4{padding:20px!important}.admin-portal .px-3{padding-left:12px!important;padding-right:12px!important}.admin-portal .py-4{padding-top:20px!important;padding-bottom:20px!important}.admin-portal .py-5{padding-top:40px!important;padding-bottom:40px!important}
+.admin-portal .small{font-size:12px!important}.admin-portal .fs-2{font-size:2rem!important}.admin-portal .fs-3{font-size:1.6rem!important}.admin-portal .fs-6{font-size:1rem!important}
+.admin-portal .fw-bold{font-weight:750!important}.admin-portal .fw-semibold{font-weight:650!important}.admin-portal .text-uppercase{text-transform:uppercase!important}.admin-portal .text-decoration-none{text-decoration:none!important}.admin-portal .text-nowrap{white-space:nowrap!important}
+.admin-portal .h-100{height:100%!important}.admin-portal .w-100{width:100%!important}.admin-portal .rounded{border-radius:9px!important}.admin-portal .rounded-4{border-radius:16px!important}.admin-portal .overflow-hidden{overflow:hidden!important}
+.admin-portal .shadow,.admin-portal .shadow-sm{box-shadow:0 12px 32px rgba(0,0,0,.18)!important}
+@media(min-width:576px){.admin-portal .col-sm-6{width:50%}}
+@media(min-width:768px){.admin-portal .col-md-3{width:25%}.admin-portal .col-md-4{width:33.333333%}.admin-portal .col-md-6{width:50%}.admin-portal .col-md-7{width:58.333333%}.admin-portal .col-md-8{width:66.666667%}}
+@media(min-width:992px){.admin-portal .col-lg-4{width:33.333333%}.admin-portal .col-lg-8{width:66.666667%}}
+@media(min-width:1200px){.admin-portal .col-xl-3{width:25%}}
+@media(max-width:767px){.admin-portal .admin-main-content{padding:18px 14px!important}.admin-portal .row{margin-left:-7px;margin-right:-7px}.admin-portal .row>*{padding-left:7px;padding-right:7px}.admin-portal .modal{padding:12px}.admin-portal .modal-dialog{margin:12px auto}.admin-portal .table{min-width:650px}}
+html[data-admin-theme="light"] .admin-portal{--admin-bg:#f5f0fa;--admin-panel:#fff;--admin-panel-raised:#f2eaf8;--admin-border:#e4d8ee;--admin-text:#30223d;--admin-muted:#766985;background:var(--admin-bg)!important;color:var(--admin-text)!important}
+html[data-admin-theme="light"] .admin-portal .admin-main-content,html[data-admin-theme="light"] .admin-portal .content-area{background:var(--admin-bg)!important;color:var(--admin-text)!important}
+html[data-admin-theme="light"] .admin-portal h1,html[data-admin-theme="light"] .admin-portal h2,html[data-admin-theme="light"] .admin-portal h3,html[data-admin-theme="light"] .admin-portal h4,html[data-admin-theme="light"] .admin-portal h5,html[data-admin-theme="light"] .admin-portal h6{color:#352443}
+html[data-admin-theme="light"] .admin-portal .card,html[data-admin-theme="light"] .admin-portal .stat-card,html[data-admin-theme="light"] .admin-portal .page-card{background:#fff!important;color:#352443!important;border-color:#e4d8ee!important}
+html[data-admin-theme="light"] .admin-portal .card-header,html[data-admin-theme="light"] .admin-portal .card-footer,html[data-admin-theme="light"] .admin-portal .table thead th,html[data-admin-theme="light"] .admin-portal .table-light th{background:#f2eaf8!important;color:#624b76!important}
+html[data-admin-theme="light"] .admin-portal .table th,html[data-admin-theme="light"] .admin-portal .table td{color:#443451;border-color:#e8deef}
+html[data-admin-theme="light"] .admin-portal .form-control,html[data-admin-theme="light"] .admin-portal .form-select,html[data-admin-theme="light"] .admin-portal input:not([type=checkbox]):not([type=radio]):not([type=file]),html[data-admin-theme="light"] .admin-portal select,html[data-admin-theme="light"] .admin-portal textarea{background:#fff!important;color:#352443!important;border-color:#d9c9e5!important}
+html[data-admin-theme="light"] .admin-portal .modal-content,html[data-admin-theme="light"] .admin-portal .modal-body{background:#fff!important;color:#352443!important}
+html[data-admin-theme="light"] .admin-portal .event-description,html[data-admin-theme="light"] .admin-portal .event-info-item,html[data-admin-theme="light"] .admin-portal #calendar,html[data-admin-theme="light"] .admin-portal .calendar-legend{background:#fff!important;color:#443451!important;border-color:#e4d8ee!important}
