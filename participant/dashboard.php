@@ -349,50 +349,10 @@ $calendarJson = json_encode(
             #participantCalendar .fc-toolbar-title { font-size: 1.05rem; }
         }
     </style>
-</head>
-<body class="bg-light">
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="bg-light participant-page">
 
-<!-- Navigation -->
-<!-- Navigation -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-    <div class="container">
-        <a class="navbar-brand" href="#">EMIS Participant Portal</a>
-        <div class="d-flex align-items-center flex-wrap">
-            <span class="navbar-text text-white me-3">
-                Welcome, <?= htmlspecialchars($firstName) ?>
-            </span>
-
-            <button type="button"
-                    class="btn btn-outline-light btn-sm me-2 position-relative"
-                    data-bs-toggle="modal"
-                    data-bs-target="#notificationsModal"
-                    aria-label="Notifications">
-                <i class="bi bi-bell"></i> Notifications
-                <?php if ($unreadNotificationCount > 0): ?>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        <?= (int)$unreadNotificationCount ?>
-                    </span>
-                <?php endif; ?>
-            </button>
-
-            <a href="equipment.php" class="btn btn-outline-info btn-sm me-2">
-                <i class="bi bi-box-seam me-1"></i> Borrow Equipment
-            </a>
-
-            <a href="my-borrowings.php" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-clipboard-check me-1"></i> My Borrowings
-            </a>
-
-            <a href="my-events.php" class="btn btn-outline-light btn-sm me-2">
-                My Registrations
-            </a>
-
-            <a href="../logout.php" class="btn btn-outline-danger btn-sm">
-                Logout
-            </a>
-        </div>
-    </div>
-</nav>
+<?php $showParticipantNotifications = true; include '../includes/participant-nav.php'; ?>
 
 <!-- Participant notifications -->
 <div class="modal fade" id="notificationsModal" tabindex="-1" aria-hidden="true">
