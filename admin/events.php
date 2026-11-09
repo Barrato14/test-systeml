@@ -601,8 +601,8 @@ $calendarJson = json_encode(
                 </table>
             </div>
         </section>
-    </main>
-</div>
+    
+
 
 <!-- Calendar event details modal -->
 <div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
