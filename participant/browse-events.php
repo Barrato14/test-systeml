@@ -91,7 +91,7 @@ foreach ($allEvents as $event) {
 <main class="browse-events-main">
     <section class="portal-page-heading">
 <div class="portal-page-heading-copy"><span class="portal-page-eyebrow"><i class="bi bi-calendar2-week"></i> PARTICIPANT PORTAL</span><h1>Discover campus events</h1><p>Find something happening on campus, explore the details, and save your spot.</p></div>
-<a href="dashboard.php" class="portal-back-link"><i class="bi bi-arrow-left"></i><span>Dashboard</span></a>
+
 </section>
 <section class="browse-events-summary" aria-label="Available events summary">
         <div class="browse-summary-icon"><i class="bi bi-calendar-check"></i></div>
@@ -123,7 +123,7 @@ foreach ($allEvents as $event) {
                 <div class="browse-empty-icon"><i class="bi bi-calendar2-x"></i></div>
                 <h3>No available events right now</h3>
                 <p>There are no upcoming or ongoing events to join at the moment. Check back later for new campus activities.</p>
-                <a href="dashboard.php" class="browse-empty-link">Return to dashboard <i class="bi bi-arrow-right"></i></a>
+                
             </div>
         <?php else: ?>
             <div class="browse-event-grid">
