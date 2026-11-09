@@ -22,7 +22,7 @@ $participantNavItems = [
     ['browse-events.php', 'Browse Events', 'bi-calendar2-event'],
     ['my-events.php', 'My Events', 'bi-ticket-perforated'],
     ['equipment.php', 'Equipment', 'bi-box-seam'],
-    ['my-borrowings.php', 'My Borrowings', 'bi-clipboard-check']
+    // My Borrowings is intentionally omitted from the shared navigation.
 ];
 ?>
 <aside class="participant-sidebar" aria-label="Participant sidebar">
