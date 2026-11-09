@@ -1176,3 +1176,9 @@ html[data-participant-theme="light"] .participant-notifications-header{border-co
 html[data-participant-theme="light"] .participant-notifications-header h2,html[data-participant-theme="light"] .participant-notification-title,html[data-participant-theme="light"] .participant-notifications-empty strong{color:#30243b}
 html[data-participant-theme="light"] .participant-notifications-header p,html[data-participant-theme="light"] .participant-notification-copy p,html[data-participant-theme="light"] .participant-notification-copy time{color:#71677d}
 html[data-participant-theme="light"] .participant-notification-item{border-color:#eee7f3}
+
+/* Shared navigation controls and compact page transitions */
+.participant-sidebar-notifications{font:inherit}
+.participant-sidebar-notifications:focus-visible,.participant-icon-button:focus-visible{outline:2px solid #c7a4f2;outline-offset:3px}
+.participant-notifications-loading i{font-size:21px;color:#c7a4f2}
+@media(max-width:700px){.participant-notifications-overlay{padding:10px}.participant-notifications-dialog{max-height:92vh;border-radius:16px}.participant-notifications-header{padding:19px 17px 14px}.participant-notifications-list{padding:8px 12px 14px}}
