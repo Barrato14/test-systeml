@@ -54,26 +54,6 @@ if (($profileRes['code'] ?? 500) === 200 && !empty($profileRes['data'])) {
 $successMsg = '';
 $errorMsg = '';
 
-// Mark a participant's own notification as read.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_notification_read'])) {
-    $notificationId = trim((string)$_POST['mark_notification_read']);
-
-    if ($notificationId !== '') {
-        $markReadResponse = supabaseRequest(
-            'notifications?id=eq.' . rawurlencode($notificationId) .
-            '&participant_id=eq.' . rawurlencode((string)$participant_id),
-            'PATCH',
-            ['is_read' => true]
-        );
-
-        if (($markReadResponse['code'] ?? 500) >= 400) {
-            $errorMsg = 'Unable to update that notification. Please try again.';
-        } else {
-            $successMsg = 'Notification marked as read.';
-        }
-    }
-}
-
 // Handle registration. The event schedule is checked on the server
 // before either creating a registration or updating an existing one.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_event_id'])) {
@@ -354,76 +334,6 @@ $calendarJson = json_encode(
 <body class="bg-light participant-page">
 
 <?php $showParticipantNotifications = true; include '../includes/participant-nav.php'; ?>
-
-<!-- Participant notifications -->
-<div class="modal fade" id="notificationsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-dark text-white">
-                <div>
-                    <h5 class="modal-title text-white mb-1"><i class="bi bi-bell me-2"></i>Notifications</h5>
-                    <small class="text-white-50">
-                        <?= (int)$unreadNotificationCount ?> unread notification(s)
-                    </small>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-3">
-                <?php if (($notificationsResponse['code'] ?? 500) >= 400): ?>
-                    <div class="alert alert-danger mb-0">Unable to load notifications right now. Please refresh the page.</div>
-                <?php elseif (empty($notifications)): ?>
-                    <div class="text-center text-muted py-5">
-                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                        <h6 class="mb-1">You're all caught up!</h6>
-                        <p class="mb-0 small">You don't have any notifications yet.</p>
-                    </div>
-                <?php else: ?>
-                    <div class="list-group list-group-flush">
-                        <?php foreach ($notifications as $notification):
-                            $isRead = ($notification['is_read'] ?? false) === true || ($notification['is_read'] ?? '') === 'true';
-                            $createdLabel = 'Date unavailable';
-                            if (!empty($notification['created_at'])) {
-                                try {
-                                    $createdDate = new DateTime($notification['created_at']);
-                                    $createdDate->setTimezone($manilaTimezone);
-                                    $createdLabel = $createdDate->format('M d, Y · g:i A');
-                                } catch (Exception $e) {
-                                    $createdLabel = 'Date unavailable';
-                                }
-                            }
-                        ?>
-                            <div class="list-group-item px-2 py-3 <?= $isRead ? '' : 'bg-light' ?>">
-                                <div class="d-flex justify-content-between align-items-start gap-3">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <strong><?= htmlspecialchars($notification['title'] ?? 'Notification') ?></strong>
-                                            <?php if (!$isRead): ?>
-                                                <span class="badge bg-primary">New</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <p class="mb-1" style="white-space:pre-wrap;"><?= htmlspecialchars($notification['message'] ?? '') ?></p>
-                                        <small class="text-muted"><?= htmlspecialchars($createdLabel) ?> (PHT)</small>
-                                    </div>
-                                    <?php if (!$isRead): ?>
-                                        <form method="POST" class="mb-0 flex-shrink-0">
-                                            <input type="hidden" name="mark_notification_read" value="<?= htmlspecialchars((string)($notification['id'] ?? '')) ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Mark as read">
-                                                <i class="bi bi-check2"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="container">
     <?php if ($successMsg): ?>
@@ -826,15 +736,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('noCalendarEvents').style.display =
             participantCalendarEvents.length === 0 ? 'block' : 'none';
     });
-
-    const notificationParams = new URLSearchParams(window.location.search);
-    if (notificationParams.get('open_notifications') === '1') {
-        const notificationModalElement = document.getElementById('notificationsModal');
-        if (notificationModalElement) {
-            bootstrap.Modal.getOrCreateInstance(notificationModalElement).show();
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }
 
     detailsModalElement.addEventListener('hidden.bs.modal', function () {
         if (reopenCalendarAfterDetails) {
