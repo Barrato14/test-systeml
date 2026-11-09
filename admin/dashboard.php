@@ -77,8 +77,9 @@ $pendingEquipment = 0;
         .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
         .stat-card { border-left: 5px solid #0d6efd; border-radius: 8px; }
     </style>
+    <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body>
+<body class="admin-portal">
 
 <div class="d-flex">
     <!-- Sidebar Navigation -->
