@@ -421,23 +421,9 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
     <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
 <body class="admin-portal">
-<div class="d-flex">
-    <aside class="sidebar flex-shrink-0" style="width:250px;">
-        <div class="p-4 text-center border-bottom border-secondary">
-            <h4 class="mb-0">EMIS Admin</h4><small class="text-muted">Command Center</small>
-        </div>
-        <nav class="mt-3">
-            <a href="dashboard.php"><i class="bi bi-speedometer2 me-2"></i><span class="nav-label">Dashboard</span></a>
-            <a href="events.php"><i class="bi bi-calendar-event me-2"></i><span class="nav-label">Event Management</span></a>
-            <a href="equipment.php" class="active"><i class="bi bi-tools me-2"></i><span class="nav-label">Equipment &amp; Services</span></a>
-            <a href="users.php"><i class="bi bi-people me-2"></i><span class="nav-label">Users &amp; Roles</span></a>
-            <a href="reports.php"><i class="bi bi-bar-chart me-2"></i><span class="nav-label">Reports &amp; Audits</span></a>
-            <a href="attendance-logs.php"><i class="bi bi-person-bounding-box me-2"></i><span class="nav-label">Attendance Logs</span></a>
-            <a href="../logout.php" class="text-danger mt-5"><i class="bi bi-box-arrow-right me-2"></i><span class="nav-label">Logout</span></a>
-        </nav>
-    </aside>
+<?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
+<main class="content-area admin-main-content">
 
-    <main class="content-area flex-grow-1">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
             <div>
                 <h2 class="fw-bold mb-1">Equipment &amp; Services</h2>
@@ -665,8 +651,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
             <div class="modal-footer"><button class="btn btn-primary">Update</button></div>
         </form>
     </div></div>
-</div>
 
+</main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.querySelectorAll('.approve-request-button').forEach(button => {
