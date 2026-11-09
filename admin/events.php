@@ -469,8 +469,9 @@ $calendarJson = json_encode(
             .event-info-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body>
+<body class="admin-portal">
 
 <div class="d-flex page-layout">
     <aside class="sidebar flex-shrink-0" style="width:250px;">
