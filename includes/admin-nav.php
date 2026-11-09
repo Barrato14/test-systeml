@@ -61,7 +61,6 @@ $adminNavItems = [
                     <a href="<?= htmlspecialchars($href) ?>" class="<?= $adminCurrentPage === $href ? 'is-active' : '' ?>"><i class="bi <?= htmlspecialchars($icon) ?>"></i><?= htmlspecialchars($label) ?></a>
                 <?php endforeach; ?>
                 <button type="button" data-open-admin-command><i class="bi bi-command"></i>Quick Switcher</button>
-                <a href="../logout.php"><i class="bi bi-box-arrow-right"></i>Sign out</a>
             </nav>
         </details>
     </div>
