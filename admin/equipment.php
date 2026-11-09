@@ -418,8 +418,9 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
             .content-area { width:100%; padding:14px; }
         }
     </style>
+    <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body>
+<body class="admin-portal">
 <div class="d-flex">
     <aside class="sidebar flex-shrink-0" style="width:250px;">
         <div class="p-4 text-center border-bottom border-secondary">
