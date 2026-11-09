@@ -165,7 +165,8 @@ try {
         .equipment-photo { height:210px; width:100%; object-fit:cover; background:#e9edf3; }
         .equipment-placeholder { height:210px; display:flex; align-items:center; justify-content:center; background:#edf1f6; color:#94a3b8; font-size:3rem; }
     </style>
-<link rel="stylesheet" href="../css/style.css">\n</head>
+<link rel="stylesheet" href="../css/style.css">
+</head>
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
 
