@@ -576,8 +576,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
             <?php endif; ?>
         </div>
         <p class="text-muted small mt-3 mb-0">Availability is calculated from total quantity minus approved, not-yet-returned borrowing requests.</p>
-    </main>
-</div>
+    
+
 
 <!-- Approve request and set pickup / return locations -->
 <div class="modal fade" id="approveRequestModal" tabindex="-1" aria-hidden="true">
