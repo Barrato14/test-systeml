@@ -123,14 +123,6 @@ html[data-admin-theme="light"] .admin-activity-tab{border-color:#e3d6ed;color:#7
             <h2 class="mb-0">Dashboard Overview</h2>
             <div class="d-flex align-items-center">
                 <span class="me-3">Welcome, <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong></span>
-                <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="../logout.php">Logout</a></li>
-                    </ul>
-                </div>
             </div>
         </div>
 
