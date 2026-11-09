@@ -25,12 +25,17 @@ $now = new DateTimeImmutable('now', $manilaTimezone);
 $eventsResponse = supabaseRequest('events?select=id,title,start_datetime,end_datetime,venue&order=start_datetime.asc', 'GET');
 $ongoingEvents = [];
 $ongoingEventMap = [];
+$activeEvents = 0;
 if (is_array($eventsResponse['data'] ?? null)) {
     foreach ($eventsResponse['data'] as $event) {
         if (empty($event['start_datetime']) || empty($event['end_datetime'])) continue;
         try {
             $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);
             $eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manilaTimezone);
+
+            // Keep the dashboard metric counting upcoming and ongoing events, but only show ongoing events in Recent Activity.
+            if ($eventEnd >= $now) $activeEvents++;
+
             if ($eventStart <= $now && $eventEnd >= $now) {
                 $ongoingEvents[] = $event;
                 $ongoingEventMap[(string)$event['id']] = $event;
@@ -38,10 +43,17 @@ if (is_array($eventsResponse['data'] ?? null)) {
         } catch (Exception $e) { continue; }
     }
 }
-$activeEvents = count($ongoingEvents);
 
-// Fetch attendance separately and show check-ins belonging to ongoing events only.
-$attendanceResponse = supabaseRequest('attendance?select=id,participant_id,event_id,check_in_time,time_out&order=check_in_time.desc&limit=50', 'GET');
+// Fetch attendance for the currently ongoing event IDs only.
+$attendanceResponse = ['data' => []];
+if (!empty($ongoingEventMap)) {
+    $eventIds = array_map('rawurlencode', array_keys($ongoingEventMap));
+    $eventFilter = 'event_id=in.(' . implode(',', $eventIds) . ')';
+    $attendanceResponse = supabaseRequest(
+        'attendance?select=id,participant_id,event_id,check_in_time,time_out&' . $eventFilter . '&order=check_in_time.desc&limit=50',
+        'GET'
+    );
+}
 $profilesResponse = supabaseRequest('profiles?select=id,first_name,last_name,course,section', 'GET');
 $profilesMap = [];
 if (is_array($profilesResponse['data'] ?? null)) {
