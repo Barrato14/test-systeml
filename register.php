@@ -77,90 +77,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - EMIS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="css/portal-theme.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account - Eventora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0B1020">
 </head>
-<body class="register-page">
-<div class="container mt-5 mb-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white"><h4>Create an Account</h4></div>
-                <div class="card-body">
-                    <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-                    <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">First Name</label>
-                            <input type="text" name="first_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" name="last_name" class="form-control" required>
-                        </div>
-                        
-                        <!-- Course Selection -->
-                        <div class="mb-3">
-                            <label for="course" class="form-label">Course</label>
-                            <select name="course" id="course" class="form-select" required>
-                                <option value="">Select Course</option>
-                                <option value="ACT">ACT (Associate in Computer Technology)</option>
-                                <option value="HM">HM (Hotel Management)</option>
-                                <option value="CT">CT</option>
-                            </select>
-                        </div>
-
-                        <!-- Year & Section Selection -->
-                        <div class="mb-3">
-                            <label for="section" class="form-label">Year & Section</label>
-                            <select name="section" id="section" class="form-select" required>
-                                <option value="">Select Section</option>
-                                <optgroup label="Year 1">
-                                    <option value="1A">1A</option>
-                                    <option value="1B">1B</option>
-                                    <option value="1C">1C</option>
-                                </optgroup>
-                                <optgroup label="Year 2">
-                                    <option value="2A">2A</option>
-                                    <option value="2B">2B</option>
-                                    <option value="2C">2C</option>
-                                </optgroup>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-dark w-100">Register</button>
-                    </form>
-
-                    <div class="text-center my-3 text-muted">OR</div>
-                    <div class="d-grid gap-2">
-                        <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn btn-outline-danger">
-                            <i class="bi bi-google"></i> Continue with Google
-                        </a>
-                        <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn btn-outline-primary">
-                            <i class="bi bi-facebook"></i> Continue with Facebook
-                        </a>
-                    </div>
-
-                    <div class="mt-3 text-center">
-                        Already have an account? <a href="login.php">Login here</a>.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<body class="auth-register-page">
+<main class="auth-layout">
+<section class="auth-showcase">
+<div class="showcase-content">
+<div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+<div class="showcase-text"><h1>Be Part of Every Great Event.</h1><p>Create your account to discover campus activities, register for events, and keep everything in one place.</p></div>
+<div class="visual-decorations">
+<div class="floating-card card-1"><div class="card-header"><i class="ph-fill ph-calendar-check text-violet"></i><span>Campus Events</span></div><div class="card-stats"><div class="stat-bar w-75"></div><div class="stat-bar w-50"></div></div></div>
+<div class="floating-card card-2"><div class="card-header"><i class="ph-fill ph-users text-light-purple"></i><span>Your Community</span></div><div class="card-stats"><h3>Get involved</h3><span class="status-badge">Your next experience starts here</span></div></div>
 </div>
+</div>
+</section>
+<section class="auth-form-wrapper auth-register-wrapper">
+<div class="mobile-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+<div class="auth-form-container auth-register-container">
+<header class="form-header"><h2>Create your account</h2><p>Enter your details to join the campus community.</p></header>
+<?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
+<?php if ($success): ?><div class="auth-success" role="status"><i class="ph ph-check-circle"></i><span><?= htmlspecialchars($success) ?></span></div><?php endif; ?>
+<form id="registerForm" method="POST" action="register.php">
+<div class="auth-register-grid">
+<div class="input-group"><label for="first_name">First Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="first_name" name="first_name" placeholder="Your first name" required autocomplete="given-name" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>"></div></div>
+<div class="input-group"><label for="last_name">Last Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="last_name" name="last_name" placeholder="Your last name" required autocomplete="family-name" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>"></div></div>
+<div class="input-group"><label for="course">Course</label><div class="input-wrapper"><i class="ph ph-graduation-cap input-icon"></i><select id="course" name="course" required><option value="">Select your course</option><option value="ACT" <?= (($_POST['course'] ?? '') === 'ACT') ? 'selected' : '' ?>>ACT (Associate in Computer Technology)</option><option value="HM" <?= (($_POST['course'] ?? '') === 'HM') ? 'selected' : '' ?>>HM (Hotel Management)</option><option value="CT" <?= (($_POST['course'] ?? '') === 'CT') ? 'selected' : '' ?>>CT</option></select></div></div>
+<div class="input-group"><label for="section">Year &amp; Section</label><div class="input-wrapper"><i class="ph ph-users-three input-icon"></i><select id="section" name="section" required><option value="">Select your section</option><optgroup label="Year 1"><option value="1A" <?= (($_POST['section'] ?? '') === '1A') ? 'selected' : '' ?>>1A</option><option value="1B" <?= (($_POST['section'] ?? '') === '1B') ? 'selected' : '' ?>>1B</option><option value="1C" <?= (($_POST['section'] ?? '') === '1C') ? 'selected' : '' ?>>1C</option></optgroup><optgroup label="Year 2"><option value="2A" <?= (($_POST['section'] ?? '') === '2A') ? 'selected' : '' ?>>2A</option><option value="2B" <?= (($_POST['section'] ?? '') === '2B') ? 'selected' : '' ?>>2B</option><option value="2C" <?= (($_POST['section'] ?? '') === '2C') ? 'selected' : '' ?>>2C</option></optgroup></select></div></div>
+<div class="input-group auth-register-full"><label for="email">Email Address</label><div class="input-wrapper"><i class="ph ph-envelope-simple input-icon"></i><input type="email" id="email" name="email" placeholder="name@example.com" required autocomplete="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"></div></div>
+<div class="input-group auth-register-full"><label for="password">Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="Create a password" required autocomplete="new-password"></div></div>
+</div>
+<button type="submit" class="btn-primary auth-register-submit"><span class="btn-text">Create Account</span><i class="ph-bold ph-arrow-right"></i></button>
+</form>
+<div class="divider"><span>OR</span></div>
+<div class="social-login">
+<a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn-social"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="" class="social-icon">Continue with Google</a>
+<a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn-social"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg" alt="" class="social-icon">Continue with Facebook</a>
+</div>
+<p class="register-prompt">Already have an account? <a href="login.php">Sign in</a></p>
+</div>
+<footer class="auth-footer"><p>&copy; <?= date('Y') ?> Eventora. All rights reserved.</p><div class="footer-links"><a href="privacy.php">Privacy Policy</a><a href="terms.php">Terms of Service</a></div></footer>
+</section>
+</main>
+<script src="/js/pwa.js"></script>
 </body>
 </html>
