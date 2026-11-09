@@ -1,17 +1,17 @@
 /* ==========================================================================
-   CSS Variables & Theme Configuration
+   CSS Variables & Theme Configuration (Purple Theme)
    ========================================================================== */
-   :root {
+:root {
     /* Colors */
-    --bg-primary: #0B1020;
-    --bg-secondary: #17142B;
-    --bg-input: #171A2B;
-    --accent-primary: #8B5CF6;
-    --accent-hover: #7C3AED;
-    --accent-secondary: #A78BFA;
+    --bg-primary: #120822; /* Deepest dark purple */
+    --bg-secondary: #1C0F35; /* Dark purple for the form panel */
+    --bg-input: #291A45; /* Slightly lighter purple for inputs */
+    --accent-primary: #A855F7; /* Vibrant Purple */
+    --accent-hover: #9333EA; /* Darker vibrant purple */
+    --accent-secondary: #C084FC; /* Soft light purple */
     --text-main: #FFFFFF;
-    --text-muted: #A1A1AA;
-    --border-color: #303047;
+    --text-muted: #B3A8C7; /* Muted text with a slight purple tint */
+    --border-color: #412A70; /* Purple-tinted border */
     --error-color: #EF4444;
     --error-bg: rgba(239, 68, 68, 0.1);
 
@@ -66,7 +66,7 @@ a:hover {
 /* Left Section: Showcase */
 .auth-showcase {
     flex: 1;
-    background: linear-gradient(135deg, var(--bg-primary) 0%, #111827 100%);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #150B27 100%);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -84,7 +84,7 @@ a:hover {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.12) 0%, transparent 50%);
     z-index: 0;
 }
 
@@ -132,9 +132,9 @@ a:hover {
 }
 
 .floating-card {
-    background: rgba(23, 26, 43, 0.7);
+    background: rgba(28, 15, 53, 0.7);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.15);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     box-shadow: var(--shadow-lg);
@@ -187,7 +187,7 @@ a:hover {
 
 .status-badge {
     font-size: 0.75rem;
-    background: rgba(167, 139, 250, 0.2);
+    background: rgba(168, 85, 247, 0.2);
     color: var(--accent-secondary);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -206,7 +206,7 @@ a:hover {
 }
 
 .mobile-logo {
-    display: none; /* Hidden on desktop */
+    display: none;
 }
 
 .auth-form-container {
@@ -289,13 +289,13 @@ a:hover {
 }
 
 .input-wrapper input::placeholder {
-    color: #525266;
+    color: #6A5A8A; /* Purple-tinted placeholder */
 }
 
 .input-wrapper input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
 }
 
 .input-wrapper input:focus ~ .input-icon {
@@ -497,8 +497,8 @@ a:hover {
 }
 
 .btn-social:hover {
-    background-color: #1F2338;
-    border-color: #4A4A68;
+    background-color: #2F1E50;
+    border-color: #583994;
     color: var(--text-main);
 }
 
@@ -562,7 +562,7 @@ a:hover {
     }
     
     .visual-decorations {
-        display: none; /* Simplify on tablet to avoid crowding */
+        display: none;
     }
     
     .auth-form-wrapper {
@@ -576,19 +576,17 @@ a:hover {
         flex-direction: column;
     }
     
-    /* Hide the large showcase entirely on mobile */
     .auth-showcase {
         display: none;
     }
 
     .auth-form-wrapper {
-        background-color: var(--bg-primary); /* Match primary on mobile */
+        background-color: var(--bg-primary);
         padding: 1.5rem;
-        justify-content: flex-start; /* Push content up on mobile */
+        justify-content: flex-start;
         min-height: 100vh;
     }
 
-    /* Show mobile header */
     .mobile-logo {
         display: flex;
         align-items: center;
