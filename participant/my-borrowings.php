@@ -69,18 +69,9 @@ function statusClass($status) {
         .item-thumb { width:64px;height:54px;object-fit:cover;border-radius:9px;background:#edf1f6; }
         .status-pill { min-width:86px; }
     </style>
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="dashboard.php">EMIS Participant Portal</a>
-        <div class="d-flex gap-2">
-            <a href="equipment.php" class="btn btn-outline-info btn-sm">Browse Equipment</a>
-            <a href="dashboard.php" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="../logout.php" class="btn btn-outline-danger btn-sm">Logout</a>
-        </div>
-    </div>
-</nav>
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="participant-page">
+<?php include '../includes/participant-nav.php'; ?>
 
 <main class="container py-4 py-md-5">
     <div class="mb-4">
