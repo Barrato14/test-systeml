@@ -1052,3 +1052,25 @@ body.admin-portal .admin-activity-card > .card-header p{margin:0!important;line-
 body.admin-portal .admin-activity-card > .card-body{padding:26px!important;}
 body.admin-portal .admin-activity-card .admin-activity-empty{padding:34px 20px;}
 @media(max-width:700px){body.admin-portal .admin-activity-card > .card-header{padding:18px!important;align-items:flex-start;flex-direction:column;}body.admin-portal .admin-activity-card > .card-body{padding:18px!important;}}
+
+
+/* Dashboard Recent Activity: definitive layout and control styling. */
+body.admin-portal .admin-activity-card{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+body.admin-portal .admin-activity-card>.card-header{box-sizing:border-box;width:100%;min-height:84px;padding:20px 24px!important;display:flex;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;background:#21172d}
+body.admin-portal .admin-activity-card>.card-header>div:first-child{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1 1 240px}
+body.admin-portal .admin-activity-card>.card-header h5{display:block;margin:0!important;padding:0;line-height:1.4}
+body.admin-portal .admin-activity-card>.card-header p{display:block;margin:0!important;line-height:1.5}
+body.admin-portal .admin-activity-tabs{display:flex;align-items:center;justify-content:flex-end;flex:0 1 auto;gap:8px;flex-wrap:wrap}
+body.admin-portal .admin-activity-tab,body.admin-portal .admin-activity-tab:focus{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 13px;border:1px solid #59416f;border-radius:11px;background:#21172d;color:#d8c6ed;font-family:inherit;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer;white-space:nowrap}
+body.admin-portal .admin-activity-tab.is-active{background:#392650;border-color:#a477d4;color:#fff}
+body.admin-portal .admin-activity-tab span{display:inline-flex;align-items:center;justify-content:center;min-width:20px;min-height:20px;padding:2px 6px;border-radius:20px;background:#30213f;color:#eee1ff;font-size:11px;line-height:1}
+body.admin-portal .admin-activity-body{box-sizing:border-box;width:100%;min-height:280px;padding:24px!important}
+body.admin-portal .admin-activity-panel{width:100%;min-width:0}
+body.admin-portal .admin-activity-panel[hidden]{display:none!important}
+body.admin-portal .admin-activity-empty{box-sizing:border-box;width:100%;min-height:210px;padding:30px 20px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:9px!important;text-align:center}
+body.admin-portal .admin-activity-empty>i{display:block;font-size:29px;line-height:1.2}
+body.admin-portal .admin-activity-empty>strong{display:block;font-size:14px;line-height:1.4}
+body.admin-portal .admin-activity-empty>span{display:block;font-size:12px;line-height:1.5}
+body.admin-portal .admin-activity-footer{display:flex;justify-content:flex-end;margin-top:16px;padding:15px 0 2px;border-top:1px solid rgba(145,115,170,.2)}
+body.admin-portal .admin-activity-footer a{display:inline-flex;align-items:center;gap:5px;text-decoration:none}
+@media(max-width:700px){body.admin-portal .admin-activity-card>.card-header{flex-direction:column;align-items:stretch;padding:18px!important}body.admin-portal .admin-activity-tabs{width:100%;justify-content:stretch}body.admin-portal .admin-activity-tab{flex:1 1 0;white-space:normal}body.admin-portal .admin-activity-body{padding:17px!important}}
