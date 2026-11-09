@@ -82,8 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Register - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/portal-theme.css">
 </head>
-<body class="bg-light">
+<body class="register-page">
 <div class="container mt-5 mb-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
