@@ -165,18 +165,9 @@ try {
         .equipment-photo { height:210px; width:100%; object-fit:cover; background:#e9edf3; }
         .equipment-placeholder { height:210px; display:flex; align-items:center; justify-content:center; background:#edf1f6; color:#94a3b8; font-size:3rem; }
     </style>
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="dashboard.php">EMIS Participant Portal</a>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <a href="dashboard.php" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="my-borrowings.php" class="btn btn-outline-info btn-sm">My Borrowings</a>
-            <a href="../logout.php" class="btn btn-outline-danger btn-sm">Logout</a>
-        </div>
-    </div>
-</nav>
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="participant-page">
+<?php include '../includes/participant-nav.php'; ?>
 
 <main class="container py-4 py-md-5">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
