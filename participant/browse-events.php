@@ -12,27 +12,68 @@ $participantId = $_SESSION['user_id'];
 $successMsg = '';
 $errorMsg = '';
 
-// Handle Registration Action
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
-    $eventId = $_POST['event_id'];
-    
-    $payload = [
-        'participant_id' => $participantId,
-        'event_id' => $eventId,
-        'status' => 'Approved' // Automatically approve for testing purposes
-    ];
+$manilaTimezone = new DateTimeZone('Asia/Manila');
 
-    $response = supabaseRequest('event_registrations', 'POST', $payload);
-    if ($response['code'] >= 400) {
-        $errorMsg = "You are already registered for this event or an error occurred.";
-    } else {
-        $successMsg = "Successfully registered for the event!";
+function eventHasEnded($event, $timezone) {
+    if (empty($event['end_datetime'])) {
+        return true;
+    }
+
+    try {
+        $eventEnd = new DateTimeImmutable($event['end_datetime']);
+        $eventEnd = $eventEnd->setTimezone($timezone);
+        $now = new DateTimeImmutable('now', $timezone);
+
+        return $eventEnd <= $now;
+    } catch (Exception $e) {
+        return true;
     }
 }
 
-// Fetch all upcoming events
+// Handle Registration Action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
+    $eventId = trim((string)$_POST['event_id']);
+
+    if ($eventId === '') {
+        $errorMsg = "Invalid event selected.";
+    } else {
+        $eventCheck = supabaseRequest(
+            'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime',
+            'GET'
+        );
+
+        if (($eventCheck['code'] ?? 500) >= 400 || empty($eventCheck['data'])) {
+            $errorMsg = "Event not found. Registration is unavailable.";
+        } elseif (eventHasEnded($eventCheck['data'][0], $manilaTimezone)) {
+            $errorMsg = "Registration is closed. This event has already ended.";
+        } else {
+            $payload = [
+                'participant_id' => $participantId,
+                'event_id' => $eventId,
+                'status' => 'Approved'
+            ];
+
+            $response = supabaseRequest('event_registrations', 'POST', $payload);
+            if (($response['code'] ?? 500) >= 400) {
+                $errorMsg = "You are already registered for this event or an error occurred.";
+            } else {
+                $successMsg = "Successfully registered for the event!";
+            }
+        }
+    }
+}
+
+// Fetch events and hide ended or invalidly scheduled events, matching the participant dashboard.
 $getResponse = supabaseRequest('events?order=start_datetime.asc', 'GET');
-$events = ($getResponse['code'] < 400 && is_array($getResponse['data'])) ? $getResponse['data'] : [];
+$allEvents = (($getResponse['code'] ?? 500) < 400 && is_array($getResponse['data'] ?? null))
+    ? $getResponse['data'] : [];
+
+$events = [];
+foreach ($allEvents as $event) {
+    if (!eventHasEnded($event, $manilaTimezone)) {
+        $events[] = $event;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
