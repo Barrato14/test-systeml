@@ -102,7 +102,7 @@ if (!empty($checkExisting['data'][0]['time_out'])) {
             <i class="bi bi-shield-check me-2"></i> Capture Face & Time Out
         </button>
         <div class="text-center mt-3">
-            <a href="dashboard.php" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Dashboard</a>
+            
         </div>
     </div>
 </div>
