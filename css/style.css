@@ -1182,3 +1182,6 @@ html[data-participant-theme="light"] .participant-notification-item{border-color
 .participant-sidebar-notifications:focus-visible,.participant-icon-button:focus-visible{outline:2px solid #c7a4f2;outline-offset:3px}
 .participant-notifications-loading i{font-size:21px;color:#c7a4f2}
 @media(max-width:700px){.participant-notifications-overlay{padding:10px}.participant-notifications-dialog{max-height:92vh;border-radius:16px}.participant-notifications-header{padding:19px 17px 14px}.participant-notifications-list{padding:8px 12px 14px}}
+
+/* Keep the notification badge completely hidden when there are no unread notifications. */
+.participant-notification-count[hidden]{display:none!important}
