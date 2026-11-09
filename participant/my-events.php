@@ -54,8 +54,10 @@ usort($myEvents, function($a, $b) {
     <title>My Events - EMIS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-</head>
-<body class="bg-light">
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="bg-light participant-page">
+<?php include '../includes/participant-nav.php'; ?>
+
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>My Registered Events</h2>
