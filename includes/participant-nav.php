@@ -119,6 +119,22 @@ $participantNavItems = [
    render(payload.notifications||[]);loaded=true;
   }catch(error){list.innerHTML='<div class="participant-notifications-error">'+escapeHtml(error.message||'Unable to load notifications.')+' <button type="button" data-retry-notifications>Try again</button></div>';}
  }
+ // Warm participant pages when the user points at a navigation link.
+ const prefetchedPages=new Set();
+ document.querySelectorAll('.participant-sidebar-nav a,.participant-mobile-menu-panel a').forEach(function(link){
+  function prefetchPage(){
+   const href=link.getAttribute('href');
+   if(!href||href.charAt(0)==='#'||prefetchedPages.has(href)||href===window.location.pathname.split('/').pop())return;
+   prefetchedPages.add(href);
+   const hint=document.createElement('link');
+   hint.rel='prefetch';
+   hint.href=href;
+   hint.as='document';
+   document.head.appendChild(hint);
+  }
+  link.addEventListener('pointerenter',prefetchPage,{once:true});
+  link.addEventListener('focus',prefetchPage,{once:true});
+ });
  document.querySelectorAll('[data-open-notifications]').forEach(function(button){button.addEventListener('click',open);});
  document.querySelectorAll('[data-close-notifications]').forEach(function(button){button.addEventListener('click',close);});
  overlay.addEventListener('click',function(event){if(event.target===overlay)close();});
