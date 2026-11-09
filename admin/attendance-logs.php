@@ -69,8 +69,9 @@ function formatManilaTime($utcString) {
         .snapshot-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
         .snapshot-thumb:hover { transform: scale(3); }
     </style>
+    <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body>
+<body class="admin-portal">
 
 <div class="d-flex">
     <!-- Sidebar Navigation -->
