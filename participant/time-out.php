@@ -78,8 +78,10 @@ if (!empty($checkExisting['data'][0]['time_out'])) {
         #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
     </style>
-</head>
-<body>
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="participant-page">
+<?php include '../includes/participant-nav.php'; ?>
+
 <div class="container">
     <div class="scanner-container">
         <h3 class="mb-3 text-center text-warning text-dark"><i class="bi bi-box-arrow-left me-2"></i>Face & GPS Time Out</h3>
