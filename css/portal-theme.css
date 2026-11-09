@@ -840,3 +840,18 @@ html[data-admin-theme="light"] .admin-portal .table th,html[data-admin-theme="li
 html[data-admin-theme="light"] .admin-portal .form-control,html[data-admin-theme="light"] .admin-portal .form-select,html[data-admin-theme="light"] .admin-portal input:not([type=checkbox]):not([type=radio]):not([type=file]),html[data-admin-theme="light"] .admin-portal select,html[data-admin-theme="light"] .admin-portal textarea{background:#fff!important;color:#352443!important;border-color:#d9c9e5!important}
 html[data-admin-theme="light"] .admin-portal .modal-content,html[data-admin-theme="light"] .admin-portal .modal-body{background:#fff!important;color:#352443!important}
 html[data-admin-theme="light"] .admin-portal .event-description,html[data-admin-theme="light"] .admin-portal .event-info-item,html[data-admin-theme="light"] .admin-portal #calendar,html[data-admin-theme="light"] .admin-portal .calendar-legend{background:#fff!important;color:#443451!important;border-color:#e4d8ee!important}
+
+
+/* Additional spacing and responsive helpers retained from the old templates. */
+.admin-portal .g-2{row-gap:8px!important}.admin-portal .g-3{row-gap:12px!important}.admin-portal .g-4{row-gap:18px!important}
+.admin-portal .me-1{margin-right:4px!important}.admin-portal .me-2{margin-right:8px!important}.admin-portal .me-3{margin-right:12px!important}
+.admin-portal .mx-0{margin-left:0!important;margin-right:0!important}.admin-portal .p-md-4{padding:20px!important}.admin-portal .p-lg-4{padding:20px!important}
+.admin-portal .alert-dismissible{position:relative;padding-right:42px}.admin-portal .alert-dismissible .btn-close{position:absolute;top:12px;right:14px}
+.admin-portal .modal.fade .modal-dialog{transform:translateY(-12px);transition:transform .18s ease}.admin-portal .modal.fade.show .modal-dialog{transform:translateY(0)}
+.admin-portal .snapshot-thumb{width:50px;height:50px;object-fit:cover;border:1px solid var(--admin-border);border-radius:8px;cursor:pointer}
+.admin-portal .snapshot-thumb:hover{transform:scale(1.8);position:relative;z-index:2}
+.admin-portal .event-modal-header{background:linear-gradient(135deg,#34204d,#6d3bb5)!important;color:#fff!important}
+.admin-portal .event-modal-header .modal-title{color:#fff!important}
+.admin-portal .modal .form-control,.admin-portal .modal .form-select{max-width:100%}
+@media(min-width:768px){.admin-portal .g-2{column-gap:0}.admin-portal .g-3{column-gap:0}.admin-portal .g-4{column-gap:0}}
+@media(max-width:767px){.admin-portal .d-flex.justify-content-between{align-items:flex-start}.admin-portal .table th,.admin-portal .table td{padding:10px 11px}.admin-portal .modal-dialog.modal-lg{max-width:100%}}
