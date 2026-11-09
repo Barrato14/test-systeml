@@ -1073,3 +1073,12 @@ html[data-participant-theme="light"] .borrowings-table th{border-color:#e8e0ee;b
 html[data-participant-theme="light"] .borrowings-table td{border-color:#eee7f3}
 html[data-participant-theme="light"] .borrowing-equipment strong,html[data-participant-theme="light"] .borrowing-dates strong,html[data-participant-theme="light"] .borrowings-empty h3{color:#30243b}
 html[data-participant-theme="light"] .borrowing-equipment span,html[data-participant-theme="light"] .borrowing-dates span,html[data-participant-theme="light"] .borrowing-requested,html[data-participant-theme="light"] .borrowing-location>div span,html[data-participant-theme="light"] .borrowing-location small,html[data-participant-theme="light"] .borrowing-purpose,html[data-participant-theme="light"] .borrowings-empty p,html[data-participant-theme="light"] .borrowings-help{color:#71677d}
+
+/* Settings popover must escape the clipped desktop navigation rail. */
+.participant-sidebar .participant-settings-panel{position:fixed;left:84px;right:auto;bottom:18px;top:auto}
+.participant-sidebar .participant-sidebar-notifications{display:flex;align-items:center}
+.participant-sidebar-notifications .participant-notification-count{position:absolute;top:4px;left:27px;right:auto}
+.participant-mobile-topbar .participant-icon-button{width:40px;height:40px;display:grid;place-items:center;border:1px solid #443354;border-radius:11px;background:#21172f;color:#d9c7f5;text-decoration:none;font-size:17px}
+.participant-mobile-topbar .participant-icon-button .participant-notification-count{top:2px;right:2px}
+@media(max-width:820px){.participant-sidebar .participant-settings-panel{position:absolute;left:auto;right:0;bottom:auto;top:calc(100% + 10px)}}
+html[data-participant-theme="light"] .participant-mobile-topbar .participant-icon-button{border-color:#e4d9ec;background:#f7f3fa;color:#65418d}
