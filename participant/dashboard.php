@@ -349,7 +349,8 @@ $calendarJson = json_encode(
             #participantCalendar .fc-toolbar-title { font-size: 1.05rem; }
         }
     </style>
-<link rel="stylesheet" href="../css/style.css">\n</head>
+<link rel="stylesheet" href="../css/style.css">
+</head>
 <body class="bg-light participant-page">
 
 <?php $showParticipantNotifications = true; include '../includes/participant-nav.php'; ?>
