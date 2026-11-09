@@ -1,0 +1,157 @@
+<?php
+$adminRole = strtolower($_SESSION['user_role'] ?? 'administrator');
+$adminCurrentPage = basename($_SERVER['PHP_SELF'] ?? '');
+$adminNavItems = [
+    ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
+    ['events.php', 'Event Management', 'bi-calendar-event'],
+    ['equipment.php', 'Equipment & Services', 'bi-tools'],
+    ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
+];
+?>
+<aside class="admin-sidebar" aria-label="Administrator navigation">
+    <div class="admin-sidebar-inner">
+        <a class="admin-brand" href="dashboard.php" aria-label="EMIS Admin Dashboard">
+            <span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span>
+            <span class="admin-brand-copy"><strong>EMIS</strong><small>Admin Command Center</small></span>
+        </a>
+        <div class="admin-nav-caption">WORKSPACE</div>
+        <nav class="admin-sidebar-nav">
+            <?php foreach ($adminNavItems as [$href, $label, $icon]): ?>
+                <a href="<?= htmlspecialchars($href) ?>" class="admin-sidebar-link <?= $adminCurrentPage === $href ? 'is-active' : '' ?>" title="<?= htmlspecialchars($label) ?>">
+                    <i class="bi <?= htmlspecialchars($icon) ?>"></i><span><?= htmlspecialchars($label) ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="admin-sidebar-bottom">
+            <button type="button" class="admin-sidebar-link admin-command-trigger" data-open-admin-command title="Quick switcher">
+                <i class="bi bi-command"></i><span>Quick Switcher</span><kbd>Ctrl K</kbd>
+            </button>
+            <div class="admin-sidebar-user">
+                <i class="bi bi-person-badge"></i>
+                <span><strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Administrator') ?></strong><small><?= htmlspecialchars(ucwords($adminRole)) ?></small></span>
+            </div>
+            <details class="admin-settings">
+                <summary class="admin-sidebar-link" title="Settings"><i class="bi bi-gear"></i><span>Settings</span></summary>
+                <div class="admin-settings-panel">
+                    <div class="admin-settings-title">Appearance</div>
+                    <button type="button" class="admin-theme-toggle" data-admin-theme-toggle><i class="bi bi-moon-stars"></i><span>Dark mode</span></button>
+                    <a href="../logout.php" class="admin-logout-link"><i class="bi bi-box-arrow-right"></i>Sign out</a>
+                </div>
+            </details>
+        </div>
+    </div>
+</aside>
+
+<header class="admin-mobile-topbar">
+    <a class="admin-mobile-brand" href="dashboard.php"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>EMIS</strong><small>Admin</small></span></a>
+    <div class="admin-mobile-actions">
+        <button type="button" class="admin-mobile-icon" data-open-admin-command aria-label="Quick switcher"><i class="bi bi-search"></i></button>
+        <details class="admin-mobile-settings">
+            <summary aria-label="Settings"><i class="bi bi-gear"></i></summary>
+            <div class="admin-settings-panel">
+                <div class="admin-settings-title">Appearance</div>
+                <button type="button" class="admin-theme-toggle" data-admin-theme-toggle><i class="bi bi-moon-stars"></i><span>Dark mode</span></button>
+                <a href="../logout.php" class="admin-logout-link"><i class="bi bi-box-arrow-right"></i>Sign out</a>
+            </div>
+        </details>
+        <details class="admin-mobile-menu">
+            <summary aria-label="Open navigation"><i class="bi bi-list"></i></summary>
+            <nav class="admin-mobile-menu-panel">
+                <?php foreach ($adminNavItems as [$href, $label, $icon]): ?>
+                    <a href="<?= htmlspecialchars($href) ?>" class="<?= $adminCurrentPage === $href ? 'is-active' : '' ?>"><i class="bi <?= htmlspecialchars($icon) ?>"></i><?= htmlspecialchars($label) ?></a>
+                <?php endforeach; ?>
+                <button type="button" data-open-admin-command><i class="bi bi-command"></i>Quick Switcher</button>
+                <a href="../logout.php"><i class="bi bi-box-arrow-right"></i>Sign out</a>
+            </nav>
+        </details>
+    </div>
+</header>
+
+<div class="admin-command-overlay" id="adminCommandOverlay" aria-hidden="true">
+    <section class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandTitle">
+        <div class="admin-command-search"><i class="bi bi-search"></i><input id="adminCommandInput" type="search" placeholder="Search admin pages..." autocomplete="off"><kbd>ESC</kbd></div>
+        <div class="admin-command-heading" id="adminCommandTitle">QUICK NAVIGATION</div>
+        <nav class="admin-command-results" id="adminCommandResults">
+            <?php foreach ($adminNavItems as [$href, $label, $icon]): ?>
+                <a href="<?= htmlspecialchars($href) ?>" data-command-label="<?= htmlspecialchars(strtolower($label)) ?>"><i class="bi <?= htmlspecialchars($icon) ?>"></i><span><?= htmlspecialchars($label) ?></span><i class="bi bi-arrow-up-right"></i></a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="admin-command-hint">Navigate faster with <kbd>Ctrl</kbd> + <kbd>K</kbd></div>
+    </section>
+</div>
+
+<script>
+(function () {
+    const root = document.documentElement;
+    const themeKey = 'emis-admin-theme';
+    function applyAdminTheme(theme) {
+        const selected = theme === 'light' ? 'light' : 'dark';
+        root.setAttribute('data-admin-theme', selected);
+        document.querySelectorAll('[data-admin-theme-toggle]').forEach(function (button) {
+            button.innerHTML = selected === 'light'
+                ? '<i class="bi bi-sun"></i><span>Light mode</span>'
+                : '<i class="bi bi-moon-stars"></i><span>Dark mode</span>';
+            button.setAttribute('aria-pressed', selected === 'light' ? 'true' : 'false');
+        });
+    }
+    let savedTheme = 'dark';
+    try { savedTheme = localStorage.getItem(themeKey) || 'dark'; } catch (error) {}
+    applyAdminTheme(savedTheme);
+    document.querySelectorAll('[data-admin-theme-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const next = root.getAttribute('data-admin-theme') === 'light' ? 'dark' : 'light';
+            applyAdminTheme(next);
+            try { localStorage.setItem(themeKey, next); } catch (error) {}
+        });
+    });
+
+    const overlay = document.getElementById('adminCommandOverlay');
+    const input = document.getElementById('adminCommandInput');
+    const results = document.getElementById('adminCommandResults');
+    function openCommand() {
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        input.value = '';
+        filterCommands();
+        window.setTimeout(function () { input.focus(); }, 30);
+    }
+    function closeCommand() {
+        overlay.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    function filterCommands() {
+        const query = input.value.trim().toLowerCase();
+        results.querySelectorAll('a').forEach(function (link) {
+            link.hidden = !link.dataset.commandLabel.includes(query);
+        });
+    }
+    document.querySelectorAll('[data-open-admin-command]').forEach(function (button) {
+        button.addEventListener('click', openCommand);
+    });
+    input.addEventListener('input', filterCommands);
+    overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) closeCommand();
+    });
+    document.addEventListener('keydown', function (event) {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            openCommand();
+        }
+        if (event.key === 'Escape') closeCommand();
+    });
+    document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (settings) {
+        settings.addEventListener('toggle', function () {
+            if (settings.open) {
+                document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (other) {
+                    if (other !== settings) other.open = false;
+                });
+            }
+        });
+    });
+    document.addEventListener('pointerdown', function (event) {
+        document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (settings) {
+            if (settings.open && !settings.contains(event.target)) settings.open = false;
+        });
+    });
+})();
+</script>
