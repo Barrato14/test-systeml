@@ -1013,3 +1013,63 @@ html[data-participant-theme="light"] .browse-empty-state{border-color:#d9cde4;ba
 html[data-participant-theme="light"] .browse-empty-state h3{color:#30243b}
 html[data-participant-theme="light"] .browse-empty-state p{color:#71677d}
 html[data-participant-theme="light"] .browse-empty-link{color:#7046a0!important}
+
+
+.portal-page-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;width:100%;margin:0 0 30px}
+.portal-page-heading-copy{min-width:0;max-width:760px}
+.portal-page-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#b99be8;font-size:10px;font-weight:800;letter-spacing:.15em}
+.portal-page-heading h1{margin:12px 0 8px;color:#f7f2ff;font-size:clamp(29px,3.7vw,43px);font-weight:800;line-height:1.12;letter-spacing:-.045em}
+.portal-page-heading p{margin:0;color:#aaa0ba;font-size:14px;line-height:1.7}
+.portal-back-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;flex:0 0 auto;min-height:42px;padding:0 15px;border:1px solid #49365e;border-radius:10px;background:#1a1426;color:#e4d7f6!important;font-size:12px;font-weight:750;text-decoration:none;white-space:nowrap}
+.portal-back-link:hover{border-color:#8963b7;background:#2a1d3d;color:#fff!important}
+.borrowings-main{width:min(1240px,calc(100% - 48px));margin:0 auto;padding:54px 0 70px}
+.borrowings-overview{display:flex;align-items:center;gap:15px;padding:18px 21px;margin-bottom:32px;border:1px solid #3a2b50;border-radius:16px;background:#171123}
+.borrowings-overview-icon{width:46px;height:46px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #594077;border-radius:13px;background:#291b3d;color:#d4b8ff;font-size:20px}
+.borrowings-overview-label{display:block;margin-bottom:3px;color:#a99bbd;font-size:10px;font-weight:800;letter-spacing:.13em}
+.borrowings-overview strong{display:block;color:#f5efff;font-size:22px}.borrowings-overview strong span{color:#b9adc9;font-size:14px;font-weight:550}
+.borrowings-overview-note{margin-left:auto;color:#b9adc9;font-size:12px}
+.borrowings-alert{padding:14px 16px;margin-bottom:22px;border:1px solid rgba(251,113,133,.3);border-radius:12px;background:rgba(251,113,133,.09);color:#fecdd3}
+.borrowings-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+.borrowings-section-kicker{color:#b99be8;font-size:10px;font-weight:800;letter-spacing:.15em}
+.borrowings-section-heading h2{margin:6px 0 0;color:#f5efff;font-size:24px;font-weight:780}
+.borrowings-count{padding:6px 10px;border:1px solid #3b2d50;border-radius:8px;background:#171123;color:#c9b8e3;font-size:11px;font-weight:700}
+.borrowings-table-shell{overflow:hidden;border:1px solid #382a49;border-radius:16px;background:#171222}
+.borrowings-table-scroll{width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.borrowings-table{width:100%;min-width:1040px;border-collapse:collapse;color:#d8cde5;font-size:12px}
+.borrowings-table th{padding:15px 14px;background:#21182e;border-bottom:1px solid #3b2d4d;color:#bca9d5;font-size:10px;font-weight:800;letter-spacing:.07em;text-align:left;white-space:nowrap}
+.borrowings-table td{padding:17px 14px;border-bottom:1px solid #30243e;vertical-align:top;line-height:1.55}
+.borrowings-table tbody tr:last-child td{border-bottom:0}.borrowings-table tbody tr:hover{background:rgba(135,91,183,.06)}
+.borrowing-equipment{display:flex;align-items:center;gap:11px;min-width:180px}
+.borrowing-thumb{width:54px;height:48px;flex:0 0 54px;object-fit:cover;border:1px solid #443354;border-radius:9px;background:#241a31}
+.borrowing-thumb-fallback{display:grid;place-items:center;color:#b99be8;font-size:19px}
+.borrowing-equipment strong,.borrowing-equipment span{display:block}.borrowing-equipment strong{max-width:170px;color:#f0e9fa;font-size:12px}
+.borrowing-equipment span,.borrowing-dates span,.borrowing-requested{color:#a99db9;font-size:11px}
+.borrowing-quantity{display:inline-grid;min-width:30px;height:28px;place-items:center;padding:0 7px;border:1px solid #49365e;border-radius:8px;background:#261b35;color:#e5d7f7;font-weight:750}
+.borrowing-dates strong,.borrowing-dates span{display:block;white-space:nowrap}.borrowing-dates strong{color:#e5d9f2;font-size:11px}
+.borrowing-location{display:grid;gap:10px;min-width:190px;max-width:230px}.borrowing-location>div strong,.borrowing-location>div span{display:block}
+.borrowing-location>div strong{margin-bottom:3px;color:#c8a9f4;font-size:10px}.borrowing-location>div span,.borrowing-location small{color:#b9adc9;font-size:11px;overflow-wrap:anywhere}
+.borrowing-location small{display:block;line-height:1.5}.borrowing-location .borrowing-returned{color:#86efac}.borrowing-location .borrowing-awaiting{color:#fcd34d}
+.borrowing-purpose{min-width:140px;max-width:190px;color:#c6bbd4;overflow-wrap:anywhere}
+.borrowing-status{display:inline-flex;align-items:center;justify-content:center;min-width:78px;padding:6px 9px;border:1px solid;border-radius:99px;font-size:10px;font-weight:800;white-space:nowrap}
+.borrowing-status-pending{border-color:#72551c;background:rgba(251,191,36,.1);color:#fcd34d}.borrowing-status-approved{border-color:#24664f;background:rgba(52,211,153,.1);color:#86efac}.borrowing-status-rejected{border-color:#753b4a;background:rgba(251,113,133,.1);color:#fda4af}.borrowing-status-returned{border-color:#59477e;background:rgba(167,139,250,.1);color:#c4b5fd}
+.borrowings-scroll-hint{display:none;padding:10px 14px;border-top:1px solid #30243e;color:#9f91af;font-size:10px}
+.borrowings-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:290px;padding:38px 24px;border:1px dashed #4a385e;border-radius:17px;background:#151020;text-align:center}
+.borrowings-empty-icon{width:64px;height:64px;display:grid;place-items:center;margin-bottom:16px;border:1px solid #4b3767;border-radius:19px;background:#241735;color:#c8a9f4;font-size:27px}
+.borrowings-empty h3{margin:0 0 8px;color:#f3edfc;font-size:19px}.borrowings-empty p{max-width:440px;margin:0;color:#aaa0ba;font-size:12px;line-height:1.75}
+.borrowings-empty-link{display:inline-flex;gap:8px;margin-top:17px;color:#d3b9fa!important;font-size:12px;font-weight:750;text-decoration:none}
+.borrowings-help{display:flex;gap:9px;margin:17px 0 0;color:#a99db9;font-size:11px;line-height:1.7}
+@media(max-width:820px){.borrowings-main{width:calc(100% - 40px)}.borrowings-scroll-hint{display:block}}
+@media(max-width:600px){.borrowings-main{width:calc(100% - 28px);padding:34px 0 50px}.portal-page-heading{flex-direction:column;align-items:stretch;gap:16px;margin-bottom:23px}.portal-page-heading h1{font-size:clamp(29px,8vw,37px)}.portal-page-heading p{font-size:13px}.portal-back-link{width:100%}.borrowings-overview{flex-wrap:wrap;padding:14px;gap:11px}.borrowings-overview-icon{width:41px;height:41px}.borrowings-overview-note{width:100%;margin:0 0 0 52px;font-size:10px}.borrowings-section-heading h2{font-size:21px}}
+html[data-participant-theme="light"] .portal-page-heading h1,html[data-participant-theme="light"] .borrowings-section-heading h2{color:#30243b}
+html[data-participant-theme="light"] .portal-page-heading p{color:#71677d}
+html[data-participant-theme="light"] .portal-page-eyebrow,html[data-participant-theme="light"] .borrowings-section-kicker{color:#7046a0}
+html[data-participant-theme="light"] .portal-back-link{border-color:#e3d9ec;background:#fff;color:#574968!important}
+html[data-participant-theme="light"] .borrowings-overview,html[data-participant-theme="light"] .borrowings-count{border-color:#e3d9ec;background:#fff}
+html[data-participant-theme="light"] .borrowings-overview-label,html[data-participant-theme="light"] .borrowings-overview-note{color:#71677d}
+html[data-participant-theme="light"] .borrowings-overview strong{color:#30243b}
+html[data-participant-theme="light"] .borrowings-table-shell,html[data-participant-theme="light"] .borrowings-empty{border-color:#e3d9ec;background:#fff}
+html[data-participant-theme="light"] .borrowings-table{color:#574968}
+html[data-participant-theme="light"] .borrowings-table th{border-color:#e8e0ee;background:#f1eafa;color:#49345f}
+html[data-participant-theme="light"] .borrowings-table td{border-color:#eee7f3}
+html[data-participant-theme="light"] .borrowing-equipment strong,html[data-participant-theme="light"] .borrowing-dates strong,html[data-participant-theme="light"] .borrowings-empty h3{color:#30243b}
+html[data-participant-theme="light"] .borrowing-equipment span,html[data-participant-theme="light"] .borrowing-dates span,html[data-participant-theme="light"] .borrowing-requested,html[data-participant-theme="light"] .borrowing-location>div span,html[data-participant-theme="light"] .borrowing-location small,html[data-participant-theme="light"] .borrowing-purpose,html[data-participant-theme="light"] .borrowings-empty p,html[data-participant-theme="light"] .borrowings-help{color:#71677d}
