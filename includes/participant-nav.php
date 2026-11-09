@@ -194,14 +194,51 @@ $participantNavItems = [
         });
     });
 
-    document.querySelectorAll('.participant-settings').forEach(function (settings) {
+    const settingsMenus = Array.from(document.querySelectorAll('.participant-settings'));
+
+    settingsMenus.forEach(function (settings) {
         settings.addEventListener('toggle', function () {
             if (settings.open) {
-                document.querySelectorAll('.participant-settings').forEach(function (other) {
+                settingsMenus.forEach(function (other) {
                     if (other !== settings) other.open = false;
                 });
             }
         });
+    });
+
+    function closeSettingsOutside(target) {
+        settingsMenus.forEach(function (settings) {
+            if (settings.open && !settings.contains(target)) {
+                settings.open = false;
+            }
+        });
+    }
+
+    document.addEventListener('pointerdown', function (event) {
+        closeSettingsOutside(event.target);
+    });
+
+    document.addEventListener('pointermove', function (event) {
+        if (window.matchMedia('(min-width: 821px)').matches) {
+            settingsMenus.forEach(function (settings) {
+                if (!settings.open) return;
+
+                const summary = settings.querySelector('summary');
+                const panel = settings.querySelector('.participant-settings-panel');
+                const x = event.clientX;
+                const y = event.clientY;
+
+                function isInside(element) {
+                    if (!element) return false;
+                    const rect = element.getBoundingClientRect();
+                    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+                }
+
+                if (!isInside(summary) && !isInside(panel)) {
+                    settings.open = false;
+                }
+            });
+        }
     });
 })();
 </script>
