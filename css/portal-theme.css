@@ -858,3 +858,17 @@ html[data-admin-theme="light"] .admin-portal .event-description,html[data-admin-
 .admin-portal .bg-info{background:#164b68!important;color:#d8f2ff!important}
 .admin-portal .bg-secondary{background:#49375e!important;color:#f4efff!important}
 .admin-portal .border-0{border:0!important}
+
+
+/* Keep the settings popover visible outside the expanded sidebar. */
+.admin-sidebar-inner{overflow:visible!important}
+.admin-sidebar{overflow:visible!important}
+.admin-settings-panel{display:none}
+.admin-settings[open]>.admin-settings-panel,.admin-mobile-settings[open]>.admin-settings-panel{display:block}
+.admin-settings>summary,.admin-mobile-settings>summary{cursor:pointer;pointer-events:auto;user-select:none}
+.admin-settings[open]>summary,.admin-mobile-settings[open]>summary{color:#f0e7ff}
+html[data-admin-theme="light"] .admin-settings-panel{background:#fff;border-color:#e2d5ed;box-shadow:0 18px 45px rgba(50,30,70,.18)}
+html[data-admin-theme="light"] .admin-settings-title{color:#352443;border-color:#e8deef}
+html[data-admin-theme="light"] .admin-theme-toggle{background:#f2eaf8;border-color:#dfd1eb;color:#503b64}
+html[data-admin-theme="light"] .admin-logout-link{border-color:#eadde9;color:#a33b58}
+@media(max-width:900px){.admin-settings-panel{left:auto;right:0;bottom:calc(100% + 10px)}}
