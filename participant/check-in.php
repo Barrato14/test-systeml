@@ -43,8 +43,10 @@ if (empty($eventId)) {
         #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
     </style>
-</head>
-<body>
+<link rel="stylesheet" href="../css/style.css">\n</head>
+<body class="participant-page">
+<?php include '../includes/participant-nav.php'; ?>
+
 
 <div class="container">
     <div class="scanner-container">
