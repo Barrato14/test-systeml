@@ -80,47 +80,100 @@ foreach ($allEvents as $event) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d0916">
     <title>Browse Events - EMIS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
-<body class="bg-light participant-page">
+<body class="participant-page browse-events-page">
 <?php include '../includes/participant-nav.php'; ?>
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Browse Available Events</h2>
-        <a href="dashboard.php" class="btn btn-outline-primary">Back to Dashboard</a>
-    </div>
+<main class="browse-events-main">
+    <section class="browse-events-heading">
+        <div class="browse-events-heading-copy">
+            <span class="browse-events-eyebrow"><i class="bi bi-calendar2-week"></i> PARTICIPANT PORTAL</span>
+            <h1>Discover campus events</h1>
+            <p>Find something happening on campus, explore the details, and save your spot.</p>
+        </div>
+        <a href="dashboard.php" class="browse-back-link"><i class="bi bi-arrow-left"></i><span>Back to dashboard</span></a>
+    </section>
 
-    <?php if ($successMsg): ?><div class="alert alert-success"><?= $successMsg ?></div><?php endif; ?>
-    <?php if ($errorMsg): ?><div class="alert alert-danger"><?= $errorMsg ?></div><?php endif; ?>
+    <section class="browse-events-summary" aria-label="Available events summary">
+        <div class="browse-summary-icon"><i class="bi bi-calendar-check"></i></div>
+        <div>
+            <span class="browse-summary-label">OPEN FOR PARTICIPATION</span>
+            <strong><?= count($events) ?> <span><?= count($events) === 1 ? 'event' : 'events' ?> available</span></strong>
+        </div>
+        <span class="browse-summary-note"><i class="bi bi-clock"></i> Upcoming and ongoing</span>
+    </section>
 
-    <div class="row">
+    <?php if ($successMsg): ?>
+        <div class="browse-feedback browse-feedback-success" role="status"><i class="bi bi-check-circle-fill"></i><?= htmlspecialchars($successMsg) ?></div>
+    <?php endif; ?>
+    <?php if ($errorMsg): ?>
+        <div class="browse-feedback browse-feedback-error" role="alert"><i class="bi bi-exclamation-circle-fill"></i><?= htmlspecialchars($errorMsg) ?></div>
+    <?php endif; ?>
+
+    <section class="browse-events-section">
+        <div class="browse-section-heading">
+            <div>
+                <span class="browse-section-kicker">WHAT'S HAPPENING</span>
+                <h2>Available events</h2>
+            </div>
+            <span class="browse-event-count"><?= count($events) ?> listed</span>
+        </div>
+
         <?php if (empty($events)): ?>
-            <div class="col-12 text-center py-5 text-muted">No events available right now. Ask your admin to create one!</div>
+            <div class="browse-empty-state">
+                <div class="browse-empty-icon"><i class="bi bi-calendar2-x"></i></div>
+                <h3>No available events right now</h3>
+                <p>There are no upcoming or ongoing events to join at the moment. Check back later for new campus activities.</p>
+                <a href="dashboard.php" class="browse-empty-link">Return to dashboard <i class="bi bi-arrow-right"></i></a>
+            </div>
         <?php else: ?>
-            <?php foreach ($events as $event): ?>
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-primary"><?= htmlspecialchars($event['title']) ?></h5>
-                            <h6 class="card-subtitle mb-2 text-muted"><?= htmlspecialchars($event['venue']) ?></h6>
-                            <p class="card-text small mb-3">
-                                <strong>Start:</strong> <?= date('M d, Y h:i A', strtotime($event['start_datetime'])) ?><br>
-                                <?= htmlspecialchars($event['description'] ?? '') ?>
-                            </p>
-                            <form method="POST" class="mt-auto">
-                                <input type="hidden" name="event_id" value="<?= htmlspecialchars($event['id']) ?>">
-                                <button type="submit" class="btn btn-primary w-100">Register for Event</button>
+            <div class="browse-event-grid">
+                <?php foreach ($events as $event):
+                    $eventTitle = $event['title'] ?? 'Untitled Event';
+                    $eventVenue = $event['venue'] ?? 'Venue to be announced';
+                    $eventDescription = trim((string)($event['description'] ?? ''));
+                    $eventImage = trim((string)($event['image_url'] ?? ''));
+                    $eventDateLabel = 'Schedule unavailable';
+                    $eventTimeLabel = '';
+
+                    if (!empty($event['start_datetime'])) {
+                        try {
+                            $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);
+                            $eventDateLabel = $eventStart->format('M d, Y');
+                            $eventTimeLabel = $eventStart->format('g:i A');
+                        } catch (Exception $e) {
+                            $eventDateLabel = 'Schedule unavailable';
+                        }
+                    }
+                ?>
+                    <article class="browse-event-card">
+                        <div class="browse-event-visual">
+                            <?php if ($eventImage !== ''): ?>
+                                <img src="<?= htmlspecialchars($eventImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($eventTitle, ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
+                            <?php else: ?>
+                                <div class="browse-event-image-fallback"><i class="bi bi-calendar2-event"></i><span>EMIS CAMPUS EVENT</span></div>
+                            <?php endif; ?>
+                            <span class="browse-event-status"><span></span> Available</span>
+                        </div>
+                        <div class="browse-event-content">
+                            <div class="browse-event-date"><i class="bi bi-calendar3"></i><?= htmlspecialchars($eventDateLabel) ?><?php if ($eventTimeLabel !== ''): ?><span class="browse-date-divider">·</span><?= htmlspecialchars($eventTimeLabel) ?><?php endif; ?></div>
+                            <h3><?= htmlspecialchars($eventTitle) ?></h3>
+                            <p class="browse-event-description"><?= htmlspecialchars($eventDescription !== '' ? $eventDescription : 'No event description has been provided yet.') ?></p>
+                            <div class="browse-event-venue"><i class="bi bi-geo-alt"></i><span><?= htmlspecialchars($eventVenue) ?></span></div>
+                            <form method="POST" class="browse-register-form">
+                                <input type="hidden" name="event_id" value="<?= htmlspecialchars((string)($event['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                <button type="submit" class="browse-register-button"><span>Register for event</span><i class="bi bi-arrow-up-right"></i></button>
                             </form>
                         </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
-    </div>
-</div>
+    </section>
+</main>
 </body>
 </html>
