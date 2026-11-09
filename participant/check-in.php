@@ -77,7 +77,7 @@ if (empty($eventId)) {
         </button>
 
         <div class="text-center mt-3">
-            <a href="dashboard.php" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i> Back to Dashboard</a>
+            
         </div>
     </div>
 </div>
