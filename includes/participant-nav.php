@@ -1,4 +1,20 @@
 <?php
+if (!isset($notifications) && function_exists('supabaseRequest') && !empty($_SESSION['user_id'])) {
+    $participantNavNotificationsResponse = supabaseRequest(
+        'notifications?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=id,is_read&order=created_at.desc',
+        'GET'
+    );
+    $participantNavNotifications = (($participantNavNotificationsResponse['code'] ?? 500) < 400 && is_array($participantNavNotificationsResponse['data'] ?? null))
+        ? $participantNavNotificationsResponse['data'] : [];
+    $unreadNotificationCount = 0;
+    foreach ($participantNavNotifications as $participantNavNotification) {
+        if (($participantNavNotification['is_read'] ?? false) !== true && ($participantNavNotification['is_read'] ?? '') !== 'true') {
+            $unreadNotificationCount++;
+        }
+    }
+}
+?>
+<?php
 $currentParticipantPage = basename($_SERVER['PHP_SELF'] ?? '');
 $participantName = $_SESSION['user_name'] ?? $_SESSION['first_name'] ?? 'Participant';
 $participantNavItems = [
@@ -24,12 +40,10 @@ $participantNavItems = [
    <?php endforeach; ?>
   </nav>
   <div class="participant-sidebar-bottom">
-   <?php if (!empty($showParticipantNotifications)): ?>
-    <button type="button" class="participant-sidebar-link participant-sidebar-notifications" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Notifications">
+   <a href="dashboard.php?open_notifications=1" class="participant-sidebar-link participant-sidebar-notifications" title="Notifications">
      <i class="bi bi-bell"></i><span>Notifications</span>
      <?php if (!empty($unreadNotificationCount)): ?><span class="participant-notification-count"><?= (int)$unreadNotificationCount ?></span><?php endif; ?>
-    </button>
-   <?php endif; ?>
+    </a>
    <div class="participant-sidebar-profile"><i class="bi bi-person-circle"></i><span><?= htmlspecialchars((string)$participantName) ?></span></div>
    <details class="participant-settings">
     <summary class="participant-sidebar-link" title="Settings"><i class="bi bi-gear"></i><span>Settings</span></summary>
@@ -49,12 +63,10 @@ $participantNavItems = [
   <span class="participant-brand-copy"><strong>EMIS</strong><small>Participant Portal</small></span>
  </a>
  <div class="participant-topbar-actions">
-  <?php if (!empty($showParticipantNotifications)): ?>
-   <button type="button" class="participant-icon-button position-relative" data-bs-toggle="modal" data-bs-target="#notificationsModal" aria-label="Open notifications">
+  <a href="dashboard.php?open_notifications=1" class="participant-icon-button position-relative" aria-label="Open notifications">
     <i class="bi bi-bell"></i>
     <?php if (!empty($unreadNotificationCount)): ?><span class="participant-notification-count"><?= (int)$unreadNotificationCount ?></span><?php endif; ?>
-   </button>
-  <?php endif; ?>
+  </a>
   <details class="participant-settings participant-mobile-settings">
    <summary aria-label="Open settings"><i class="bi bi-gear"></i></summary>
    <div class="participant-settings-panel">
