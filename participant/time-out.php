@@ -78,7 +78,8 @@ if (!empty($checkExisting['data'][0]['time_out'])) {
         #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
     </style>
-<link rel="stylesheet" href="../css/style.css">\n</head>
+<link rel="stylesheet" href="../css/style.css">
+</head>
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
 
