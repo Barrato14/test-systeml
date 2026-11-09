@@ -69,7 +69,8 @@ function statusClass($status) {
         .item-thumb { width:64px;height:54px;object-fit:cover;border-radius:9px;background:#edf1f6; }
         .status-pill { min-width:86px; }
     </style>
-<link rel="stylesheet" href="../css/style.css">\n</head>
+<link rel="stylesheet" href="../css/style.css">
+</head>
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
 
