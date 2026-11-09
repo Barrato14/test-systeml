@@ -221,5 +221,58 @@ html[data-admin-theme="light"] .admin-activity-tab{border-color:#e3d6ed;color:#7
 
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>(function(){const tabs=document.querySelectorAll('[data-activity-tab]');const panels=document.querySelectorAll('[data-activity-panel]');tabs.forEach(function(tab){tab.addEventListener('click',function(){const selected=tab.dataset.activityTab;tabs.forEach(function(item){const active=item===tab;item.classList.toggle('is-active',active);item.setAttribute('aria-selected',active?'true':'false')});panels.forEach(function(panel){const active=panel.dataset.activityPanel===selected;panel.classList.toggle('is-active',active);panel.hidden=!active})})})})();</script></body>
+<script>
+(function () {
+    const tabs = Array.from(document.querySelectorAll('[data-activity-tab]'));
+    const panels = Array.from(document.querySelectorAll('[data-activity-panel]'));
+
+    function showActivity(selected) {
+        tabs.forEach(function (tab) {
+            const active = tab.dataset.activityTab === selected;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach(function (panel) {
+            const active = panel.dataset.activityPanel === selected;
+            panel.classList.toggle('is-active', active);
+            panel.hidden = !active;
+        });
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            showActivity(tab.dataset.activityTab);
+        });
+    });
+
+    const activityCard = document.querySelector('.admin-activity-card');
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    if (activityCard) {
+        activityCard.addEventListener('touchstart', function (event) {
+            if (!event.changedTouches.length) return;
+            touchStartX = event.changedTouches[0].clientX;
+            touchStartY = event.changedTouches[0].clientY;
+        }, { passive: true });
+
+        activityCard.addEventListener('touchend', function (event) {
+            if (!event.changedTouches.length) return;
+            const deltaX = event.changedTouches[0].clientX - touchStartX;
+            const deltaY = event.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(deltaX) < 55 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+            const current = tabs.findIndex(function (tab) {
+                return tab.classList.contains('is-active');
+            });
+            const next = deltaX < 0 ? current + 1 : current - 1;
+
+            if (next >= 0 && next < tabs.length) {
+                showActivity(tabs[next].dataset.activityTab);
+            }
+        }, { passive: true });
+    }
+})();
+</script></body>
 </html>
