@@ -64,6 +64,23 @@ if (is_array($attendanceResponse['data'] ?? null)) {
         if (count($recentAttendance) >= 8) break;
     }
 }
+
+// Filter attendance on the server using the selected event's database ID.
+// This avoids relying on client-side text matching or CSS visibility rules.
+$selectedEventId = trim((string)($_GET['event_id'] ?? ''));
+$selectedEventTitle = '';
+if ($selectedEventId !== '' && isset($ongoingEventMap[$selectedEventId])) {
+    $selectedEventTitle = (string)($ongoingEventMap[$selectedEventId]['title'] ?? 'Selected event');
+    $recentAttendance = array_values(array_filter(
+        $recentAttendance,
+        function ($record) use ($selectedEventId) {
+            return (string)($record['event_id'] ?? '') === $selectedEventId;
+        }
+    ));
+} else {
+    $selectedEventId = '';
+}
+
 function formatDashboardActivityTime($value) {
     if (empty($value)) return 'Time unavailable';
     try {
@@ -150,7 +167,7 @@ $pendingEquipment = 0;
                             <?php else: ?>
                                 <div class="admin-activity-list">
                                     <?php foreach (array_slice($ongoingEvents, 0, 8) as$event): ?>
-                                        <article class="admin-activity-item" data-event-id="<?= htmlspecialchars((string)($event['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><span class="admin-activity-icon event"><i class="bi bi-calendar-event"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($event['title'] ?? 'Untitled event') ?></strong><span><?= htmlspecialchars($event['venue'] ?? 'Venue not specified') ?></span><small>Started <?= htmlspecialchars(formatDashboardActivityTime($event['start_datetime'] ?? '')) ?></small></div><span class="admin-live-label"><span></span> Ongoing</span></article>
+                                        <article class="admin-activity-item" data-event-id="<?= htmlspecialchars((string)($event['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" role="button" tabindex="0" style="cursor:pointer"><span class="admin-activity-icon event"><i class="bi bi-calendar-event"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($event['title'] ?? 'Untitled event') ?></strong><span><?= htmlspecialchars($event['venue'] ?? 'Venue not specified') ?></span><small>Started <?= htmlspecialchars(formatDashboardActivityTime($event['start_datetime'] ?? '')) ?></small></div><span class="admin-live-label"><span></span> Ongoing</span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -158,11 +175,11 @@ $pendingEquipment = 0;
                         </div>
                         <div class="admin-activity-panel" id="attendancePanel" role="tabpanel" aria-labelledby="attendanceTab" data-activity-panel="attendance" hidden>
                             <?php if (empty($recentAttendance)): ?>
-                                <div class="admin-activity-empty"><i class="bi bi-person-check"></i><strong>No recent attendance yet</strong><span>Check-ins for currently ongoing events will appear here.</span></div>
+                                <div class="admin-activity-empty"><i class="bi bi-person-check"></i><strong><?= $selectedEventId !== '' ? 'Attendance for ' . htmlspecialchars($selectedEventTitle) : 'No recent attendance yet' ?></strong><span><?= $selectedEventId !== '' ? 'No attendance records were found for this event.' : 'Check-ins for currently ongoing events will appear here.' ?></span></div>
                             <?php else: ?>
                                 <div class="admin-activity-list">
                                     <?php foreach ($recentAttendance as$record): ?>
-                                        <article class="admin-activity-item" data-event-id="<?= htmlspecialchars((string)($record['event_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
+                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -238,111 +255,39 @@ $pendingEquipment = 0;
 </script>
 <script>
 (function () {
-    const eventItems = Array.from(
-        document.querySelectorAll('#ongoingPanel .admin-activity-item')
-    );
-    const attendancePanel = document.querySelector('#attendancePanel');
-    const attendanceTab = document.querySelector('#attendanceTab');
-
-    if (!attendancePanel || !attendanceTab || !eventItems.length) return;
-
-    let attendanceList = attendancePanel.querySelector('.admin-activity-list');
-    let originalEmptyState = attendancePanel.querySelector(
-        '.admin-activity-empty:not([data-event-attendance-empty])'
+    const eventItems = document.querySelectorAll(
+        '#ongoingPanel .admin-activity-item[data-event-id]'
     );
 
-    // Keep a separate empty state for event-specific filtering.
-    let filteredEmptyState = attendancePanel.querySelector(
-        '[data-event-attendance-empty]'
-    );
+    function openEventAttendance(eventItem) {
+        const eventId = eventItem.dataset.eventId;
+        if (!eventId) return;
 
-    if (!filteredEmptyState) {
-        filteredEmptyState = document.createElement('div');
-        filteredEmptyState.className = 'admin-activity-empty';
-        filteredEmptyState.setAttribute('data-event-attendance-empty', '');
-        filteredEmptyState.innerHTML =
-            '<i class="bi bi-person-check"></i>' +
-            '<strong></strong>' +
-            '<span>No attendance records were found for this event.</span>';
-        attendancePanel.insertBefore(
-            filteredEmptyState,
-            attendanceList || originalEmptyState || attendancePanel.firstChild
-        );
-    }
-
-    function setVisible(element, visible) {
-        if (!element) return;
-        element.hidden = !visible;
-        element.style.display = visible ? '' : 'none';
-    }
-
-    function getAttendanceRows() {
-        return attendanceList
-            ? Array.from(attendanceList.querySelectorAll('.admin-activity-item'))
-            : [];
-    }
-
-    function showAllAttendance() {
-        const rows = getAttendanceRows();
-
-        rows.forEach(function (row) {
-            setVisible(row, true);
-        });
-
-        setVisible(attendanceList, rows.length > 0);
-        setVisible(filteredEmptyState, false);
-        setVisible(originalEmptyState, rows.length === 0);
+        const url = new URL(window.location.href);
+        url.searchParams.set('event_id', eventId);
+        url.hash = 'attendancePanel';
+        window.location.href = url.toString();
     }
 
     eventItems.forEach(function (eventItem) {
-        eventItem.style.cursor = 'pointer';
-        eventItem.setAttribute('role', 'button');
-        eventItem.setAttribute('tabindex', '0');
+        eventItem.addEventListener('click', function () {
+            openEventAttendance(eventItem);
+        });
 
-        function showEventAttendance() {
-            const eventId = String(eventItem.dataset.eventId || '');
-            const eventTitle = eventItem.querySelector(
-                '.admin-activity-copy strong'
-            )?.textContent.trim() || 'Selected event';
-
-            if (!eventId) return;
-
-            const rows = getAttendanceRows();
-            let matchingCount = 0;
-
-            rows.forEach(function (row) {
-                const matches = String(row.dataset.eventId || '') === eventId;
-                setVisible(row, matches);
-                if (matches) matchingCount++;
-            });
-
-            // The original PHP empty state is only for the unfiltered view.
-            setVisible(originalEmptyState, false);
-            setVisible(attendanceList, matchingCount > 0);
-            setVisible(filteredEmptyState, matchingCount === 0);
-            filteredEmptyState.querySelector('strong').textContent =
-                'Attendance for ' + eventTitle;
-
-            // Switch tabs without triggering the "show all" reset.
-            selectingEvent = true;
-            attendanceTab.click();
-            selectingEvent = false;
-        }
-
-        eventItem.addEventListener('click', showEventAttendance);
         eventItem.addEventListener('keydown', function (event) {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                showEventAttendance();
+                openEventAttendance(eventItem);
             }
         });
     });
 
-    let selectingEvent = false;
-
-    attendanceTab.addEventListener('click', function () {
-        if (!selectingEvent) showAllAttendance();
-    });
+    // When an event ID is in the URL, open the Attendance tab on page load.
+    const selectedEventId = new URLSearchParams(window.location.search).get('event_id');
+    if (selectedEventId) {
+        const attendanceTab = document.querySelector('#attendanceTab');
+        if (attendanceTab) attendanceTab.click();
+    }
 })();
 </script>
 
