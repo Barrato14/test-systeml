@@ -6,7 +6,7 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 
 // Ensure user is logged in and is an Administrator
-if (!isset($_SESSION['user_id']) \vert{}\vert{} strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
     header("Location: ../login.php");
     exit;
 }
@@ -25,7 +25,7 @@ $ongoingEvents = [];
 $ongoingEventMap = [];$activeEvents = 0;
 if (is_array($eventsResponse['data'] ?? null)) {
     foreach ($eventsResponse['data'] as$event) {
-        if (empty($event['start_datetime']) \vert{}\vert{} empty($event['end_datetime'])) continue;
+        if (empty($event['start_datetime']) || empty($event['end_datetime'])) continue;
         try {
             $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);$eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manilaTimezone);
 
@@ -162,7 +162,7 @@ $pendingEquipment = 0;
                             <?php else: ?>
                                 <div class="admin-activity-list">
                                     <?php foreach ($recentAttendance as$record): ?>
-                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) \vert{}\vert{} !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
+                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
