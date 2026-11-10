@@ -6,7 +6,7 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 
 // Ensure user is logged in and is an Administrator
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
+if (!isset($_SESSION['user_id']) \vert{}\vert{} strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
     header("Location: ../login.php");
     exit;
 }
@@ -20,25 +20,21 @@ $totalUsers = (
 ) ? count($totalUsersResponse['data']) : 0;
 
 // Load currently ongoing events for the dashboard activity panel.
-$manilaTimezone = new DateTimeZone('Asia/Manila');
-$now = new DateTimeImmutable('now', $manilaTimezone);
-$eventsResponse = supabaseRequest('events?select=id,title,start_datetime,end_datetime,venue&order=start_datetime.asc', 'GET');
+$manilaTimezone = new DateTimeZone('Asia/Manila');$now = new DateTimeImmutable('now', $manilaTimezone);$eventsResponse = supabaseRequest('events?select=id,title,start_datetime,end_datetime,venue&order=start_datetime.asc', 'GET');
 $ongoingEvents = [];
-$ongoingEventMap = [];
-$activeEvents = 0;
+$ongoingEventMap = [];$activeEvents = 0;
 if (is_array($eventsResponse['data'] ?? null)) {
-    foreach ($eventsResponse['data'] as $event) {
-        if (empty($event['start_datetime']) || empty($event['end_datetime'])) continue;
+    foreach ($eventsResponse['data'] as$event) {
+        if (empty($event['start_datetime']) \vert{}\vert{} empty($event['end_datetime'])) continue;
         try {
-            $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);
-            $eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manilaTimezone);
+            $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);$eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manilaTimezone);
 
             // Keep the dashboard metric counting upcoming and ongoing events, but only show ongoing events in Recent Activity.
-            if ($eventEnd >= $now) $activeEvents++;
+            if ($eventEnd >= $now)$activeEvents++;
 
-            if ($eventStart <= $now && $eventEnd >= $now) {
-                $ongoingEvents[] = $event;
-                $ongoingEventMap[(string)$event['id']] = $event;
+            if ($eventStart <=$now && $eventEnd >=$now) {
+                $ongoingEvents[] =$event;
+                $ongoingEventMap[(string)$event['id']] =$event;
             }
         } catch (Exception $e) { continue; }
     }
@@ -46,10 +42,7 @@ if (is_array($eventsResponse['data'] ?? null)) {
 
 // Fetch attendance for the currently ongoing event IDs only.
 $attendanceResponse = ['data' => []];
-if (!empty($ongoingEventMap)) {
-    $eventIds = array_map('rawurlencode', array_keys($ongoingEventMap));
-    $eventFilter = 'event_id=in.(' . implode(',', $eventIds) . ')';
-    $attendanceResponse = supabaseRequest(
+if (!empty($ongoingEventMap)) {$eventIds = array_map('rawurlencode', array_keys($ongoingEventMap));$eventFilter = 'event_id=in.(' . implode(',', $eventIds) . ')';$attendanceResponse = supabaseRequest(
         'attendance?select=id,participant_id,event_id,check_in_time,time_out&' . $eventFilter . '&order=check_in_time.desc&limit=50',
         'GET'
     );
@@ -57,22 +50,17 @@ if (!empty($ongoingEventMap)) {
 $profilesResponse = supabaseRequest('profiles?select=id,first_name,last_name,course,section', 'GET');
 $profilesMap = [];
 if (is_array($profilesResponse['data'] ?? null)) {
-    foreach ($profilesResponse['data'] as $profile) {
-        $profilesMap[(string)($profile['id'] ?? '')] = $profile;
+    foreach ($profilesResponse['data'] as $profile) {$profilesMap[(string)($profile['id'] ?? '')] =$profile;
     }
 }
 $recentAttendance = [];
 if (is_array($attendanceResponse['data'] ?? null)) {
-    foreach ($attendanceResponse['data'] as $attendance) {
+    foreach ($attendanceResponse['data'] as$attendance) {
         $eventId = (string)($attendance['event_id'] ?? '');
         if ($eventId === '' || !isset($ongoingEventMap[$eventId])) continue;
-        $participantId = (string)($attendance['participant_id'] ?? '');
-        $profile = $profilesMap[$participantId] ?? [];
-        $attendance['participant_name'] = trim((string)($profile['first_name'] ?? '') . ' ' . (string)($profile['last_name'] ?? '')) ?: 'Participant';
-        $attendance['participant_course'] = $profile['course'] ?? '';
-        $attendance['participant_section'] = $profile['section'] ?? '';
-        $attendance['event_title'] = $ongoingEventMap[$eventId]['title'] ?? 'Ongoing event';
-        $recentAttendance[] = $attendance;
+        $participantId = (string)($attendance['participant_id'] ?? '');$profile = $profilesMap[$participantId] ?? [];
+        $attendance['participant_name'] = trim((string)($profile['first_name'] ?? '') . ' ' . (string)($profile['last_name'] ?? '')) ?: 'Participant';$attendance['participant_course'] = $profile['course'] ?? '';$attendance['participant_section'] = $profile['section'] ?? '';$attendance['event_title'] = $ongoingEventMap[$eventId]['title'] ?? 'Ongoing event';
+        $recentAttendance[] =$attendance;
         if (count($recentAttendance) >= 8) break;
     }
 }
@@ -92,11 +80,8 @@ $pendingEquipment = 0;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - EMIS</title>
-    <!-- Optional: Add Bootstrap CSS if it isn't compiled into your theme file -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
-    <!-- FIXED: Added the missing closing quotation mark here -->
     <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
 <body class="admin-portal">
@@ -164,7 +149,7 @@ $pendingEquipment = 0;
                                 <div class="admin-activity-empty"><i class="bi bi-calendar2-x"></i><strong>No events are ongoing right now</strong><span>Upcoming and completed events are excluded from this view.</span></div>
                             <?php else: ?>
                                 <div class="admin-activity-list">
-                                    <?php foreach (array_slice($ongoingEvents, 0, 8) as $event): ?>
+                                    <?php foreach (array_slice($ongoingEvents, 0, 8) as$event): ?>
                                         <article class="admin-activity-item"><span class="admin-activity-icon event"><i class="bi bi-calendar-event"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($event['title'] ?? 'Untitled event') ?></strong><span><?= htmlspecialchars($event['venue'] ?? 'Venue not specified') ?></span><small>Started <?= htmlspecialchars(formatDashboardActivityTime($event['start_datetime'] ?? '')) ?></small></div><span class="admin-live-label"><span></span> Ongoing</span></article>
                                     <?php endforeach; ?>
                                 </div>
@@ -176,8 +161,8 @@ $pendingEquipment = 0;
                                 <div class="admin-activity-empty"><i class="bi bi-person-check"></i><strong>No recent attendance yet</strong><span>Check-ins for currently ongoing events will appear here.</span></div>
                             <?php else: ?>
                                 <div class="admin-activity-list">
-                                    <?php foreach ($recentAttendance as $record): ?>
-                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
+                                    <?php foreach ($recentAttendance as$record): ?>
+                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) \vert{}\vert{} !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
