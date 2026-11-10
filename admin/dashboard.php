@@ -150,7 +150,7 @@ $pendingEquipment = 0;
                             <?php else: ?>
                                 <div class="admin-activity-list">
                                     <?php foreach (array_slice($ongoingEvents, 0, 8) as$event): ?>
-                                        <article class="admin-activity-item"><span class="admin-activity-icon event"><i class="bi bi-calendar-event"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($event['title'] ?? 'Untitled event') ?></strong><span><?= htmlspecialchars($event['venue'] ?? 'Venue not specified') ?></span><small>Started <?= htmlspecialchars(formatDashboardActivityTime($event['start_datetime'] ?? '')) ?></small></div><span class="admin-live-label"><span></span> Ongoing</span></article>
+                                        <article class="admin-activity-item" data-event-id="<?= htmlspecialchars((string)($event['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><span class="admin-activity-icon event"><i class="bi bi-calendar-event"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($event['title'] ?? 'Untitled event') ?></strong><span><?= htmlspecialchars($event['venue'] ?? 'Venue not specified') ?></span><small>Started <?= htmlspecialchars(formatDashboardActivityTime($event['start_datetime'] ?? '')) ?></small></div><span class="admin-live-label"><span></span> Ongoing</span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -162,7 +162,7 @@ $pendingEquipment = 0;
                             <?php else: ?>
                                 <div class="admin-activity-list">
                                     <?php foreach ($recentAttendance as$record): ?>
-                                        <article class="admin-activity-item"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
+                                        <article class="admin-activity-item" data-event-id="<?= htmlspecialchars((string)($record['event_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"><span class="admin-activity-icon attendance"><i class="bi bi-person-check"></i></span><div class="admin-activity-copy"><strong><?= htmlspecialchars($record['participant_name']) ?></strong><span>Checked in to <?= htmlspecialchars($record['event_title']) ?></span><small><?= htmlspecialchars(formatDashboardActivityTime($record['check_in_time'] ?? '')) ?><?php if (!empty($record['participant_course']) || !empty($record['participant_section'])): ?> · <?= htmlspecialchars(trim(($record['participant_course'] ?? '') . ' ' . ($record['participant_section'] ?? ''))) ?><?php endif; ?></small></div><span class="admin-attendance-label"><?= !empty($record['time_out']) ? 'Completed' : 'Present' ?></span></article>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -238,27 +238,36 @@ $pendingEquipment = 0;
 </script>
 <script>
 (function () {
-    const eventItems = document.querySelectorAll('#ongoingPanel .admin-activity-item');
+    const eventItems = Array.from(
+        document.querySelectorAll('#ongoingPanel .admin-activity-item')
+    );
     const attendancePanel = document.querySelector('#attendancePanel');
     const attendanceTab = document.querySelector('#attendanceTab');
-    const attendanceList = attendancePanel
-        ? attendancePanel.querySelector('.admin-activity-list')
-        : null;
 
-    if (!eventItems.length || !attendancePanel || !attendanceTab || !attendanceList) return;
+    if (!attendancePanel || !attendanceTab || !eventItems.length) return;
 
-    let selectingEvent = false;
-    let emptyMessage = attendancePanel.querySelector('[data-event-attendance-empty]');
+    let attendanceList = attendancePanel.querySelector('.admin-activity-list');
+    let originalEmptyState = attendancePanel.querySelector(
+        '.admin-activity-empty:not([data-event-attendance-empty])'
+    );
 
-    if (!emptyMessage) {
-        emptyMessage = document.createElement('div');
-        emptyMessage.className = 'admin-activity-empty';
-        emptyMessage.setAttribute('data-event-attendance-empty', '');
-        emptyMessage.innerHTML =
+    // Keep a separate empty state for event-specific filtering.
+    let filteredEmptyState = attendancePanel.querySelector(
+        '[data-event-attendance-empty]'
+    );
+
+    if (!filteredEmptyState) {
+        filteredEmptyState = document.createElement('div');
+        filteredEmptyState.className = 'admin-activity-empty';
+        filteredEmptyState.setAttribute('data-event-attendance-empty', '');
+        filteredEmptyState.innerHTML =
             '<i class="bi bi-person-check"></i>' +
             '<strong></strong>' +
             '<span>No attendance records were found for this event.</span>';
-        attendancePanel.insertBefore(emptyMessage, attendanceList);
+        attendancePanel.insertBefore(
+            filteredEmptyState,
+            attendanceList || originalEmptyState || attendancePanel.firstChild
+        );
     }
 
     function setVisible(element, visible) {
@@ -267,12 +276,22 @@ $pendingEquipment = 0;
         element.style.display = visible ? '' : 'none';
     }
 
+    function getAttendanceRows() {
+        return attendanceList
+            ? Array.from(attendanceList.querySelectorAll('.admin-activity-item'))
+            : [];
+    }
+
     function showAllAttendance() {
-        attendanceList.querySelectorAll('.admin-activity-item').forEach(function (record) {
-            setVisible(record, true);
+        const rows = getAttendanceRows();
+
+        rows.forEach(function (row) {
+            setVisible(row, true);
         });
-        setVisible(attendanceList, true);
-        setVisible(emptyMessage, false);
+
+        setVisible(attendanceList, rows.length > 0);
+        setVisible(filteredEmptyState, false);
+        setVisible(originalEmptyState, rows.length === 0);
     }
 
     eventItems.forEach(function (eventItem) {
@@ -281,25 +300,30 @@ $pendingEquipment = 0;
         eventItem.setAttribute('tabindex', '0');
 
         function showEventAttendance() {
-            const eventTitle = eventItem.querySelector('.admin-activity-copy strong')
-                ?.textContent.trim();
-            if (!eventTitle) return;
+            const eventId = String(eventItem.dataset.eventId || '');
+            const eventTitle = eventItem.querySelector(
+                '.admin-activity-copy strong'
+            )?.textContent.trim() || 'Selected event';
 
-            let visibleCount = 0;
+            if (!eventId) return;
 
-            attendanceList.querySelectorAll('.admin-activity-item').forEach(function (record) {
-                const eventLabel = record.querySelector('.admin-activity-copy span');
-                const matches = eventLabel &&
-                    eventLabel.textContent.trim() === 'Checked in to ' + eventTitle;
+            const rows = getAttendanceRows();
+            let matchingCount = 0;
 
-                setVisible(record, Boolean(matches));
-                if (matches) visibleCount++;
+            rows.forEach(function (row) {
+                const matches = String(row.dataset.eventId || '') === eventId;
+                setVisible(row, matches);
+                if (matches) matchingCount++;
             });
 
-            setVisible(attendanceList, visibleCount > 0);
-            setVisible(emptyMessage, visibleCount === 0);
-            emptyMessage.querySelector('strong').textContent = 'Attendance for ' + eventTitle;
+            // The original PHP empty state is only for the unfiltered view.
+            setVisible(originalEmptyState, false);
+            setVisible(attendanceList, matchingCount > 0);
+            setVisible(filteredEmptyState, matchingCount === 0);
+            filteredEmptyState.querySelector('strong').textContent =
+                'Attendance for ' + eventTitle;
 
+            // Switch tabs without triggering the "show all" reset.
             selectingEvent = true;
             attendanceTab.click();
             selectingEvent = false;
@@ -313,6 +337,8 @@ $pendingEquipment = 0;
             }
         });
     });
+
+    let selectingEvent = false;
 
     attendanceTab.addEventListener('click', function () {
         if (!selectingEvent) showAllAttendance();
