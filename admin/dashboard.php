@@ -235,11 +235,7 @@ $pendingEquipment = 0;
         }, { passive: true });
     }
 })();
-</script></body>
-</html>
-
-
-<!-- Added behavior: clicking an ongoing event filters the Attendance panel to that event. -->
+</script>
 <script>
 (function () {
     const eventItems = document.querySelectorAll('#ongoingPanel .admin-activity-item');
@@ -249,58 +245,64 @@ $pendingEquipment = 0;
         ? attendancePanel.querySelector('.admin-activity-list')
         : null;
 
-    if (!eventItems.length || !attendancePanel || !attendanceTab) return;
+    if (!eventItems.length || !attendancePanel || !attendanceTab || !attendanceList) return;
+
+    let selectingEvent = false;
+    let emptyMessage = attendancePanel.querySelector('[data-event-attendance-empty]');
+
+    if (!emptyMessage) {
+        emptyMessage = document.createElement('div');
+        emptyMessage.className = 'admin-activity-empty';
+        emptyMessage.setAttribute('data-event-attendance-empty', '');
+        emptyMessage.innerHTML =
+            '<i class="bi bi-person-check"></i>' +
+            '<strong></strong>' +
+            '<span>No attendance records were found for this event.</span>';
+        attendancePanel.insertBefore(emptyMessage, attendanceList);
+    }
+
+    function setVisible(element, visible) {
+        if (!element) return;
+        element.hidden = !visible;
+        element.style.display = visible ? '' : 'none';
+    }
+
+    function showAllAttendance() {
+        attendanceList.querySelectorAll('.admin-activity-item').forEach(function (record) {
+            setVisible(record, true);
+        });
+        setVisible(attendanceList, true);
+        setVisible(emptyMessage, false);
+    }
 
     eventItems.forEach(function (eventItem) {
         eventItem.style.cursor = 'pointer';
         eventItem.setAttribute('role', 'button');
         eventItem.setAttribute('tabindex', '0');
-        eventItem.setAttribute('aria-label', 'Show attendance for ' +
-            (eventItem.querySelector('.admin-activity-copy strong')?.textContent.trim() || 'this event'));
 
         function showEventAttendance() {
             const eventTitle = eventItem.querySelector('.admin-activity-copy strong')
                 ?.textContent.trim();
-
             if (!eventTitle) return;
-
-            const records = attendanceList
-                ? Array.from(attendanceList.querySelectorAll('.admin-activity-item'))
-                : [];
 
             let visibleCount = 0;
 
-            records.forEach(function (record) {
+            attendanceList.querySelectorAll('.admin-activity-item').forEach(function (record) {
                 const eventLabel = record.querySelector('.admin-activity-copy span');
                 const matches = eventLabel &&
                     eventLabel.textContent.trim() === 'Checked in to ' + eventTitle;
 
-                record.hidden = !matches;
+                setVisible(record, Boolean(matches));
                 if (matches) visibleCount++;
             });
 
-            let emptyMessage = attendancePanel.querySelector('[data-event-attendance-empty]');
+            setVisible(attendanceList, visibleCount > 0);
+            setVisible(emptyMessage, visibleCount === 0);
+            emptyMessage.querySelector('strong').textContent = 'Attendance for ' + eventTitle;
 
-            if (!emptyMessage) {
-                emptyMessage = document.createElement('div');
-                emptyMessage.className = 'admin-activity-empty';
-                emptyMessage.setAttribute('data-event-attendance-empty', '');
-                emptyMessage.innerHTML =
-                    '<i class="bi bi-person-check"></i>' +
-                    '<strong></strong>' +
-                    '<span>No attendance records were found for this event.</span>';
-                attendancePanel.insertBefore(emptyMessage, attendancePanel.firstChild);
-            }
-
-            emptyMessage.querySelector('strong').textContent =
-                'Attendance for ' + eventTitle;
-            emptyMessage.hidden = visibleCount !== 0;
-
-            if (attendanceList) {
-                attendanceList.hidden = visibleCount === 0;
-            }
-
+            selectingEvent = true;
             attendanceTab.click();
+            selectingEvent = false;
         }
 
         eventItem.addEventListener('click', showEventAttendance);
@@ -312,17 +314,11 @@ $pendingEquipment = 0;
         });
     });
 
-    // Restore all attendance records when the Attendance tab is selected directly.
     attendanceTab.addEventListener('click', function () {
-        if (attendanceList) {
-            attendanceList.querySelectorAll('.admin-activity-item').forEach(function (record) {
-                record.hidden = false;
-            });
-            attendanceList.hidden = false;
-        }
-
-        const emptyMessage = attendancePanel.querySelector('[data-event-attendance-empty]');
-        if (emptyMessage) emptyMessage.hidden = true;
+        if (!selectingEvent) showAllAttendance();
     });
 })();
 </script>
+
+</body>
+</html>
