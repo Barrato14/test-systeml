@@ -219,6 +219,19 @@ $pendingEquipment = 0;
 
     tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
+            // Leaving the event-specific Attendance view must clear its URL filter.
+            // Reloading without event_id restores the full attendance list and the
+            // normal Ongoing Events view, so event cards remain selectable.
+            if (tab.dataset.activityTab === 'ongoing') {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('event_id')) {
+                    url.searchParams.delete('event_id');
+                    url.hash = '';
+                    window.location.href = url.toString();
+                    return;
+                }
+            }
+
             showActivity(tab.dataset.activityTab);
         });
     });
