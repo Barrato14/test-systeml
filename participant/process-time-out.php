@@ -1,10 +1,16 @@
-<?php
+<?
+$faceVerification = verifyParticipantFace($participantId, $faceDescriptor);
+if (!$faceVerification['success']) {
+    respond(false, $faceVerification['message']);
+}
+php
 session_start();
 date_default_timezone_set('Asia/Manila');
 header('Content-Type: application/json');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/face-recognition.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -22,6 +28,7 @@ $participantId = $_SESSION['user_id']; // Use the authenticated session.
 $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
+$faceDescriptor = $input['face_descriptor'] ?? null;
 
 if ($eventId === '' || $photoDataUrl === '') {
     respond(false, 'Missing required time-out data or photo.');
