@@ -37,18 +37,21 @@ function logAudit($profileId, $action, $details) {
 
 function redirectByRole($role) {
     // Use relative paths so it doesn't break when running inside a subfolder
-    switch ($role) {
-        case 'Administrator': 
-            header("Location: admin/dashboard.php"); 
+    switch (strtolower(trim((string)$role))) {
+        case 'administrator':
+            header("Location: admin/dashboard.php");
             break;
-        case 'Event Organizer': 
-            header("Location: organizer/dashboard.php"); 
+
+        case 'event organizer':
+            header("Location: organizer/dashboard.php");
             break;
-        case 'Staff': 
-            header("Location: staff/dashboard.php"); 
+
+        case 'staff':
+            header("Location: staff/dashboard.php");
             break;
-        default: 
-            header("Location: participant/dashboard.php"); 
+
+        default:
+            header("Location: participant/dashboard.php");
             break;
     }
     exit;
