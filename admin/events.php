@@ -739,6 +739,10 @@ $calendarJson = json_encode(
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
                         <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <div class="input-group mb-2">
+                            <input type="search" id="create-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
+                            <button type="button" id="create-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
+                        </div>
                         <div id="createLocationMap" class="event-location-map"></div>
                         <input type="hidden" name="latitude" id="create-lat">
                         <input type="hidden" name="longitude" id="create-lng">
@@ -809,6 +813,10 @@ $calendarJson = json_encode(
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
                         <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <div class="input-group mb-2">
+                            <input type="search" id="edit-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
+                            <button type="button" id="edit-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
+                        </div>
                         <div id="editLocationMap" class="event-location-map"></div>
                         <input type="hidden" name="latitude" id="edit-lat">
                         <input type="hidden" name="longitude" id="edit-lng">
@@ -854,11 +862,13 @@ const editEventData = <?= json_encode(array_values($events), JSON_HEX_TAG | JSON
 // the existing Google Maps embeds and links elsewhere on this page remain unchanged.
 const eventLocationPickers = {};
 
-function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId) {
+function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId, searchInputId, searchButtonId) {
     const mapElement = document.getElementById(mapId);
     const latitudeInput = document.getElementById(latitudeId);
     const longitudeInput = document.getElementById(longitudeId);
     const statusElement = document.getElementById(statusId);
+    const searchInput = document.getElementById(searchInputId);
+    const searchButton = document.getElementById(searchButtonId);
 
     const map = L.map(mapElement).setView([15.225, 120.57], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -895,6 +905,56 @@ function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId) {
         statusElement.textContent = 'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
     }
 
+    async function searchLocation() {
+        const query = searchInput.value.trim();
+        if (!query) {
+            statusElement.textContent = 'Enter a place or address to search.';
+            searchInput.focus();
+            return;
+        }
+
+        const originalButtonContent = searchButton.innerHTML;
+        searchButton.disabled = true;
+        searchButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Searching...';
+        statusElement.textContent = 'Searching for "' + query + '"...';
+
+        try {
+            const endpoint = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
+            const response = await fetch(endpoint, {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error('The location search service is unavailable right now.');
+            }
+
+            const results = await response.json();
+            if (!Array.isArray(results) || results.length === 0) {
+                statusElement.textContent = 'No matching place found. Try a more specific name or address.';
+                return;
+            }
+
+            const result = results[0];
+            updateSelection(Number(result.lat), Number(result.lon), true);
+            if (result.display_name) {
+                statusElement.textContent = 'Found: ' + result.display_name + ' — adjust the pin if needed.';
+            }
+        } catch (error) {
+            statusElement.textContent = error.message || 'Could not search for that location. Please try again.';
+        } finally {
+            searchButton.disabled = false;
+            searchButton.innerHTML = originalButtonContent;
+        }
+    }
+
+    searchButton.addEventListener('click', searchLocation);
+    searchInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchLocation();
+        }
+    });
+
     map.on('click', function (event) {
         updateSelection(event.latlng.lat, event.latlng.lng);
     });
@@ -925,7 +985,8 @@ document.addEventListener('DOMContentLoaded', function () {
     createModalElement.addEventListener('shown.bs.modal', function () {
         if (!eventLocationPickers.create) {
             eventLocationPickers.create = createEventLocationPicker(
-                'createLocationMap', 'create-lat', 'create-lng', 'create-location-status'
+                'createLocationMap', 'create-lat', 'create-lng', 'create-location-status',
+                'create-location-search', 'create-location-search-button'
             );
         }
         eventLocationPickers.create.refresh();
@@ -934,7 +995,8 @@ document.addEventListener('DOMContentLoaded', function () {
     editModalElement.addEventListener('shown.bs.modal', function () {
         if (!eventLocationPickers.edit) {
             eventLocationPickers.edit = createEventLocationPicker(
-                'editLocationMap', 'edit-lat', 'edit-lng', 'edit-location-status'
+                'editLocationMap', 'edit-lat', 'edit-lng', 'edit-location-status',
+                'edit-location-search', 'edit-location-search-button'
             );
         }
         eventLocationPickers.edit.refresh();
