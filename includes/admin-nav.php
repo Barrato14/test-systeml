@@ -5,6 +5,7 @@ $adminNavItems = [
     ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
     ['events.php', 'Event Management', 'bi-calendar-event'],
     ['equipment.php', 'Equipment & Services', 'bi-tools'],
+    ['users.php', 'User Management', 'bi-people'],
     ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
 ];
 ?>
