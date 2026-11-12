@@ -192,6 +192,96 @@ foreach ($registrations as $reg) {
     }
 }
 
+// Prepare participant dashboard statistics and the next registered event.
+$dashboardNow = new DateTimeImmutable('now', $manilaTimezone);
+$dashboardUpcomingCount = 0;
+$dashboardAttendedCount = 0;
+$dashboardAttendanceMinutes = 0;
+$dashboardNextEvent = null;
+$dashboardNextEventStart = null;
+
+foreach ($registrations as $registration) {
+    $registeredEventId = (string)($registration['event_id'] ?? '');
+    $registeredEvent = $eventsMap[$registeredEventId] ?? null;
+
+    if (!$registeredEvent || eventHasEnded($registeredEvent, $manilaTimezone)) {
+        continue;
+    }
+
+    if (!empty($registeredEvent['start_datetime'])) {
+        try {
+            $registeredStart = (new DateTimeImmutable($registeredEvent['start_datetime']))->setTimezone($manilaTimezone);
+            if ($registeredStart > $dashboardNow) {
+                $dashboardUpcomingCount++;
+            }
+
+            if ($dashboardNextEventStart === null || $registeredStart < $dashboardNextEventStart) {
+                $dashboardNextEvent = $registeredEvent;
+                $dashboardNextEventStart = $registeredStart;
+            }
+        } catch (Exception $e) {
+        }
+    }
+}
+
+foreach ($participantAttendance as $attendanceRecord) {
+    if (empty($attendanceRecord['check_in_time'])) {
+        continue;
+    }
+
+    $dashboardAttendedCount++;
+
+    if (!empty($attendanceRecord['time_out'])) {
+        try {
+            $checkIn = new DateTimeImmutable($attendanceRecord['check_in_time']);
+            $timeOut = new DateTimeImmutable($attendanceRecord['time_out']);
+            if ($timeOut > $checkIn) {
+                $dashboardAttendanceMinutes += (int)(($timeOut->getTimestamp() - $checkIn->getTimestamp()) / 60);
+            }
+        } catch (Exception $e) {
+        }
+    }
+}
+
+$dashboardRegistrationCount = count($registrations);
+$dashboardAttendanceRate = $dashboardRegistrationCount > 0
+    ? min(100, (int)round(($dashboardAttendedCount / $dashboardRegistrationCount) * 100))
+    : 0;
+$dashboardAttendanceHours = round($dashboardAttendanceMinutes / 60, 1);
+
+// Combine announcements and attendance records into a small recent-activity feed.
+$dashboardActivities = [];
+
+foreach (array_slice($notifications, 0, 8) as $notification) {
+    $dashboardActivities[] = [
+        'title' => $notification['title'] ?? 'New notification',
+        'message' => $notification['message'] ?? '',
+        'date' => $notification['created_at'] ?? '',
+        'icon' => 'bi-megaphone',
+        'kind' => 'announcement'
+    ];
+}
+
+foreach ($participantAttendance as $attendanceEventId => $attendanceRecord) {
+    if (empty($attendanceRecord['check_in_time'])) {
+        continue;
+    }
+
+    $activityEvent = $eventsMap[$attendanceEventId] ?? [];
+    $dashboardActivities[] = [
+        'title' => 'Attendance recorded',
+        'message' => $activityEvent['title'] ?? 'Event attendance',
+        'date' => $attendanceRecord['time_out'] ?: $attendanceRecord['check_in_time'],
+        'icon' => 'bi-check2-circle',
+        'kind' => 'attendance'
+    ];
+}
+
+usort($dashboardActivities, function ($a, $b) {
+    return strtotime((string)($b['date'] ?? '')) <=> strtotime((string)($a['date'] ?? ''));
+});
+$dashboardActivities = array_slice($dashboardActivities, 0, 5);
+
 // Prepare upcoming and ongoing events for the read-only participant calendar.
 $calendarEvents = [];
 $now = new DateTimeImmutable('now', $manilaTimezone);
@@ -331,6 +421,7 @@ $calendarJson = json_encode(
     </style>
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="../css/weather-widget.css">
+<link rel="stylesheet" href="../css/participant-dashboard.css">
 </head>
 <body class="bg-light participant-page">
 
@@ -344,12 +435,14 @@ $calendarJson = json_encode(
         <div class="alert alert-danger"><?= htmlspecialchars($errorMsg) ?></div>
     <?php endif; ?>
 
-    <div class="row mb-4">
-        <div class="col">
-            <h2 class="h4">My Approved Events & Check-In</h2>
-            <p class="text-muted">Perform your secure face-scan and GPS check-in/time-out for approved events here.</p>
+    <section class="participant-dashboard-hero mb-4">
+        <div>
+            <span class="participant-dashboard-eyebrow">PARTICIPANT OVERVIEW</span>
+            <h1>Welcome back, <?= htmlspecialchars((string)$firstName) ?>!</h1>
+            <p>Your events, attendance progress, and latest updates in one place.</p>
         </div>
-    </div>
+        <a href="browse-events.php" class="participant-dashboard-primary-link"><i class="bi bi-compass"></i> Explore Events</a>
+    </section>
 
     <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
@@ -449,192 +542,119 @@ $calendarJson = json_encode(
         </div>
     </div>
 
-    <!-- Section 1: Registered / Approved Events (ended events are hidden) -->
-    <div class="row mb-5">
-        <?php if (empty($registeredEventIds)): ?>
-            <div class="col-12">
-                <div class="alert alert-warning text-center py-4 shadow-sm">
-                    <h5>You aren't registered for any events yet.</h5>
-                    <p class="mb-0">Choose an available event from the list below to register!</p>
-                </div>
+    <section class="participant-dashboard-stats mb-4">
+        <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-check"></i></span>
+            <div><strong><?= number_format($dashboardRegistrationCount) ?></strong><span>Registered events</span></div>
+        </article>
+        <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar-event"></i></span>
+            <div><strong><?= number_format($dashboardUpcomingCount) ?></strong><span>Upcoming events</span></div>
+        </article>
+        <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon"><i class="bi bi-clock-history"></i></span>
+            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Recorded attendance</span></div>
+        </article>
+        <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon"><i class="bi bi-graph-up-arrow"></i></span>
+            <div><strong><?= $dashboardAttendanceRate ?>%</strong><span>Attendance rate</span></div>
+        </article>
+    </section>
+
+    <section class="participant-dashboard-main-grid mb-4">
+        <article class="participant-dashboard-panel participant-dashboard-next-event">
+            <div class="participant-dashboard-panel-heading">
+                <div><span class="participant-dashboard-eyebrow">UP NEXT</span><h2>Your next event</h2></div>
+                <i class="bi bi-calendar2-week"></i>
             </div>
-        <?php else: ?>
-            <?php foreach ($registrations as $reg):
-                $eventId = (string)($reg['event_id'] ?? '');
-                $event = $eventsMap[$eventId] ?? null;
-                if (!$event) continue;
-
-                // Completely remove ended events from the participant dashboard.
-                if (eventHasEnded($event, $manilaTimezone)) {
-                    continue;
-                }
-
-                $status = $reg['status'] ?? 'Approved';
-                $dateObj = new DateTime($event['start_datetime']);
-                $dateObj->setTimezone($manilaTimezone);
-                $formattedDate = $dateObj->format('F j, Y, g:i a');
-
-                $eventImg = !empty($event['image_url'])
-                    ? htmlspecialchars($event['image_url'])
-                    : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
-
-                $lat = $event['latitude'] ?? null;
-                $lng = $event['longitude'] ?? null;
-
-                $attRecord = $participantAttendance[$eventId] ?? null;
-                $hasCheckedIn = !empty($attRecord['check_in_time']);
-                $hasTimedOut = !empty($attRecord['time_out']);
-                $eventEnded = eventHasEnded($event, $manilaTimezone);
-            ?>
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 shadow-sm border-0">
-                        <img src="<?= $eventImg ?>" class="card-img-top event-card-img" alt="Event Image">
-
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-primary fw-bold"><?= htmlspecialchars($event['title'] ?? 'Untitled Event') ?></h5>
-
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-geo-alt-fill text-danger me-2"></i>
-                                <span class="text-muted fw-semibold me-2"><?= htmlspecialchars($event['venue'] ?? 'General Venue') ?></span>
-                                <?php if ($lat && $lng): ?>
-                                    <a href="https://www.google.com/maps?q=<?= rawurlencode($lat . ',' . $lng) ?>"
-                                       target="_blank" rel="noopener"
-                                       class="badge bg-light text-primary border text-decoration-none map-badge">
-                                        <i class="bi bi-map me-1"></i>Map
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-
-                            <p class="card-text small mb-3">
-                                <strong><i class="bi bi-calendar-event me-1"></i> Date:</strong> <?= htmlspecialchars($formattedDate) ?><br>
-                                <span class="text-muted"><?= htmlspecialchars(substr($event['description'] ?? '', 0, 90)) ?>...</span>
-                            </p>
-
-                            <div class="mt-auto">
-                                <hr>
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <?php if ($eventEnded): ?>
-                                        <span class="badge bg-secondary">Event Ended</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-success"><?= htmlspecialchars($status) ?></span>
-                                    <?php endif; ?>
-
-                                    <?php if ($eventEnded): ?>
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-calendar-x me-1"></i>Attendance Closed
-                                        </span>
-                                    <?php elseif (!$hasCheckedIn): ?>
-                                        <a href="check-in.php?event_id=<?= rawurlencode($eventId) ?>"
-                                           class="btn btn-sm btn-primary fw-bold">
-                                            <i class="bi bi-camera me-1"></i> Check In (Face/GPS)
-                                        </a>
-                                    <?php elseif (!$hasTimedOut): ?>
-                                        <a href="time-out.php?event_id=<?= rawurlencode($eventId) ?>"
-                                           class="btn btn-sm btn-warning fw-bold text-dark">
-                                            <i class="bi bi-box-arrow-left me-1"></i> Time Out (Face/GPS)
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-check-circle me-1"></i>Completed
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <?php if ($dashboardNextEvent && $dashboardNextEventStart): ?>
+                <h3><?= htmlspecialchars($dashboardNextEvent['title'] ?? 'Untitled Event') ?></h3>
+                <p class="participant-dashboard-event-description"><?= htmlspecialchars($dashboardNextEvent['description'] ?? 'You are registered for this event.') ?></p>
+                <div class="participant-dashboard-event-details">
+                    <span><i class="bi bi-calendar3"></i><?= htmlspecialchars($dashboardNextEventStart->format('F j, Y')) ?></span>
+                    <span><i class="bi bi-clock"></i><?= htmlspecialchars($dashboardNextEventStart->format('g:i A')) ?> PHT</span>
+                    <span><i class="bi bi-geo-alt"></i><?= htmlspecialchars($dashboardNextEvent['venue'] ?? 'Venue to be announced') ?></span>
                 </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
+                <a href="my-events.php" class="participant-dashboard-text-link">View my events <i class="bi bi-arrow-right"></i></a>
+            <?php else: ?>
+                <div class="participant-dashboard-empty">
+                    <i class="bi bi-calendar-plus"></i>
+                    <strong>No upcoming registered events</strong>
+                    <span>Explore available events and register for one.</span>
+                    <a href="browse-events.php" class="participant-dashboard-text-link">Browse events <i class="bi bi-arrow-right"></i></a>
+                </div>
+            <?php endif; ?>
+        </article>
 
-    <!-- Section 2: Available Events to Join -->
-    <div class="row mb-3 mt-4">
-        <div class="col">
-            <h3 class="h5 text-secondary fw-bold">Available Events to Join</h3>
-            <hr>
+        <article class="participant-dashboard-panel participant-dashboard-progress">
+            <div class="participant-dashboard-panel-heading">
+                <div><span class="participant-dashboard-eyebrow">YOUR PARTICIPATION</span><h2>Attendance progress</h2></div>
+                <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <div class="participant-dashboard-progress-value"><?= $dashboardAttendanceRate ?>%</div>
+            <p>of your registered events have a recorded check-in.</p>
+            <div class="participant-dashboard-progress-track"><span style="width: <?= $dashboardAttendanceRate ?>%;"></span></div>
+            <div class="participant-dashboard-progress-meta">
+                <span><?= number_format($dashboardAttendedCount) ?> attended</span>
+                <span><?= number_format($dashboardRegistrationCount) ?> registered</span>
+            </div>
+            <a href="my-events.php" class="participant-dashboard-text-link">See attendance details <i class="bi bi-arrow-right"></i></a>
+        </article>
+    </section>
+
+    <section class="participant-dashboard-lower-grid mb-4">
+        <article class="participant-dashboard-panel">
+            <div class="participant-dashboard-panel-heading">
+                <div><span class="participant-dashboard-eyebrow">LATEST UPDATES</span><h2>Announcements</h2></div>
+                <button type="button" class="participant-dashboard-icon-button" data-open-notifications aria-label="Open all notifications"><i class="bi bi-bell"></i></button>
+            </div>
+            <?php if (empty($notifications)): ?>
+                <div class="participant-dashboard-empty compact"><i class="bi bi-megaphone"></i><span>No announcements yet. New event announcements will appear here.</span></div>
+            <?php else: ?>
+                <div class="participant-dashboard-announcements">
+                    <?php foreach (array_slice($notifications, 0, 4) as $announcement): ?>
+                        <div class="participant-dashboard-announcement">
+                            <span class="participant-dashboard-announcement-icon"><i class="bi bi-megaphone"></i></span>
+                            <div><strong><?= htmlspecialchars($announcement['title'] ?? 'Announcement') ?></strong><p><?= htmlspecialchars($announcement['message'] ?? '') ?></p>
+                            <?php if (!empty($announcement['created_at'])): ?><time><?= htmlspecialchars((new DateTime($announcement['created_at']))->setTimezone($manilaTimezone)->format('M j, Y · g:i A')) ?></time><?php endif; ?></div>
+                            <?php if (($announcement['is_read'] ?? false) !== true && ($announcement['is_read'] ?? '') !== 'true'): ?><span class="participant-dashboard-new-label">NEW</span><?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="participant-dashboard-text-button" data-open-notifications>View all notifications <i class="bi bi-arrow-right"></i></button>
+            <?php endif; ?>
+        </article>
+
+        <article class="participant-dashboard-panel">
+            <div class="participant-dashboard-panel-heading">
+                <div><span class="participant-dashboard-eyebrow">YOUR LATEST ACTIONS</span><h2>Recent activity</h2></div>
+                <i class="bi bi-activity"></i>
+            </div>
+            <?php if (empty($dashboardActivities)): ?>
+                <div class="participant-dashboard-empty compact"><i class="bi bi-clock-history"></i><span>Your event registrations and attendance updates will appear here.</span></div>
+            <?php else: ?>
+                <div class="participant-dashboard-activity-list">
+                    <?php foreach ($dashboardActivities as $activity): ?>
+                        <div class="participant-dashboard-activity">
+                            <span class="participant-dashboard-activity-icon"><i class="bi <?= htmlspecialchars($activity['icon']) ?>"></i></span>
+                            <div><strong><?= htmlspecialchars($activity['title']) ?></strong><p><?= htmlspecialchars($activity['message']) ?></p>
+                            <?php if (!empty($activity['date'])): ?><time><?= htmlspecialchars((new DateTime($activity['date']))->setTimezone($manilaTimezone)->format('M j, Y · g:i A')) ?></time><?php endif; ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </article>
+    </section>
+
+    <section class="participant-dashboard-quick-links mb-5">
+        <div><span class="participant-dashboard-eyebrow">SHORTCUTS</span><h2>Quick actions</h2></div>
+        <div class="participant-dashboard-action-grid">
+            <a href="browse-events.php"><i class="bi bi-compass"></i><span><strong>Browse events</strong><small>Discover campus activities</small></span><i class="bi bi-arrow-up-right"></i></a>
+            <a href="my-events.php"><i class="bi bi-ticket-perforated"></i><span><strong>My events</strong><small>View registrations and attendance</small></span><i class="bi bi-arrow-up-right"></i></a>
+            <a href="face-registration.php"><i class="bi bi-person-bounding-box"></i><span><strong>Face registration</strong><small>Manage your face profile</small></span><i class="bi bi-arrow-up-right"></i></a>
+            <button type="button" data-open-notifications><i class="bi bi-bell"></i><span><strong>Notifications</strong><small><?= number_format($unreadNotificationCount) ?> unread updates</small></span><i class="bi bi-arrow-up-right"></i></button>
         </div>
-    </div>
-
-    <?php
-    // Only show events that have not ended and that this participant has not registered for.
-    $availableEvents = [];
-
-    foreach ($allEvents as $evt) {
-        $evtId = (string)($evt['id'] ?? '');
-
-        if ($evtId === '' || in_array($evtId, $registeredEventIds, true)) {
-            continue;
-        }
-
-        if (eventHasEnded($evt, $manilaTimezone)) {
-            continue;
-        }
-
-        $availableEvents[] = $evt;
-    }
-    ?>
-
-    <div class="row">
-        <?php if (empty($availableEvents)): ?>
-            <div class="col-12 text-muted pb-4">
-                There are currently no available events to register for.
-            </div>
-        <?php else: ?>
-            <?php foreach ($availableEvents as $evt):
-                $evtImg = !empty($evt['image_url'])
-                    ? htmlspecialchars($evt['image_url'])
-                    : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80';
-
-                $eLat = $evt['latitude'] ?? null;
-                $eLng = $evt['longitude'] ?? null;
-
-                $startDate = '';
-                if (!empty($evt['start_datetime'])) {
-                    try {
-                        $startObj = new DateTime($evt['start_datetime']);
-                        $startObj->setTimezone($manilaTimezone);
-                        $startDate = $startObj->format('M d, Y h:i A');
-                    } catch (Exception $e) {
-                        $startDate = 'Schedule not available';
-                    }
-                }
-            ?>
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 shadow-sm border-light">
-                        <img src="<?= $evtImg ?>" class="card-img-top event-card-img" alt="Event Image" style="filter: brightness(0.9);">
-
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-dark fw-bold"><?= htmlspecialchars($evt['title'] ?? 'Untitled Event') ?></h5>
-
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-geo-alt text-danger me-2"></i>
-                                <span class="text-muted fw-semibold me-2"><?= htmlspecialchars($evt['venue'] ?? 'Not specified') ?></span>
-                                <?php if ($eLat !== null && $eLat !== '' && $eLng !== null && $eLng !== ''): ?>
-                                    <a href="https://www.google.com/maps?q=<?= rawurlencode($eLat . ',' . $eLng) ?>"
-                                       target="_blank" rel="noopener"
-                                       class="badge bg-light text-primary border text-decoration-none map-badge">
-                                        <i class="bi bi-map me-1"></i>Map
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-
-                            <p class="card-text small mb-3">
-                                <strong><i class="bi bi-clock me-1"></i> Start:</strong> <?= htmlspecialchars($startDate) ?><br>
-                                <span class="text-muted"><?= htmlspecialchars(substr($evt['description'] ?? '', 0, 80)) ?>...</span>
-                            </p>
-
-                            <form method="POST" class="mt-auto">
-                                <input type="hidden" name="register_event_id" value="<?= htmlspecialchars((string)$evt['id']) ?>">
-                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-bold">
-                                    Register For Event
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
+    </section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
