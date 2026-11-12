@@ -68,8 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (($updateResponse['code'] ?? 500) >= 300) {
-            error_log('Google student profile save failed: ' . json_encode($updateResponse['data'] ?? []));
-            $error = 'We could not save your student details. Please check the profile settings or contact the administrator.';
+            $diagnosticCode = (int)($updateResponse['code'] ?? 500);
+            $diagnosticDetails = json_encode($updateResponse['data'] ?? [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            error_log('Google student profile save failed. HTTP ' . $diagnosticCode . ': ' . $diagnosticDetails);
+            $error = 'Temporary diagnostic: Supabase returned HTTP ' . $diagnosticCode . '. Details: ' . htmlspecialchars($diagnosticDetails ?: 'No response details returned.', ENT_QUOTES, 'UTF-8');
         } else {
             $_SESSION['user_name'] = $firstName . ' ' . $lastName;
             unset($_SESSION['google_profile_csrf']);
