@@ -51,7 +51,7 @@ if ($email === '' || $authUserId === '') {
 }
 
 if (!$emailConfirmed) {
-    socialLoginFailure('Your Google or Facebook account did not return a confirmed email address. Please verify your email with that provider or use email registration.');
+    socialLoginFailure('Your Google account did not return a confirmed email address. Please verify your email with Google or use email registration.');
 }
 
 $metadata = $authUser['user_metadata'] ?? [];
