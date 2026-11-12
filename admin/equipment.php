@@ -5,7 +5,7 @@ date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-$allowedRoles = ['administrator', 'event organizer', 'staff'];
+$allowedRoles = ['administrator', 'staff'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
 if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)) {
