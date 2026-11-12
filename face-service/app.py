@@ -116,7 +116,7 @@ def get_profile(participant_id: str):
     url, key = supabase_config()
     endpoint = (
         f"{url}/rest/v1/participant_face_profiles"
-        f"?participant_id=eq.{participant_id}&select=face_descriptor,consent_given"
+        f"?participant_id=eq.{participant_id}&select=face_descriptor,consent_given,face_model"
     )
     result = requests.get(endpoint, headers=supabase_headers(key), timeout=20)
     if not result.ok:
