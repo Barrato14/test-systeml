@@ -410,12 +410,21 @@ $inactiveCount = 0;
 foreach ($allUsers as $account) {
 
     $role = $account['role'] ?? '';
+    $isActive = userIsActive($account['is_active'] ?? null);
+    $isVerified = isset($account['is_verified'])
+        && $account['is_verified'] !== null
+        && userIsActive($account['is_verified']);
 
-    if (isset($roleCounts[$role])) {
+    if ($role === 'Participant') {
+        // Only verified and active participants belong in the Participants total.
+        if ($isVerified && $isActive) {
+            $roleCounts['Participant']++;
+        }
+    } elseif (isset($roleCounts[$role])) {
         $roleCounts[$role]++;
     }
 
-    if (userIsActive($account['is_active'] ?? null)) {
+    if ($isActive) {
         $activeCount++;
     } else {
         $inactiveCount++;
