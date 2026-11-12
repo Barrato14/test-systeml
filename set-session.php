@@ -117,8 +117,8 @@ $_SESSION['user_name'] = trim(($profile['first_name'] ?? $firstName) . ' ' . ($p
 
 if (strtolower($userRole) === 'administrator') {
     header('Location: admin/dashboard.php');
-} elseif (strtolower($userRole) === 'event organizer') {
-    header('Location: organizer/dashboard.php');
+} elseif (strtolower(trim($userRole)) === 'event organizer') {
+    header('Location: admin/dashboard.php');
 } elseif (strtolower($userRole) === 'staff') {
     header('Location: staff/dashboard.php');
 } else {
