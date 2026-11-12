@@ -99,6 +99,7 @@ def save_profile(participant_id: str, descriptor: list[float]):
         "consent_given": True,
         "consent_given_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
+        "face_model": "dlib_face_recognition_v1",
     }
     result = requests.post(
         endpoint,
@@ -169,6 +170,8 @@ def verify(payload: dict, x_face_service_token: str | None = Header(default=None
         profile = get_profile(participant_id)
         if not profile:
             return response_error("No face is registered to your account. Please register your face first.", 404)
+        if profile.get("face_model") != "dlib_face_recognition_v1":
+            return response_error("Your previous face registration uses an older recognition model. Please register your face again.", 409)
         if profile.get("consent_given") not in (True, "true"):
             return response_error("Your face registration is not active. Please register your face again.", 403)
 
