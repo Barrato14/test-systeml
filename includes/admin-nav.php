@@ -1,19 +1,31 @@
 <?php
-$adminRole = strtolower($_SESSION['user_role'] ?? 'administrator');
+$adminRole = strtolower(trim((string)($_SESSION['user_role'] ?? 'administrator')));
 $adminCurrentPage = basename($_SERVER['PHP_SELF'] ?? '');
-$adminNavItems = [
-    ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
-    ['events.php', 'Event Management', 'bi-calendar-event'],
-    ['equipment.php', 'Equipment & Services', 'bi-tools'],
-    ['users.php', 'User Management', 'bi-people'],
-    ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
-];
+
+if ($adminRole === 'event organizer') {
+    $adminNavItems = [
+        ['events.php', 'Event Management', 'bi-calendar-event'],
+        ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
+    ];
+    $adminHomePage = 'events.php';
+    $adminWorkspaceLabel = 'Event Organizer Workspace';
+} else {
+    $adminNavItems = [
+        ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
+        ['events.php', 'Event Management', 'bi-calendar-event'],
+        ['equipment.php', 'Equipment & Services', 'bi-tools'],
+        ['users.php', 'User Management', 'bi-people'],
+        ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
+    ];
+    $adminHomePage = 'dashboard.php';
+    $adminWorkspaceLabel = 'Admin Command Center';
+}
 ?>
-<aside class="admin-sidebar" aria-label="Administrator navigation">
+<aside class="admin-sidebar" aria-label="EMIS workspace navigation">
     <div class="admin-sidebar-inner">
-        <a class="admin-brand" href="dashboard.php" aria-label="EMIS Admin Dashboard">
+        <a class="admin-brand" href="<?= htmlspecialchars($adminHomePage) ?>" aria-label="EMIS Workspace">
             <span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span>
-            <span class="admin-brand-copy"><strong>EMIS</strong><small>Admin Command Center</small></span>
+            <span class="admin-brand-copy"><strong>EMIS</strong><small><?= htmlspecialchars($adminWorkspaceLabel) ?></small></span>
         </a>
         <div class="admin-nav-caption">WORKSPACE</div>
         <nav class="admin-sidebar-nav">
@@ -44,7 +56,7 @@ $adminNavItems = [
 </aside>
 
 <header class="admin-mobile-topbar">
-    <a class="admin-mobile-brand" href="dashboard.php"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>EMIS</strong><small>Admin</small></span></a>
+    <a class="admin-mobile-brand" href="<?= htmlspecialchars($adminHomePage) ?>"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>EMIS</strong><small><?= $adminRole === 'event organizer' ? 'Organizer' : 'Admin' ?></small></span></a>
     <div class="admin-mobile-actions">
         <button type="button" class="admin-mobile-icon" data-open-admin-command aria-label="Quick switcher"><i class="bi bi-search"></i></button>
         <details class="admin-mobile-settings">
@@ -69,7 +81,7 @@ $adminNavItems = [
 
 <div class="admin-command-overlay" id="adminCommandOverlay" aria-hidden="true">
     <section class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandTitle">
-        <div class="admin-command-search"><i class="bi bi-search"></i><input id="adminCommandInput" type="search" placeholder="Search admin pages..." autocomplete="off"><kbd>ESC</kbd></div>
+        <div class="admin-command-search"><i class="bi bi-search"></i><input id="adminCommandInput" type="search" placeholder="Search workspace pages..." autocomplete="off"><kbd>ESC</kbd></div>
         <div class="admin-command-heading" id="adminCommandTitle">QUICK NAVIGATION</div>
         <nav class="admin-command-results" id="adminCommandResults">
             <?php foreach ($adminNavItems as [$href, $label, $icon]): ?>
