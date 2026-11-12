@@ -1,0 +1,14 @@
+# Keep credentials and local-only files out of the Docker image
+.env
+.env.*
+!.env.example
+.git
+.github
+.vscode
+.idea
+node_modules
+vendor
+__pycache__
+*.pyc
+*.pyo
+*.log
