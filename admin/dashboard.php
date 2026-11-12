@@ -11,9 +11,9 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !==
     exit;
 }
 
-// Count unique accounts across Supabase Auth and public.profiles.
-// Email is the deduplication key so a Google Auth user and their matching
-// profile row are counted once. Verification status is intentionally ignored.
+// Count eligible accounts from public.profiles.
+// Profiles are the source of truth for role and participant verification;
+// Auth-only identities are not counted because their eligibility is unknown.
 $serviceKey = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
 $totalUserAccounts = [];
 
@@ -50,15 +50,12 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         return $decoded;
     };
 
-    // Count all application roles except Administrators. Unverified accounts
-    // remain included, and email deduplication prevents counting a profile and
-    // its matching Supabase Auth user twice.
-    $administratorEmails = [];
     $profileRowsFetched = 0;
-    $authRowsFetched = 0;
+    $eligibleParticipants = 0;
+    $eligibleStaffAndOrganizers = 0;
 
     for ($offset = 0; ; $offset += 1000) {
-        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,role&order=id.asc&limit=1000&offset=' . $offset;
+        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,role,is_verified&order=id.asc&limit=1000&offset=' . $offset;
         $profileRows = $fetchAdminJson($profilesUrl);
 
         if (!is_array($profileRows)) {
@@ -71,11 +68,24 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
             $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
             $accountId = trim((string)($profileRow['id'] ?? ''));
             $role = strtolower(trim((string)($profileRow['role'] ?? '')));
+            $role = str_replace(['_', '-'], ' ', $role);
+            $isVerified = in_array(
+                strtolower(trim((string)($profileRow['is_verified'] ?? 'false'))),
+                ['true', '1', 't', 'yes'],
+                true
+            );
 
-            if ($role === 'administrator') {
-                if ($emailKey !== '') {
-                    $administratorEmails[$emailKey] = true;
-                }
+            $isEligible = false;
+
+            if ($role === 'participant' && $isVerified) {
+                $isEligible = true;
+                $eligibleParticipants++;
+            } elseif (in_array($role, ['staff', 'event organizer'], true)) {
+                $isEligible = true;
+                $eligibleStaffAndOrganizers++;
+            }
+
+            if (!$isEligible) {
                 continue;
             }
 
@@ -91,47 +101,34 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         }
     }
 
-    // Include Auth-only accounts, but exclude Auth identities linked to admin profiles.
-    for ($page = 1; ; $page++) {
-        $authUrl = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users?page=' . $page . '&per_page=1000';
-        $authResult = $fetchAdminJson($authUrl);
-        $authRows = is_array($authResult) ? ($authResult['users'] ?? []) : null;
-
-        if (!is_array($authRows)) {
-            error_log('EMIS Total Users: Supabase Auth response did not contain a users array. Response structure: ' . (is_array($authResult) ? implode(',', array_keys($authResult)) : gettype($authResult)));
-            break;
-        }
-
-        $authRowsFetched += count($authRows);
-
-        foreach ($authRows as $authUser) {
-            $emailKey = strtolower(trim((string)($authUser['email'] ?? '')));
-            $accountId = trim((string)($authUser['id'] ?? ''));
-
-            if ($emailKey !== '' && isset($administratorEmails[$emailKey])) {
-                continue;
+    $totalUsers = count($totalUserAccounts);
+    error_log('EMIS Total Users counts: profiles fetched=' . $profileRowsFetched . ', verified participants=' . $eligibleParticipants . ', staff and event organizers=' . $eligibleStaffAndOrganizers . ', eligible unique accounts counted=' . $totalUsers);
+} else {
+    // Fallback for local setups: apply the same role and verification rules.
+    $totalUsersResponse = supabaseRequest('profiles?select=id,email,role,is_verified&limit=1000', 'GET');
+    $fallbackAccounts = [];
+    if (is_array($totalUsersResponse['data'] ?? null)) {
+        foreach ($totalUsersResponse['data'] as $profileRow) {
+            $role = strtolower(str_replace(['_', '-'], ' ', trim((string)($profileRow['role'] ?? ''))));
+            $isVerified = in_array(
+                strtolower(trim((string)($profileRow['is_verified'] ?? 'false'))),
+                ['true', '1', 't', 'yes'],
+                true
+            );
+            if ($role !== 'participant' || $isVerified || in_array($role, ['staff', 'event organizer'], true)) {
+                if (in_array($role, ['participant', 'staff', 'event organizer'], true)) {
+                    $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
+                    $accountId = trim((string)($profileRow['id'] ?? ''));
+                    if ($emailKey !== '') {
+                        $fallbackAccounts['email:' . $emailKey] = true;
+                    } elseif ($accountId !== '') {
+                        $fallbackAccounts['profile:' . $accountId] = true;
+                    }
+                }
             }
-
-            if ($emailKey !== '') {
-                $totalUserAccounts['email:' . $emailKey] = true;
-            } elseif ($accountId !== '') {
-                $totalUserAccounts['auth:' . $accountId] = true;
-            }
-        }
-
-        if (count($authRows) < 1000) {
-            break;
         }
     }
-
-    $totalUsers = count($totalUserAccounts);
-    error_log('EMIS Total Users counts: profiles fetched=' . $profileRowsFetched . ', Auth users fetched=' . $authRowsFetched . ', unique accounts counted=' . $totalUsers);
-} else {
-    // Fallback for local setups: count every profile role except Administrator.
-    $totalUsersResponse = supabaseRequest('profiles?select=id&role=neq.Administrator&limit=1000', 'GET');
-    $totalUsers = is_array($totalUsersResponse['data'] ?? null)
-        ? count($totalUsersResponse['data'])
-        : 0;
+    $totalUsers = count($fallbackAccounts);
 }
 
 // Load currently ongoing events for the dashboard activity panel.
