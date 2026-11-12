@@ -7,7 +7,7 @@ require_once '../includes/auth.php';
 require_once '../includes/mail.php';
 
 // Keep the same EMIS roles and permissions.
-$allowedRoles = ['administrator', 'staff', 'event organizer'];
+$allowedRoles = ['administrator', 'event organizer'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
 if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)) {
