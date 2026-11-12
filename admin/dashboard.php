@@ -33,13 +33,21 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
 
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($response === false || $status < 200 || $status >= 300) {
+            error_log('EMIS Total Users Supabase request failed. HTTP status: ' . $status . '; cURL error: ' . ($curlError !== '' ? $curlError : 'none') . '; endpoint: ' . (parse_url($url, PHP_URL_PATH) ?: 'unknown') . '; response: ' . substr((string)$response, 0, 1000));
             return null;
         }
 
-        return json_decode($response, true);
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            error_log('EMIS Total Users Supabase response was not valid JSON. Endpoint: ' . (parse_url($url, PHP_URL_PATH) ?: 'unknown'));
+            return null;
+        }
+
+        return $decoded;
     };
 
     // Count all application roles except Administrators. Unverified accounts
@@ -86,6 +94,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         $authRows = is_array($authResult) ? ($authResult['users'] ?? []) : null;
 
         if (!is_array($authRows)) {
+            error_log('EMIS Total Users: Supabase Auth response did not contain a users array. Response structure: ' . (is_array($authResult) ? implode(',', array_keys($authResult)) : gettype($authResult)));
             break;
         }
 
