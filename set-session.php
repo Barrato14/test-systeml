@@ -73,27 +73,18 @@ $profileRows = is_array($profileResponse) ? ($profileResponse['data'] ?? []) : [
 $profile = (!empty($profileRows) && isset($profileRows[0]) && is_array($profileRows[0])) ? $profileRows[0] : null;
 
 if (!$profile) {
-    $payload = [
-        'first_name' => $firstName,
-        'last_name' => $lastName,
+    // A new Google account is already present in Supabase Auth.
+    // Collect the real student details first, then create its linked profile
+    // from complete-google-profile.php using the server-only service key.
+    $profile = [
+        'id' => $authUserId,
+        'first_name' => '',
+        'last_name' => '',
         'email' => $email,
         'role' => 'Participant',
-        'is_verified' => true,
-        'verification_token' => null
+        'course' => '',
+        'section' => ''
     ];
-
-    $insertResponse = supabaseRequest('profiles', 'POST', $payload);
-    if (($insertResponse['code'] ?? 500) >= 300) {
-        socialLoginFailure('Your identity was verified, but your EMIS profile could not be created. Please contact the administrator.');
-    }
-
-    $profileResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-    $profileRows = is_array($profileResponse) ? ($profileResponse['data'] ?? []) : [];
-    $profile = (!empty($profileRows) && isset($profileRows[0]) && is_array($profileRows[0])) ? $profileRows[0] : null;
-
-    if (!$profile) {
-        socialLoginFailure('Your EMIS profile could not be loaded. Please try again.');
-    }
 } else {
     $isActive = $profile['is_active'] ?? true;
 
@@ -119,7 +110,7 @@ if (!$profile) {
 
 session_regenerate_id(true);
 $userRole = $profile['role'] ?? 'Participant';
-$_SESSION['user_id'] = $profile['id'] ?? '';
+$_SESSION['user_id'] = $profile['id'] ?? $authUserId;
 $_SESSION['user_email'] = $email;
 $_SESSION['user_role'] = $userRole;
 $_SESSION['user_name'] = trim(($profile['first_name'] ?? $firstName) . ' ' . ($profile['last_name'] ?? $lastName));
