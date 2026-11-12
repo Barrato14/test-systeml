@@ -95,6 +95,11 @@ if (!$profile) {
         socialLoginFailure('Your EMIS profile could not be loaded. Please try again.');
     }
 } else {
+    $isActive = $profile['is_active'] ?? true;
+
+    if ($isActive === false || $isActive === 'false' || $isActive === 0 || $isActive === '0') {
+        socialLoginFailure('Your account has been deactivated. Please contact the administrator.');
+    }
     // Provider-confirmed email is sufficient for social sign-in; synchronize
     // an existing profile that was previously left unverified by registration.
     $profileId = $profile['id'] ?? null;
