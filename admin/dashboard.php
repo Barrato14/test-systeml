@@ -11,13 +11,94 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !==
     exit;
 }
 
-// Fetch total users
-$totalUsersResponse = supabaseRequest('profiles?select=id', 'GET');
-$totalUsers = (
-    is_array($totalUsersResponse) &&
-    isset($totalUsersResponse['data']) &&
-    is_array($totalUsersResponse['data'])
-) ? count($totalUsersResponse['data']) : 0;
+// Count unique accounts across Supabase Auth and public.profiles.
+// Email is the deduplication key so a Google Auth user and their matching
+// profile row are counted once. Verification status is intentionally ignored.
+$serviceKey = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
+$totalUserAccounts = [];
+
+if ($serviceKey !== '' && !empty($supabaseUrl)) {
+    $fetchAdminJson = function ($url) use ($serviceKey) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_HTTPHEADER => [
+                'apikey: ' . $serviceKey,
+                'Authorization: Bearer ' . $serviceKey,
+                'Accept: application/json'
+            ],
+            CURLOPT_TIMEOUT => 20
+        ]);
+
+        $response = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false || $status < 200 || $status >= 300) {
+            return null;
+        }
+
+        return json_decode($response, true);
+    };
+
+    // Include every profile, including accounts whose is_verified value is false.
+    for ($offset = 0; ; $offset += 1000) {
+        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email&order=id.asc&limit=1000&offset=' . $offset;
+        $profileRows = $fetchAdminJson($profilesUrl);
+
+        if (!is_array($profileRows)) {
+            break;
+        }
+
+        foreach ($profileRows as $profileRow) {
+            $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
+            $accountId = trim((string)($profileRow['id'] ?? ''));
+            if ($emailKey !== '') {
+                $totalUserAccounts['email:' . $emailKey] = true;
+            } elseif ($accountId !== '') {
+                $totalUserAccounts['profile:' . $accountId] = true;
+            }
+        }
+
+        if (count($profileRows) < 1000) {
+            break;
+        }
+    }
+
+    // Include Auth users too, including Google users whose profile row may be missing.
+    for ($page = 1; ; $page++) {
+        $authUrl = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users?page=' . $page . '&per_page=1000';
+        $authResult = $fetchAdminJson($authUrl);
+        $authRows = is_array($authResult) ? ($authResult['users'] ?? []) : null;
+
+        if (!is_array($authRows)) {
+            break;
+        }
+
+        foreach ($authRows as $authUser) {
+            $emailKey = strtolower(trim((string)($authUser['email'] ?? '')));
+            $accountId = trim((string)($authUser['id'] ?? ''));
+            if ($emailKey !== '') {
+                $totalUserAccounts['email:' . $emailKey] = true;
+            } elseif ($accountId !== '') {
+                $totalUserAccounts['auth:' . $accountId] = true;
+            }
+        }
+
+        if (count($authRows) < 1000) {
+            break;
+        }
+    }
+
+    $totalUsers = count($totalUserAccounts);
+} else {
+    // Fallback for local setups that have not configured the server-only key.
+    $totalUsersResponse = supabaseRequest('profiles?select=id&limit=1000', 'GET');
+    $totalUsers = is_array($totalUsersResponse['data'] ?? null)
+        ? count($totalUsersResponse['data'])
+        : 0;
+}
 
 // Load currently ongoing events for the dashboard activity panel.
 $manilaTimezone = new DateTimeZone('Asia/Manila');$now = new DateTimeImmutable('now', $manilaTimezone);$eventsResponse = supabaseRequest('events?select=id,title,start_datetime,end_datetime,venue&order=start_datetime.asc', 'GET');
