@@ -80,9 +80,10 @@ const consentCheckbox = document.getElementById('faceConsent');
 const saveFaceButton = document.getElementById('saveFaceButton');
 const csrfToken = <?= json_encode($_SESSION['face_registration_csrf']) ?>;
 let faceScannerReady = false;
+let registrationSaved = false;
 
 function updateSaveButton() {
-    saveFaceButton.disabled = !(faceScannerReady && consentCheckbox.checked && window.EMISFace && window.EMISFace.getDescriptor());
+    saveFaceButton.disabled = registrationSaved || !(faceScannerReady && consentCheckbox.checked && window.EMISFace && window.EMISFace.getDescriptor());
 }
 
 consentCheckbox.addEventListener('change', updateSaveButton);
@@ -120,6 +121,8 @@ saveFaceButton.addEventListener('click', async function () {
 
         faceStatus.textContent = result.message;
         faceStatus.className = 'alert alert-success text-center';
+        registrationSaved = true;
+        saveFaceButton.disabled = true;
         saveFaceButton.innerHTML = '<i class="bi bi-check-circle me-2"></i>Face Registered';
     } catch (error) {
         faceStatus.textContent = error.message;
