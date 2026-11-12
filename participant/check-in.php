@@ -60,6 +60,7 @@ if (empty($eventId)) {
         </div>
 
         <!-- Camera Viewport -->
+        <div id="faceDetectionStatus" class="alert alert-info text-center">Loading face detection...</div>
         <div class="position-relative mb-3">
             <video id="videoElement" autoplay playsinline></video>
             <canvas id="canvas"></canvas>
@@ -82,6 +83,8 @@ if (empty($eventId)) {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<script src="../js/emis-face.js"></script>
 <script>
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
@@ -92,22 +95,28 @@ const lngDisplay = document.getElementById('lngDisplay');
 
 let currentLatitude = null;
 let currentLongitude = null;
-let mediaStream = null;
+let faceDescriptor = null;
+let faceReady = false;
+let gpsReady = false;
 
-// 1. Access Webcam
-navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false })
-    .then(stream => {
-        mediaStream = stream;
-        video.srcObject = stream;
-        statusAlert.className = 'alert alert-warning text-center';
-        statusAlert.innerHTML = 'Camera ready. Waiting for GPS location...';
-    })
-    .catch(err => {
-        statusAlert.className = 'alert alert-danger text-center';
-        statusAlert.innerHTML = 'Camera Error: Please allow camera permissions in your browser.';
-    });
+function updateCaptureAvailability() {
+    captureBtn.disabled = !(faceReady && gpsReady);
+    if (faceReady && gpsReady) {
+        statusAlert.className = 'alert alert-success text-center';
+        statusAlert.textContent = 'Face detected and GPS acquired. You can proceed.';
+    }
+}
 
-// 2. Access GPS Geolocation
+window.EMISFace.start(video, document.getElementById('faceDetectionStatus'), function (state) {
+    faceReady = state.ready;
+    faceDescriptor = state.ready ? window.EMISFace.getDescriptor() : null;
+    updateCaptureAvailability();
+}).catch(function () {
+    faceReady = false;
+    faceDescriptor = null;
+    captureBtn.disabled = true;
+});
+
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
         position => {
@@ -117,9 +126,10 @@ if (navigator.geolocation) {
             latDisplay.textContent = currentLatitude;
             lngDisplay.textContent = currentLongitude;
 
-            statusAlert.className = 'alert alert-success text-center';
-            statusAlert.innerHTML = 'Ready! GPS coordinates acquired. Click below to check in.';
-            captureBtn.disabled = false;
+            gpsReady = true;
+            statusAlert.className = 'alert alert-info text-center';
+            statusAlert.textContent = 'GPS acquired. Waiting for your registered face to be detected...';
+            updateCaptureAvailability();
         },
         error => {
             statusAlert.className = 'alert alert-danger text-center';
@@ -134,6 +144,12 @@ if (navigator.geolocation) {
 
 // 3. Capture and Submit Handler
 captureBtn.addEventListener('click', async () => {
+    faceDescriptor = window.EMISFace.getDescriptor();
+    if (!faceDescriptor) {
+        statusAlert.className = 'alert alert-warning text-center';
+        statusAlert.textContent = 'Your registered face must be detected before proceeding.';
+        return;
+    }
     captureBtn.disabled = true;
     captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Check-In...';
     statusAlert.className = 'alert alert-info text-center';
@@ -156,7 +172,8 @@ captureBtn.addEventListener('click', async () => {
                 participant_id: '<?= $participantId ?>',
                 latitude: currentLatitude,
                 longitude: currentLongitude,
-                photo_data: photoDataUrl
+                photo_data: photoDataUrl,
+                face_descriptor: faceDescriptor
             })
         });
 
