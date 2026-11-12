@@ -101,6 +101,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($_POST['action'] ?? '') !== 'update_role') {
             throw new Exception('Invalid action.');
         }
+        elseif ($action === 'toggle_status') {
+            $targetId = trim($_POST['user_id'] ?? '');
+            $newStatus = $_POST['new_status'] ?? '';
+        
+            if ($targetId === '' || !in_array($newStatus, ['true', 'false'], true)) {
+                throw new Exception('Invalid account status.');
+            }
+        
+            if ($targetId === (string)$_SESSION['user_id']) {
+                throw new Exception('You cannot deactivate your own account.');
+            }
+        
+            $targetRows = usersApiRequest(
+                'profiles?id=eq.' . rawurlencode($targetId) . '&select=id,role,is_active'
+            );
+        
+            if (empty($targetRows)) {
+                throw new Exception('User account not found.');
+            }
+        
+            $targetUser = $targetRows[0];
+        
+            // Never allow the last administrator to be deactivated.
+            if (
+                $targetUser['role'] === 'Administrator' &&
+                $newStatus === 'false'
+            ) {
+                $admins = usersApiRequest(
+                    'profiles?role=eq.Administrator&is_active=eq.true&select=id'
+                );
+        
+                if (count($admins) <= 1) {
+                    throw new Exception('You cannot deactivate the last active administrator.');
+                }
+            }
+        
+            usersApiRequest(
+                'profiles?id=eq.' . rawurlencode($targetId),
+                'PATCH',
+                ['is_active' => $newStatus === 'true']
+            );
+        
+            $successMsg = $newStatus === 'true'
+                ? 'Account activated successfully.'
+                : 'Account deactivated successfully.';
+        }
 
         $targetId = trim($_POST['user_id'] ?? '');
         $newRole = trim($_POST['new_role'] ?? '');
@@ -560,5 +606,62 @@ foreach ($allUsers as $account) {
 
 </div>
 </main>
+    
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Account Details</h5>
+                <button type="button" class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="userDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function showUserDetails(user) {
+    const fields = [
+        ['Full Name', user.name],
+        ['Email', user.email],
+        ['User ID', user.id],
+        ['Role', user.role],
+        ['Course', user.course || 'Not specified'],
+        ['Section', user.section || 'Not specified'],
+        ['Email Verification', user.verified ? 'Verified' : 'Unverified'],
+        ['Account Status', user.active ? 'Active' : 'Deactivated'],
+        ['Date Registered', user.created || 'Not available'],
+        ['Last Updated', user.updated || 'Not available']
+    ];
+
+    const content = document.getElementById('userDetailsContent');
+    content.replaceChildren();
+
+    fields.forEach(([label, value]) => {
+        const row = document.createElement('div');
+        row.className = 'py-2 border-bottom';
+
+        const heading = document.createElement('small');
+        heading.className = 'text-muted d-block';
+        heading.textContent = label;
+
+        const detail = document.createElement('strong');
+        detail.textContent = value;
+
+        row.append(heading, detail);
+        content.appendChild(row);
+    });
+
+    bootstrap.Modal.getOrCreateInstance(
+        document.getElementById('userDetailsModal')
+    ).show();
+}
+</script>
+
 </body>
 </html>
