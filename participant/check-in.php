@@ -28,6 +28,17 @@ $participantId = $userId;
 if (empty($eventId)) {
     die("Error: No event specified for check-in.");
 }
+
+$faceProfileCheck = supabaseServiceRequest(
+    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$participantId) . '&select=participant_id',
+    'GET'
+);
+if (($faceProfileCheck['code'] ?? 500) >= 400) {
+    die("Face verification is temporarily unavailable. Please contact the administrator.");
+}
+if (empty($faceProfileCheck['data'])) {
+    die('Please <a href="face-registration.php">register your face</a> before checking in.');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
