@@ -199,8 +199,19 @@ function formatDashboardActivityTime($value) {
         return (new DateTimeImmutable($value))->setTimezone(new DateTimeZone('Asia/Manila'))->format('M j, Y · g:i A');
     } catch (Exception $e) { return 'Invalid date'; }
 }
-$totalAttendanceResponse = supabaseRequest('attendance?select=id', 'GET');
-$totalCheckIns = is_array($totalAttendanceResponse['data'] ?? null) ? count($totalAttendanceResponse['data']) : 0;
+// Count check-ins only for events that are currently ongoing.
+$totalCheckIns = 0;
+if (!empty($ongoingEventMap)) {
+    $activeEventIds = array_map('rawurlencode', array_keys($ongoingEventMap));
+    $activeEventFilter = 'event_id=in.(' . implode(',', $activeEventIds) . ')';
+    $totalAttendanceResponse = supabaseRequest(
+        'attendance?select=id&' . $activeEventFilter,
+        'GET'
+    );
+    $totalCheckIns = is_array($totalAttendanceResponse['data'] ?? null)
+        ? count($totalAttendanceResponse['data'])
+        : 0;
+}
 $pendingEquipment = 0;
 ?>
 <!DOCTYPE html>
@@ -257,7 +268,7 @@ $pendingEquipment = 0;
             <div class="col-md-3">
                 <div class="card stat-card shadow-sm mb-3" style="border-left-color: #dc3545;">
                     <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">Total Check-Ins</h6>
+                        <h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6>
                         <h2 class="mb-0"><?= $totalCheckIns ?></h2>
                     </div>
                 </div>
