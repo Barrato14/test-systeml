@@ -291,7 +291,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Failed to create event. Please check the information and try again.');
             }
 
+            $createdEvent = is_array($response['data'] ?? null) && isset($response['data'][0])
+                ? $response['data'][0]
+                : null;
+
             $successMsg = 'Event created successfully!';
+
+            // Automatically announce newly created events to all participant accounts.
+            $participantsResponse = supabaseRequest(
+                'profiles?role=eq.Participant&select=id&limit=1000',
+                'GET'
+            );
+
+            if (($participantsResponse['code'] ?? 500) < 400 && is_array($participantsResponse['data'] ?? null)) {
+                $automaticAnnouncementTitle = 'New Event Added: ' . $payload['title'];
+                $automaticAnnouncementMessage = 'A new event has been added to EMIS. '
+                    . 'Date: ' . formatManilaTime($payload['start_datetime']) . '. '
+                    . 'Venue: ' . ($payload['venue'] ?: 'To be announced') . '. '
+                    . 'Open Browse Events to view the full details and register.';
+
+                $announcementSent = 0;
+                $announcementFailed = 0;
+
+                foreach ($participantsResponse['data'] as $participant) {
+                    $participantId = trim((string)($participant['id'] ?? ''));
+                    if ($participantId === '') {
+                        continue;
+                    }
+
+                    $announcementPayload = [
+                        'participant_id' => $participantId,
+                        'event_id' => $createdEvent['id'] ?? null,
+                        'title' => $automaticAnnouncementTitle,
+                        'message' => $automaticAnnouncementMessage,
+                        'is_read' => false
+                    ];
+
+                    $announcementResponse = supabaseRequest('notifications', 'POST', $announcementPayload);
+
+                    if (($announcementResponse['code'] ?? 500) < 400) {
+                        $announcementSent++;
+                    } else {
+                        $announcementFailed++;
+                    }
+                }
+
+                $successMsg .= " Automatic announcements sent to {$announcementSent} participant(s).";
+                if ($announcementFailed > 0) {
+                    $successMsg .= " {$announcementFailed} could not be notified.";
+                }
+            } else {
+                $successMsg .= ' The event was created, but automatic announcements could not be sent.';
+            }
         } elseif ($action === 'edit') {
             $updateId = trim($_POST['event_id'] ?? '');
             if ($updateId === '') {
