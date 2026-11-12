@@ -131,6 +131,17 @@ if (strtolower($userRole) === 'administrator') {
 } elseif (strtolower($userRole) === 'staff') {
     header('Location: staff/dashboard.php');
 } else {
-    header('Location: participant/dashboard.php');
+    // First-time Google participants must complete their real student details.
+    $hasStudentName = trim((string)($profile['first_name'] ?? '')) !== ''
+        && trim((string)($profile['last_name'] ?? '')) !== '';
+    $hasCourseDetails = trim((string)($profile['course'] ?? '')) !== ''
+        && trim((string)($profile['section'] ?? '')) !== '';
+
+    if (!$hasStudentName || !$hasCourseDetails) {
+        $_SESSION['google_profile_csrf'] = bin2hex(random_bytes(32));
+        header('Location: complete-google-profile.php');
+    } else {
+        header('Location: participant/dashboard.php');
+    }
 }
 exit;
