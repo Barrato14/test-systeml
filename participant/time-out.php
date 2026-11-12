@@ -119,39 +119,46 @@ if (empty($faceProfileCheck['data'])) {
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
-<script src="../js/emis-face.js"></script>
 <script>
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
 const captureBtn = document.getElementById('captureBtn');
 const statusAlert = document.getElementById('statusAlert');
+const faceDetectionStatus = document.getElementById('faceDetectionStatus');
 const latDisplay = document.getElementById('latDisplay');
 const lngDisplay = document.getElementById('lngDisplay');
 
 let currentLatitude = null;
 let currentLongitude = null;
-let faceDescriptor = null;
-let faceReady = false;
+let cameraStream = null;
+let cameraReady = false;
 let gpsReady = false;
 
 function updateCaptureAvailability() {
-    captureBtn.disabled = !(faceReady && gpsReady);
-    if (faceReady && gpsReady) {
+    captureBtn.disabled = !(cameraReady && gpsReady);
+    if (cameraReady && gpsReady) {
         statusAlert.className = 'alert alert-success text-center';
-        statusAlert.textContent = 'Face detected and GPS acquired. You can proceed.';
+        statusAlert.textContent = 'Camera and GPS are ready. Python will verify your face when you capture.';
     }
 }
 
-window.EMISFace.start(video, document.getElementById('faceDetectionStatus'), function (state) {
-    faceReady = state.ready;
-    faceDescriptor = state.ready ? window.EMISFace.getDescriptor() : null;
-    updateCaptureAvailability();
-}).catch(function () {
-    faceReady = false;
-    faceDescriptor = null;
-    captureBtn.disabled = true;
-});
+async function startCamera() {
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
+            audio: false
+        });
+        video.srcObject = cameraStream;
+        await video.play();
+        cameraReady = true;
+        faceDetectionStatus.className = 'alert alert-success text-center';
+        faceDetectionStatus.textContent = 'Camera ready. Python will detect and verify one face during attendance.';
+        updateCaptureAvailability();
+    } catch (error) {
+        faceDetectionStatus.className = 'alert alert-danger text-center';
+        faceDetectionStatus.textContent = error.message || 'Unable to access the camera. Allow camera permission and try again.';
+    }
+}
 
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -161,8 +168,6 @@ if (navigator.geolocation) {
             latDisplay.textContent = currentLatitude;
             lngDisplay.textContent = currentLongitude;
             gpsReady = true;
-            statusAlert.className = 'alert alert-info text-center';
-            statusAlert.textContent = 'GPS acquired. Waiting for your registered face to be detected...';
             updateCaptureAvailability();
         },
         () => {
@@ -177,27 +182,18 @@ if (navigator.geolocation) {
 }
 
 captureBtn.addEventListener('click', async () => {
-    faceDescriptor = window.EMISFace.getDescriptor();
-    if (!faceDescriptor) {
-        statusAlert.className = 'alert alert-warning text-center';
-        statusAlert.textContent = 'Your registered face must be detected before proceeding.';
-        return;
-    }
+    if (!cameraReady || !gpsReady || !video.videoWidth) return;
+
     captureBtn.disabled = true;
-    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Time Out...';
+    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying Face & Timing Out...';
     statusAlert.className = 'alert alert-info text-center';
-    statusAlert.textContent = 'Snapping departure photo and recording time out...';
+    statusAlert.textContent = 'Capturing image. Python is detecting and matching your registered face...';
 
     try {
-        if (!video.videoWidth || !video.videoHeight) {
-            throw new Error('Camera is not ready. Please wait and try again.');
-        }
-
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photoDataUrl = canvas.toDataURL('image/jpeg', 0.88);
 
         const response = await fetch('process-time-out.php', {
             method: 'POST',
@@ -206,26 +202,29 @@ captureBtn.addEventListener('click', async () => {
                 event_id: <?= json_encode((string)$eventId) ?>,
                 latitude: currentLatitude,
                 longitude: currentLongitude,
-                photo_data: photoDataUrl,
-                face_descriptor: faceDescriptor
+                photo_data: photoDataUrl
             })
         });
 
         const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Server rejected time out.');
-        }
+        if (!response.ok || !result.success) throw new Error(result.message || 'Server rejected time out.');
 
         statusAlert.className = 'alert alert-success text-center';
         statusAlert.textContent = 'Time Out Successful! Redirecting...';
         setTimeout(() => { window.location.href = 'dashboard.php'; }, 2000);
-    } catch (err) {
+    } catch (error) {
         captureBtn.disabled = false;
         captureBtn.innerHTML = '<i class="bi bi-shield-check me-2"></i> Capture Face & Time Out';
         statusAlert.className = 'alert alert-danger text-center';
-        statusAlert.textContent = 'Error: ' + err.message;
+        statusAlert.textContent = 'Error: ' + error.message;
     }
 });
+
+window.addEventListener('beforeunload', () => {
+    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+});
+
+startCamera();
 </script>
 </body>
 </html>
