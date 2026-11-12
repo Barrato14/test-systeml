@@ -162,7 +162,7 @@ $users = [];
 
 try {
     $users = usersApiRequest(
-        'profiles?select=id,first_name,last_name,email,role,is_verified'
+        'profiles?select=id,first_name,last_name,email,role,is_verified,is_active,course,section,created_at,updated_at'
         . '&order=first_name.asc'
     );
 } catch (Exception $e) {
