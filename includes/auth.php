@@ -43,7 +43,7 @@ function redirectByRole($role) {
             break;
 
         case 'event organizer':
-            header("Location: organizer/dashboard.php");
+            header("Location: admin/events.php");
             break;
 
         case 'staff':
