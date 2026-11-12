@@ -100,6 +100,7 @@ $pendingEquipment = 0;
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
     <link rel="stylesheet" href="../css/portal-theme.css">
+    <link rel="stylesheet" href="../css/weather-widget.css">
 </head>
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
@@ -112,6 +113,8 @@ $pendingEquipment = 0;
                 <span class="me-3">Welcome, <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong></span>
             </div>
         </div>
+
+        <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
         <!-- Metric Cards -->
         <div class="row mb-4">
@@ -198,6 +201,7 @@ $pendingEquipment = 0;
     </div>
 
 </main>
+<script src="../js/weather-widget.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function () {
