@@ -6,7 +6,7 @@ body.participant-page .participant-dashboard-hero {
     padding: 28px 30px;
     border: 1px solid var(--emis-border);
     border-radius: 18px;
-    background: linear-gradient(120deg, rgba(124,58,237,.18), rgba(23,18,38,.96) 58%);
+    background: #171226;
 }
 .participant-dashboard-eyebrow {
     display: block;
