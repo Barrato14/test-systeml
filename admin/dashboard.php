@@ -42,9 +42,13 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         return json_decode($response, true);
     };
 
-    // Include every profile, including accounts whose is_verified value is false.
+    // Count all application roles except Administrators. Unverified accounts
+    // remain included, and email deduplication prevents counting a profile and
+    // its matching Supabase Auth user twice.
+    $administratorEmails = [];
+
     for ($offset = 0; ; $offset += 1000) {
-        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email&order=id.asc&limit=1000&offset=' . $offset;
+        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,role&order=id.asc&limit=1000&offset=' . $offset;
         $profileRows = $fetchAdminJson($profilesUrl);
 
         if (!is_array($profileRows)) {
@@ -54,6 +58,15 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         foreach ($profileRows as $profileRow) {
             $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
             $accountId = trim((string)($profileRow['id'] ?? ''));
+            $role = strtolower(trim((string)($profileRow['role'] ?? '')));
+
+            if ($role === 'administrator') {
+                if ($emailKey !== '') {
+                    $administratorEmails[$emailKey] = true;
+                }
+                continue;
+            }
+
             if ($emailKey !== '') {
                 $totalUserAccounts['email:' . $emailKey] = true;
             } elseif ($accountId !== '') {
@@ -66,7 +79,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         }
     }
 
-    // Include Auth users too, including Google users whose profile row may be missing.
+    // Include Auth-only accounts, but exclude Auth identities linked to admin profiles.
     for ($page = 1; ; $page++) {
         $authUrl = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users?page=' . $page . '&per_page=1000';
         $authResult = $fetchAdminJson($authUrl);
@@ -79,6 +92,11 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         foreach ($authRows as $authUser) {
             $emailKey = strtolower(trim((string)($authUser['email'] ?? '')));
             $accountId = trim((string)($authUser['id'] ?? ''));
+
+            if ($emailKey !== '' && isset($administratorEmails[$emailKey])) {
+                continue;
+            }
+
             if ($emailKey !== '') {
                 $totalUserAccounts['email:' . $emailKey] = true;
             } elseif ($accountId !== '') {
@@ -93,8 +111,8 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
 
     $totalUsers = count($totalUserAccounts);
 } else {
-    // Fallback for local setups that have not configured the server-only key.
-    $totalUsersResponse = supabaseRequest('profiles?select=id&limit=1000', 'GET');
+    // Fallback for local setups: count every profile role except Administrator.
+    $totalUsersResponse = supabaseRequest('profiles?select=id&role=neq.Administrator&limit=1000', 'GET');
     $totalUsers = is_array($totalUsersResponse['data'] ?? null)
         ? count($totalUsersResponse['data'])
         : 0;
