@@ -37,15 +37,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!in_array($section, ['1A', '1B', '1C', '2A', '2B', '2C'], true)) {
         $error = 'Please select a valid year and section.';
     } else {
-        $updateResponse = supabaseRequest('profiles?id=eq.' . urlencode($profileId), 'PATCH', [
+        $existingProfileResponse = supabaseServiceRequest(
+            'profiles?id=eq.' . urlencode($profileId) . '&select=id',
+            'GET'
+        );
+        $existingProfiles = $existingProfileResponse['data'] ?? [];
+        $profileExists = is_array($existingProfiles) && !empty($existingProfiles);
+
+        $studentProfilePayload = [
+            'id' => $profileId,
             'first_name' => $firstName,
             'last_name' => $lastName,
+            'email' => $email,
             'course' => $course,
-            'section' => $section
-        ]);
+            'section' => $section,
+            'role' => 'Participant',
+            'is_verified' => true,
+            'verification_token' => null
+        ];
+
+        if ($profileExists) {
+            unset($studentProfilePayload['id'], $studentProfilePayload['email'], $studentProfilePayload['role']);
+            $updateResponse = supabaseServiceRequest(
+                'profiles?id=eq.' . urlencode($profileId),
+                'PATCH',
+                $studentProfilePayload
+            );
+        } else {
+            $updateResponse = supabaseServiceRequest('profiles', 'POST', $studentProfilePayload);
+        }
 
         if (($updateResponse['code'] ?? 500) >= 300) {
-            $error = 'We could not save your student details. Please try again.';
+            error_log('Google student profile save failed: ' . json_encode($updateResponse['data'] ?? []));
+            $error = 'We could not save your student details. Please check the profile settings or contact the administrator.';
         } else {
             $_SESSION['user_name'] = $firstName . ' ' . $lastName;
             unset($_SESSION['google_profile_csrf']);
