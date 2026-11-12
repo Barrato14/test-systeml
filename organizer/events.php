@@ -2,8 +2,12 @@
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-if (function_exists('requireRole')) {
-    requireRole(['Administrator', 'Event Organizer']);
+if (
+    !isset($_SESSION['user_id']) ||
+    strtolower(trim((string)($_SESSION['user_role'] ?? ''))) !== 'event organizer'
+) {
+    http_response_code(403);
+    exit('Access denied. Event Organizer access is required.');
 }
 
 $error = '';
@@ -52,23 +56,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_event'])) {
 }
 
 // Fetch Organizer's Events with embedded approved registrations count
-$response = supabaseRequest('events?organizer_id=eq.' . $organizerId . '&order=start_datetime.desc&select=*,event_registrations(status)', 'GET');
+$response = supabaseRequest(
+    'events?organizer_id=eq.' . rawurlencode((string)$organizerId)
+    . '&order=start_datetime.desc&select=*,event_registrations(status)',
+    'GET'
+);
 
 $events = [];
-if (!empty($response['data']) && is_array($response['data'])) {
+if (
+    ($response['code'] ?? 500) < 400 &&
+    is_array($response['data'] ?? null) &&
+    array_is_list($response['data'])
+) {
     foreach ($response['data'] as $ev) {
-        // Count approved registrations for this event
+        // Ignore unexpected response values instead of treating them as event rows.
+        if (!is_array($ev)) {
+            continue;
+        }
+
+        // Count approved registrations for this event.
         $approvedCount = 0;
-        if (!empty($ev['event_registrations'])) {
-            foreach ($ev['event_registrations'] as $reg) {
-                if (isset($reg['status']) && $reg['status'] === 'Approved') {
+        $registrations = $ev['event_registrations'] ?? [];
+        if (is_array($registrations)) {
+            foreach ($registrations as $reg) {
+                if (
+                    is_array($reg) &&
+                    ($reg['status'] ?? '') === 'Approved'
+                ) {
                     $approvedCount++;
                 }
             }
         }
+
         $ev['current_registrations'] = $approvedCount;
         $events[] = $ev;
     }
+} else {
+    $error = $error ?: 'Unable to load your events. Please refresh or try again later.';
 }
 ?>
 <!DOCTYPE html>
@@ -79,8 +103,10 @@ if (!empty($response['data']) && is_array($response['data'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/portal-theme.css">
 </head>
-<body class="bg-light organizer-portal">
-<div class="container mt-4">
+<body class="admin-portal organizer-portal">
+<?php require_once __DIR__ . '/../includes/organizer-nav.php'; ?>
+<main class="content-area admin-main-content">
+<div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Manage Events</h2>
         <a href="../logout.php" class="btn btn-outline-danger">Logout</a>
@@ -160,5 +186,7 @@ if (!empty($response['data']) && is_array($response['data'])) {
         </div>
     </div>
 </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
