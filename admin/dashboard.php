@@ -55,7 +55,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
     $eligibleStaffAndOrganizers = 0;
 
     for ($offset = 0; ; $offset += 1000) {
-        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,role,is_verified&order=id.asc&limit=1000&offset=' . $offset;
+        $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,first_name,last_name,role,is_verified&order=id.asc&limit=1000&offset=' . $offset;
         $profileRows = $fetchAdminJson($profilesUrl);
 
         if (!is_array($profileRows)) {
@@ -67,8 +67,15 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         foreach ($profileRows as $profileRow) {
             $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
             $accountId = trim((string)($profileRow['id'] ?? ''));
+            $firstName = trim((string)($profileRow['first_name'] ?? ''));
+            $lastName = trim((string)($profileRow['last_name'] ?? ''));
             $role = strtolower(trim((string)($profileRow['role'] ?? '')));
             $role = str_replace(['_', '-'], ' ', $role);
+
+            // A user must have both name fields completed before being counted.
+            if ($firstName === '' || $lastName === '') {
+                continue;
+            }
             $isVerified = in_array(
                 strtolower(trim((string)($profileRow['is_verified'] ?? 'false'))),
                 ['true', '1', 't', 'yes'],
@@ -102,13 +109,18 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
     }
 
     $totalUsers = count($totalUserAccounts);
-    error_log('EMIS Total Users counts: profiles fetched=' . $profileRowsFetched . ', verified participants=' . $eligibleParticipants . ', staff and event organizers=' . $eligibleStaffAndOrganizers . ', eligible unique accounts counted=' . $totalUsers);
+    error_log('EMIS Total Users counts: profiles fetched=' . $profileRowsFetched . ', verified participants with complete names=' . $eligibleParticipants . ', staff and event organizers with complete names=' . $eligibleStaffAndOrganizers . ', eligible unique accounts counted=' . $totalUsers);
 } else {
     // Fallback for local setups: apply the same role and verification rules.
-    $totalUsersResponse = supabaseRequest('profiles?select=id,email,role,is_verified&limit=1000', 'GET');
+    $totalUsersResponse = supabaseRequest('profiles?select=id,email,first_name,last_name,role,is_verified&limit=1000', 'GET');
     $fallbackAccounts = [];
     if (is_array($totalUsersResponse['data'] ?? null)) {
         foreach ($totalUsersResponse['data'] as $profileRow) {
+            $firstName = trim((string)($profileRow['first_name'] ?? ''));
+            $lastName = trim((string)($profileRow['last_name'] ?? ''));
+            if ($firstName === '' || $lastName === '') {
+                continue;
+            }
             $role = strtolower(str_replace(['_', '-'], ' ', trim((string)($profileRow['role'] ?? ''))));
             $isVerified = in_array(
                 strtolower(trim((string)($profileRow['is_verified'] ?? 'false'))),
