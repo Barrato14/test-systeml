@@ -184,10 +184,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google Logo" class="social-icon">
                         Continue with Google
                     </a>
-                    <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=facebook&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn-social">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/facebook/facebook-original.svg" alt="Facebook Logo" class="social-icon">
-                        Continue with Facebook
-                    </a>
                 </div>
 
                 <p class="register-prompt">
