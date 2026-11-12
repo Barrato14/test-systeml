@@ -7,11 +7,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     python3 \
     python3-venv \
-    python3-dev \
-    build-essential \
-    cmake \
-    libopenblas-dev \
-    liblapack-dev \
     libjpeg62-turbo-dev \
     supervisor \
     && docker-php-ext-install curl pdo pdo_pgsql pgsql \
@@ -31,7 +26,10 @@ RUN composer install --no-dev --optimize-autoloader
 
 RUN python3 -m venv /opt/face-venv \
     && /opt/face-venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/face-venv/bin/pip install --no-cache-dir -r /var/www/html/face-service/requirements.txt
+    && /opt/face-venv/bin/pip install --no-cache-dir dlib-bin==20.0.1.post1 \
+    && /opt/face-venv/bin/pip install --no-cache-dir -r /var/www/html/face-service/requirements.txt \
+    && /opt/face-venv/bin/pip install --no-cache-dir --no-deps face-recognition==1.3.0 \
+    && /opt/face-venv/bin/python -c "import dlib, face_recognition; print('Face recognition dependencies loaded successfully.')"
 
 COPY deploy/supervisord.conf /etc/supervisor/conf.d/emis.conf
 
