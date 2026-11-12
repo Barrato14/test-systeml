@@ -66,6 +66,22 @@ function userIsActive($value)
     );
 }
 
+function userAccountIsActive($user)
+{
+    $role = strtolower(trim((string)($user['role'] ?? '')));
+    $isActive = userIsActive($user['is_active'] ?? null);
+
+    if ($role === 'participant') {
+        $isVerified = isset($user['is_verified'])
+            && $user['is_verified'] !== null
+            && userIsActive($user['is_verified']);
+
+        return $isActive && $isVerified;
+    }
+
+    return $isActive;
+}
+
 function usersApiRequest($endpoint, $method = 'GET', $payload = null)
 {
     global $supabaseUrl, $serviceKey;
@@ -190,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Retrieve the target account.
         $targetRows = usersApiRequest(
             'profiles?id=eq.' . rawurlencode($targetId)
-            . '&select=id,role,is_active'
+            . '&select=id,role,is_active,is_verified'
         );
 
         if (empty($targetRows)) {
@@ -200,9 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetUser = $targetRows[0];
 
         $oldRole = $targetUser['role'] ?? '';
-        $oldStatus = userIsActive(
-            $targetUser['is_active'] ?? null
-        );
+        $oldStatus = userAccountIsActive($targetUser);
 
         /* -----------------------------------------
            ACTION A: CHANGE ROLE
@@ -368,9 +382,7 @@ if (
             $email = $user['email'] ?? '';
             $role = $user['role'] ?? '';
 
-            $active = userIsActive(
-                $user['is_active'] ?? null
-            );
+            $active = userAccountIsActive($user);
 
             $matchesSearch = (
                 $search === '' ||
@@ -410,7 +422,7 @@ $inactiveCount = 0;
 foreach ($allUsers as $account) {
 
     $role = $account['role'] ?? '';
-    $isActive = userIsActive($account['is_active'] ?? null);
+    $isActive = userAccountIsActive($account);
     $isVerified = isset($account['is_verified'])
         && $account['is_verified'] !== null
         && userIsActive($account['is_verified']);
@@ -1086,9 +1098,7 @@ $totalUsers = count($allUsers);
 
                         $role = $user['role'] ?? 'Participant';
 
-                        $isActive = userIsActive(
-                            $user['is_active'] ?? null
-                        );
+                        $isActive = userAccountIsActive($user);
 
                         $isVerified = userIsActive(
                             $user['is_verified'] ?? false
