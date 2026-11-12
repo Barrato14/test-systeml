@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $email,
+            'password_hash' => password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT),
             'course' => $course,
             'section' => $section,
             'role' => 'Participant',
@@ -71,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $diagnosticCode = (int)($updateResponse['code'] ?? 500);
             $diagnosticDetails = json_encode($updateResponse['data'] ?? [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             error_log('Google student profile save failed. HTTP ' . $diagnosticCode . ': ' . $diagnosticDetails);
-            $error = 'Temporary diagnostic: Supabase returned HTTP ' . $diagnosticCode . '. Details: ' . htmlspecialchars($diagnosticDetails ?: 'No response details returned.', ENT_QUOTES, 'UTF-8');
+            $error = 'We could not save your student details. Please try again or contact the administrator.';
         } else {
             $_SESSION['user_name'] = $firstName . ' ' . $lastName;
             unset($_SESSION['google_profile_csrf']);
