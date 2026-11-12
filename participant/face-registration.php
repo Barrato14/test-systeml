@@ -71,47 +71,67 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
     </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
-<script src="../js/emis-face.js"></script>
 <script>
 const faceVideo = document.getElementById('faceRegistrationVideo');
 const faceStatus = document.getElementById('faceRegistrationStatus');
 const consentCheckbox = document.getElementById('faceConsent');
 const saveFaceButton = document.getElementById('saveFaceButton');
 const csrfToken = <?= json_encode($_SESSION['face_registration_csrf']) ?>;
-let faceScannerReady = false;
+let cameraStream = null;
+let cameraReady = false;
 let registrationSaved = false;
 
 function updateSaveButton() {
-    saveFaceButton.disabled = registrationSaved || !(faceScannerReady && consentCheckbox.checked && window.EMISFace && window.EMISFace.getDescriptor());
+    saveFaceButton.disabled = registrationSaved || !(cameraReady && consentCheckbox.checked);
+}
+
+async function startRegistrationCamera() {
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Camera access is not supported by this browser.');
+        }
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
+            audio: false
+        });
+        faceVideo.srcObject = cameraStream;
+        await faceVideo.play();
+        cameraReady = true;
+        faceStatus.textContent = 'Camera ready. Center your face, make sure only you are visible, then register.';
+        faceStatus.className = 'alert alert-success text-center';
+        updateSaveButton();
+    } catch (error) {
+        faceStatus.textContent = error.message || 'Unable to access the camera. Please allow camera permission.';
+        faceStatus.className = 'alert alert-danger text-center';
+    }
 }
 
 consentCheckbox.addEventListener('change', updateSaveButton);
 
-window.EMISFace.start(faceVideo, faceStatus, function (state) {
-    faceScannerReady = state.ready;
-    updateSaveButton();
-}).catch(function () {
-    saveFaceButton.disabled = true;
-});
-
 saveFaceButton.addEventListener('click', async function () {
-    const descriptor = window.EMISFace.getDescriptor();
-    if (!descriptor || !consentCheckbox.checked) {
-        faceStatus.textContent = 'A face scan and your consent are required.';
+    if (!cameraReady || !consentCheckbox.checked || !faceVideo.videoWidth) {
+        faceStatus.textContent = 'Camera readiness and your consent are required.';
         faceStatus.className = 'alert alert-warning text-center';
         return;
     }
 
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = faceVideo.videoWidth;
+    captureCanvas.height = faceVideo.videoHeight;
+    captureCanvas.getContext('2d').drawImage(faceVideo, 0, 0, captureCanvas.width, captureCanvas.height);
+    const imageData = captureCanvas.toDataURL('image/jpeg', 0.9);
+
     saveFaceButton.disabled = true;
-    saveFaceButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving face registration...';
+    saveFaceButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Detecting and registering face...';
+    faceStatus.textContent = 'Python is checking your image and preparing your face template...';
+    faceStatus.className = 'alert alert-info text-center';
 
     try {
         const response = await fetch('save-face-registration.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
-                face_descriptor: descriptor,
+                image_data: imageData,
                 consent_given: true,
                 csrf_token: csrfToken
             })
@@ -122,7 +142,6 @@ saveFaceButton.addEventListener('click', async function () {
         faceStatus.textContent = result.message;
         faceStatus.className = 'alert alert-success text-center';
         registrationSaved = true;
-        saveFaceButton.disabled = true;
         saveFaceButton.innerHTML = '<i class="bi bi-check-circle me-2"></i>Face Registered';
     } catch (error) {
         faceStatus.textContent = error.message;
@@ -131,6 +150,12 @@ saveFaceButton.addEventListener('click', async function () {
         updateSaveButton();
     }
 });
+
+window.addEventListener('beforeunload', function () {
+    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+});
+
+startRegistrationCamera();
 </script>
 </body>
 </html>
