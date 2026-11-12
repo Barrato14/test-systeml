@@ -94,118 +94,112 @@ if (empty($faceProfileCheck['data'])) {
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
-<script src="../js/emis-face.js"></script>
 <script>
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
 const captureBtn = document.getElementById('captureBtn');
 const statusAlert = document.getElementById('statusAlert');
+const faceDetectionStatus = document.getElementById('faceDetectionStatus');
 const latDisplay = document.getElementById('latDisplay');
 const lngDisplay = document.getElementById('lngDisplay');
 
 let currentLatitude = null;
 let currentLongitude = null;
-let faceDescriptor = null;
-let faceReady = false;
+let cameraStream = null;
+let cameraReady = false;
 let gpsReady = false;
 
 function updateCaptureAvailability() {
-    captureBtn.disabled = !(faceReady && gpsReady);
-    if (faceReady && gpsReady) {
+    captureBtn.disabled = !(cameraReady && gpsReady);
+    if (cameraReady && gpsReady) {
         statusAlert.className = 'alert alert-success text-center';
-        statusAlert.textContent = 'Face detected and GPS acquired. You can proceed.';
+        statusAlert.textContent = 'Camera and GPS are ready. Python will verify your face when you capture.';
     }
 }
 
-window.EMISFace.start(video, document.getElementById('faceDetectionStatus'), function (state) {
-    faceReady = state.ready;
-    faceDescriptor = state.ready ? window.EMISFace.getDescriptor() : null;
-    updateCaptureAvailability();
-}).catch(function () {
-    faceReady = false;
-    faceDescriptor = null;
-    captureBtn.disabled = true;
-});
+async function startCamera() {
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
+            audio: false
+        });
+        video.srcObject = cameraStream;
+        await video.play();
+        cameraReady = true;
+        faceDetectionStatus.className = 'alert alert-success text-center';
+        faceDetectionStatus.textContent = 'Camera ready. Python will detect and verify one face during attendance.';
+        updateCaptureAvailability();
+    } catch (error) {
+        faceDetectionStatus.className = 'alert alert-danger text-center';
+        faceDetectionStatus.textContent = error.message || 'Unable to access the camera. Allow camera permission and try again.';
+    }
+}
 
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
         position => {
             currentLatitude = position.coords.latitude;
             currentLongitude = position.coords.longitude;
-            
             latDisplay.textContent = currentLatitude;
             lngDisplay.textContent = currentLongitude;
-
             gpsReady = true;
-            statusAlert.className = 'alert alert-info text-center';
-            statusAlert.textContent = 'GPS acquired. Waiting for your registered face to be detected...';
             updateCaptureAvailability();
         },
-        error => {
+        () => {
             statusAlert.className = 'alert alert-danger text-center';
-            statusAlert.innerHTML = 'GPS Error: Please enable location services to check in.';
+            statusAlert.textContent = 'GPS Error: Please enable location services to check in.';
         },
         { enableHighAccuracy: true, timeout: 10000 }
     );
 } else {
     statusAlert.className = 'alert alert-danger text-center';
-    statusAlert.innerHTML = 'Geolocation is not supported by your browser.';
+    statusAlert.textContent = 'Geolocation is not supported by your browser.';
 }
 
-// 3. Capture and Submit Handler
 captureBtn.addEventListener('click', async () => {
-    faceDescriptor = window.EMISFace.getDescriptor();
-    if (!faceDescriptor) {
-        statusAlert.className = 'alert alert-warning text-center';
-        statusAlert.textContent = 'Your registered face must be detected before proceeding.';
-        return;
-    }
+    if (!cameraReady || !gpsReady || !video.videoWidth) return;
+
     captureBtn.disabled = true;
-    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Check-In...';
+    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying Face & Checking In...';
     statusAlert.className = 'alert alert-info text-center';
-    statusAlert.innerHTML = 'Snapping photo and recording check-in...';
+    statusAlert.textContent = 'Capturing image. Python is detecting and matching your registered face...';
 
-    // Draw video frame to canvas
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-    // Prepare payload to send to backend processing script
     try {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photoDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
         const response = await fetch('process-check-in.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                event_id: '<?= $eventId ?>',
-                participant_id: '<?= $participantId ?>',
+                event_id: <?= json_encode((string)$eventId) ?>,
                 latitude: currentLatitude,
                 longitude: currentLongitude,
-                photo_data: photoDataUrl,
-                face_descriptor: faceDescriptor
+                photo_data: photoDataUrl
             })
         });
 
         const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Server rejected check-in.');
 
-        if (result.success) {
-            statusAlert.className = 'alert alert-success text-center';
-            statusAlert.innerHTML = '<strong>Check-in Successful!</strong> Redirecting to dashboard...';
-            setTimeout(() => {
-                window.location.href = 'dashboard.php';
-            }, 2000);
-        } else {
-            throw new Error(result.message || 'Server rejected check-in.');
-        }
-    } catch (err) {
+        statusAlert.className = 'alert alert-success text-center';
+        statusAlert.textContent = 'Check-in successful! Redirecting to dashboard...';
+        setTimeout(() => { window.location.href = 'dashboard.php'; }, 2000);
+    } catch (error) {
         captureBtn.disabled = false;
         captureBtn.innerHTML = '<i class="bi bi-shield-check me-2"></i> Capture Face & Check In';
         statusAlert.className = 'alert alert-danger text-center';
-        statusAlert.innerHTML = 'Error: ' + err.message;
+        statusAlert.textContent = 'Error: ' + error.message;
     }
 });
+
+window.addEventListener('beforeunload', () => {
+    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+});
+
+startCamera();
 </script>
 </body>
 </html>
