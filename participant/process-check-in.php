@@ -1,16 +1,11 @@
-<?
-$faceVerification = verifyParticipantFace($participantId, $faceDescriptor);
-if (!$faceVerification['success']) {
-    respond(false, $faceVerification['message']);
-}
-php
+<?php
 session_start();
 date_default_timezone_set('Asia/Manila');
 header('Content-Type: application/json');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
-require_once '../includes/face-recognition.php';
+require_once '../includes/face-service.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -21,16 +16,19 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !==
     respond(false, 'Unauthorized access.');
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    respond(false, 'Method not allowed.');
+}
 
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
 $eventId = $input['event_id'] ?? '';
-$participantId = $_SESSION['user_id']; // Never trust participant_id from the browser.
+$participantId = (string)$_SESSION['user_id'];
 $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
-$faceDescriptor = $input['face_descriptor'] ?? null;
 
-if ($eventId === '' || $photoDataUrl === '') {
+if ($eventId === '' || !is_string($photoDataUrl) || $photoDataUrl === '') {
     respond(false, 'Missing required check-in data or photo.');
 }
 
@@ -71,7 +69,7 @@ if ($now >= $eventEnd) {
     respond(false, 'Check-in is closed. This event ended on ' . $eventEnd->format('F j, Y, g:i A') . ' (PHT).');
 }
 
-// Check for duplicate check-in.
+// Check for duplicate check-in before performing face verification.
 $existingCheckIn = supabaseRequest(
     'attendance?event_id=eq.' . rawurlencode($eventId) .
     '&participant_id=eq.' . rawurlencode($participantId) . '&select=id',
@@ -84,6 +82,16 @@ if (($existingCheckIn['code'] ?? 500) >= 400) {
 
 if (!empty($existingCheckIn['data'])) {
     respond(false, 'You have already checked in for this event.');
+}
+
+$faceResponse = callEmisFaceService('verify', [
+    'participant_id' => $participantId,
+    'image_data' => $photoDataUrl
+]);
+$faceResult = $faceResponse['data'] ?? [];
+
+if (($faceResponse['code'] ?? 500) >= 300 || empty($faceResult['success'])) {
+    respond(false, $faceResult['message'] ?? 'Face verification failed. Please try again.');
 }
 
 $payload = [
