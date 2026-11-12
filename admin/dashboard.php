@@ -5,11 +5,17 @@ date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure user is logged in and is an Administrator
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'administrator') {
+// Administrators and Event Organizers share this dashboard.
+// Organizer data is restricted to events assigned to the signed-in account.
+$currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+if (
+    !isset($_SESSION['user_id']) ||
+    !in_array($currentRole, ['administrator', 'event organizer'], true)
+) {
     header("Location: ../login.php");
     exit;
 }
+$isEventOrganizer = $currentRole === 'event organizer';
 
 // Count eligible accounts from public.profiles.
 // Profiles are the source of truth for role and participant verification;
@@ -144,7 +150,13 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
 }
 
 // Load currently ongoing events for the dashboard activity panel.
-$manilaTimezone = new DateTimeZone('Asia/Manila');$now = new DateTimeImmutable('now', $manilaTimezone);$eventsResponse = supabaseRequest('events?select=id,title,start_datetime,end_datetime,venue&order=start_datetime.asc', 'GET');
+$manilaTimezone = new DateTimeZone('Asia/Manila');$now = new DateTimeImmutable('now', $manilaTimezone);$eventsQuery = 'events?select=id,title,start_datetime,end_datetime,venue,organizer_id&order=start_datetime.asc';
+if ($isEventOrganizer) {
+    $eventsQuery = 'events?select=id,title,start_datetime,end_datetime,venue,organizer_id'
+        . '&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id'])
+        . '&order=start_datetime.asc';
+}
+$eventsResponse = supabaseRequest($eventsQuery, 'GET');
 $ongoingEvents = [];
 $ongoingEventMap = [];$activeEvents = 0;
 if (is_array($eventsResponse['data'] ?? null)) {
@@ -231,7 +243,7 @@ $pendingEquipment = 0;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - EMIS</title>
+    <title><?= $isEventOrganizer ? 'Event Organizer Dashboard - EMIS' : 'Admin Dashboard - EMIS' ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
     <link rel="stylesheet" href="../css/portal-theme.css">
@@ -243,9 +255,9 @@ $pendingEquipment = 0;
 
 
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">Dashboard Overview</h2>
+            <h2 class="mb-0"><?= $isEventOrganizer ? 'Event Organizer Overview' : 'Dashboard Overview' ?></h2>
             <div class="d-flex align-items-center">
-                <span class="me-3">Welcome, <strong><?= htmlspecialchars($_SESSION['user_name'] ?? 'Admin') ?></strong></span>
+                <span class="me-3">Welcome, <strong><?= htmlspecialchars($_SESSION['user_name'] ?? ($isEventOrganizer ? 'Event Organizer' : 'Admin')) ?></strong></span>
             </div>
         </div>
 
@@ -253,37 +265,29 @@ $pendingEquipment = 0;
 
         <!-- Metric Cards -->
         <div class="row mb-4">
+            <?php if (!$isEventOrganizer): ?>
             <div class="col-md-3">
-                <div class="card stat-card shadow-sm mb-3">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">Total Users</h6>
-                        <h2 class="mb-0"><?= $totalUsers ?></h2>
-                    </div>
-                </div>
+                <div class="card stat-card shadow-sm mb-3"><div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Total Users</h6><h2 class="mb-0"><?= $totalUsers ?></h2>
+                </div></div>
             </div>
+            <?php endif; ?>
             <div class="col-md-3">
-                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #198754;">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">Active Events</h6>
-                        <h2 class="mb-0"><?= $activeEvents ?></h2>
-                    </div>
-                </div>
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #198754;"><div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2"><?= $isEventOrganizer ? 'My Active Events' : 'Active Events' ?></h6><h2 class="mb-0"><?= $activeEvents ?></h2>
+                </div></div>
             </div>
+            <?php if (!$isEventOrganizer): ?>
             <div class="col-md-3">
-                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #ffc107;">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6>
-                        <h2 class="mb-0"><?= $pendingEquipment ?></h2>
-                    </div>
-                </div>
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #ffc107;"><div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2>
+                </div></div>
             </div>
+            <?php endif; ?>
             <div class="col-md-3">
-                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #dc3545;">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6>
-                        <h2 class="mb-0"><?= $totalCheckIns ?></h2>
-                    </div>
-                </div>
+                <div class="card stat-card shadow-sm mb-3" style="border-left-color: #dc3545;"><div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2"><?= $isEventOrganizer ? 'My Event Check-Ins' : 'Active Event Check-Ins' ?></h6><h2 class="mb-0"><?= $totalCheckIns ?></h2>
+                </div></div>
             </div>
         </div>
 
@@ -292,7 +296,7 @@ $pendingEquipment = 0;
             <div class="col-lg-8">
                 <section class="card shadow-sm admin-activity-card">
                     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-3">
-                        <div><h5 class="mb-1">Recent Activity</h5><p class="small text-muted mb-0">Activity from events that are currently ongoing.</p></div>
+                        <div><h5 class="mb-1">Recent Activity</h5><p class="small text-muted mb-0"><?= $isEventOrganizer ? 'Activity from your events that are currently ongoing.' : 'Activity from events that are currently ongoing.' ?></p></div>
                         <div class="admin-activity-tabs" role="tablist" aria-label="Recent activity categories">
                             <button type="button" class="admin-activity-tab is-active" id="ongoingTab" role="tab" aria-selected="true" aria-controls="ongoingPanel" data-activity-tab="ongoing"><i class="bi bi-calendar2-check"></i> Ongoing Events <span><?= count($ongoingEvents) ?></span></button>
                             <button type="button" class="admin-activity-tab" id="attendanceTab" role="tab" aria-selected="false" aria-controls="attendancePanel" data-activity-tab="attendance"><i class="bi bi-person-check"></i> Attendance <span><?= count($recentAttendance) ?></span></button>
@@ -309,7 +313,7 @@ $pendingEquipment = 0;
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
-                            <div class="admin-activity-footer"><a href="events.php">Manage events <i class="bi bi-arrow-up-right"></i></a></div>
+                            <div class="admin-activity-footer"><a href="events.php"><?= $isEventOrganizer ? 'View my events' : 'Manage events' ?> <i class="bi bi-arrow-up-right"></i></a></div>
                         </div>
                         <div class="admin-activity-panel" id="attendancePanel" role="tabpanel" aria-labelledby="attendanceTab" data-activity-panel="attendance" hidden>
                             <?php if (empty($recentAttendance)): ?>
@@ -327,9 +331,11 @@ $pendingEquipment = 0;
                 </section>
             </div>
             <div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-header"><h5 class="mb-0">Quick Actions</h5></div><div class="card-body"><div class="d-grid gap-3">
-                <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i> Create New Event</a>
+                <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i> <?= $isEventOrganizer ? 'Create Event' : 'Create New Event' ?></a>
                 <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i> View Face &amp; GPS Attendance</a>
+                <?php if (!$isEventOrganizer): ?>
                 <a href="equipment.php?action=approve" class="btn btn-outline-warning text-start"><i class="bi bi-tools me-2"></i> Review Borrowing Requests</a>
+                <?php endif; ?>
             </div></div></div></div>
         </div>
 
