@@ -30,18 +30,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && isset($user['password_hash']) && password_verify($password, $user['password_hash'])) {
         
         // --- VERIFICATION CHECK ADDED HERE ---
-        $isVerified = $user['is_verified'] ?? false;
-        if ($isVerified === false || $isVerified === 'false' || $isVerified === 0) {
-            $error = "Please check your Gmail inbox and click the verification link before logging in.";
+        $isActive = $user['is_active'] ?? true;
+
+        if ($isActive === false || $isActive === 'false' || $isActive === 0 || $isActive === '0') {
+            $error = "Your account has been deactivated. Please contact the administrator.";
         } else {
-            // Proceed with login session setup
-            session_regenerate_id(true); // Prevent session fixation
-            $_SESSION['user_id'] = $user['id'] ?? '';
-            $_SESSION['user_email'] = $user['email'] ?? $email;
-            $_SESSION['user_role'] = $user['role'] ?? 'user';
-            $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-            
-            redirectByRole($_SESSION['user_role']);
+            $isVerified = $user['is_verified'] ?? false;
+        
+            if ($isVerified === false || $isVerified === 'false' || $isVerified === 0) {
+                $error = "Please check your Gmail inbox and click the verification link before logging in.";
+            } else {
+                // Keep your existing session setup and redirect code here.
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $user['id'] ?? '';
+                $_SESSION['user_email'] = $user['email'] ?? $email;
+                $_SESSION['user_role'] = $user['role'] ?? 'user';
+                $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+        
+                redirectByRole($_SESSION['user_role']);
+            }
         }
         // -------------------------------------
 
