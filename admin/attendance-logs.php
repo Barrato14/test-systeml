@@ -10,9 +10,21 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'admi
     exit;
 }
 
-// Fetch attendance records and profiles from Supabase
+// Fetch attendance records, events, and profiles from Supabase
 $attendanceRes = supabaseRequest('attendance?select=*&order=check_in_time.desc', 'GET');
 $attendanceLogs = ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) ? $attendanceRes['data'] : [];
+
+$eventsRes = supabaseRequest('events?select=id,title&order=start_datetime.desc', 'GET');
+$eventsMap = [];
+$eventOptions = [];
+if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
+    foreach ($eventsRes['data'] as $event) {
+        $eventId = (string)($event['id'] ?? '');
+        if ($eventId === '') continue;
+        $eventsMap[$eventId] = (string)($event['title'] ?? 'Untitled Event');
+        $eventOptions[$eventId] = (string)($event['title'] ?? 'Untitled Event');
+    }
+}
 
 // Fetch profiles to map course/section info if available
 $profilesRes = supabaseRequest('profiles?select=*', 'GET');
@@ -26,10 +38,12 @@ if ($profilesRes['code'] === 200 && is_array($profilesRes['data'])) {
 // Filter parameters from query string
 $filterCourse = $_GET['course'] ?? '';
 $filterSection = $_GET['section'] ?? '';
+$filterEvent = trim((string)($_GET['event_id'] ?? ''));
 
-// Apply filters if selected
-if (!empty($filterCourse) || !empty($filterSection)) {
-    $attendanceLogs = array_filter($attendanceLogs, function($log) use ($profilesMap, $filterCourse, $filterSection) {
+// Apply event, course, and section filters if selected
+if (!empty($filterEvent) || !empty($filterCourse) || !empty($filterSection)) {
+    $attendanceLogs = array_filter($attendanceLogs, function($log) use ($profilesMap, $filterCourse, $filterSection, $filterEvent) {
+        if ($filterEvent !== '' && (string)($log['event_id'] ?? '') !== $filterEvent) return false;
         $pid = $log['participant_id'] ?? '';
         $profile = $profilesMap[$pid] ?? [];
         $pCourse = strtoupper($profile['course'] ?? '');
@@ -93,6 +107,15 @@ function formatManilaTime($utcString) {
                         </select>
                     </div>
                     <div class="col-md-4">
+                        <label for="event_id" class="form-label fw-bold small">Filter by Event</label>
+                        <select name="event_id" id="event_id" class="form-select">
+                            <option value="">All Events</option>
+                            <?php foreach ($eventOptions as $eventId => $eventTitle): ?>
+                                <option value="<?= htmlspecialchars($eventId, ENT_QUOTES, 'UTF-8') ?>" <?= $filterEvent === (string)$eventId ? 'selected' : '' ?>><?= htmlspecialchars($eventTitle) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label for="section" class="form-label fw-bold small">Filter by Year & Section</label>
                         <select name="section" id="section" class="form-select">
                             <option value="">All Sections (1A-2C)</option>
@@ -125,7 +148,7 @@ function formatManilaTime($utcString) {
                             <tr>
                                 <th>Participant / ID</th>
                                 <th>Course & Section</th>
-                                <th>Event ID</th>
+                                <th>Event</th>
                                 <th>Time In (Face & GPS)</th>
                                 <th>Time Out (Face & GPS)</th>
                                 <th>Status</th>
@@ -153,7 +176,10 @@ function formatManilaTime($utcString) {
                                             <span class="badge bg-info text-dark"><?= htmlspecialchars(strtoupper($courseName)) ?></span>
                                             <span class="badge bg-secondary"><?= htmlspecialchars(strtoupper($sectionName)) ?></span>
                                         </td>
-                                        <td><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></td>
+                                        <td>
+                                            <strong><?= htmlspecialchars($eventsMap[(string)($log['event_id'] ?? '')] ?? 'Unknown Event') ?></strong>
+                                            <div><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></div>
+                                        </td>
                                         
                                         <!-- Time In Details -->
                                         <td>
