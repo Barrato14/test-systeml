@@ -63,6 +63,17 @@ if (($checkExisting['code'] ?? 500) !== 200 || empty($checkExisting['data'])) {
 if (!empty($checkExisting['data'][0]['time_out'])) {
     die("Error: You have already timed out for this event.");
 }
+
+$faceProfileCheck = supabaseServiceRequest(
+    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$participantId) . '&select=participant_id',
+    'GET'
+);
+if (($faceProfileCheck['code'] ?? 500) >= 400) {
+    die("Face verification is temporarily unavailable. Please contact the administrator.");
+}
+if (empty($faceProfileCheck['data'])) {
+    die('Please <a href="face-registration.php">register your face</a> before timing out.');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
