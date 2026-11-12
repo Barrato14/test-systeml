@@ -1,0 +1,273 @@
+<?php
+session_start();
+date_default_timezone_set('Asia/Manila');
+require_once '../config/database.php';
+require_once '../includes/auth.php';
+
+// Only Event Organizers may access this page.
+if (
+    !isset($_SESSION['user_id']) ||
+    strtolower(trim((string)($_SESSION['user_role'] ?? ''))) !== 'event organizer'
+) {
+    http_response_code(403);
+    exit('Access denied. Event Organizer access is required.');
+}
+
+// Fetch only events owned by the signed-in organizer.
+$organizerId = (string)$_SESSION['user_id'];
+$eventsRes = supabaseRequest(
+    'events?select=id,title&organizer_id=eq.' . rawurlencode($organizerId)
+    . '&order=start_datetime.desc&limit=1000',
+    'GET'
+);
+$eventsMap = [];
+$eventOptions = [];
+$organizerEventIds = [];
+
+if (
+    ($eventsRes['code'] ?? 500) < 400 &&
+    is_array($eventsRes['data'] ?? null)
+) {
+    foreach ($eventsRes['data'] as $event) {
+        if (!is_array($event)) continue;
+        $eventId = trim((string)($event['id'] ?? ''));
+        if ($eventId === '') continue;
+        $eventTitle = (string)($event['title'] ?? 'Untitled Event');
+        $eventsMap[$eventId] = $eventTitle;
+        $eventOptions[$eventId] = $eventTitle;
+        $organizerEventIds[] = $eventId;
+    }
+}
+
+// Fetch attendance only for this organizer's events.
+$attendanceLogs = [];
+if (!empty($organizerEventIds)) {
+    $encodedEventIds = array_map('rawurlencode', $organizerEventIds);
+    $attendanceRes = supabaseRequest(
+        'attendance?select=*&event_id=in.(' . implode(',', $encodedEventIds) . ')'
+        . '&order=check_in_time.desc&limit=2000',
+        'GET'
+    );
+    if (
+        ($attendanceRes['code'] ?? 500) < 400 &&
+        is_array($attendanceRes['data'] ?? null)
+    ) {
+        $attendanceLogs = array_values(array_filter(
+            $attendanceRes['data'],
+            function ($log) {
+                return is_array($log);
+            }
+        ));
+    }
+}
+
+// Fetch profiles to map course/section info if available
+$profilesRes = supabaseRequest('profiles?select=*', 'GET');
+$profilesMap = [];
+if ($profilesRes['code'] === 200 && is_array($profilesRes['data'])) {
+    foreach ($profilesRes['data'] as $profile) {
+        $profilesMap[$profile['id']] = $profile;
+    }
+}
+
+// Filter parameters from query string
+$filterCourse = $_GET['course'] ?? '';
+$filterSection = $_GET['section'] ?? '';
+$filterEvent = trim((string)($_GET['event_id'] ?? ''));
+
+// Apply event, course, and section filters if selected
+if (!empty($filterEvent) || !empty($filterCourse) || !empty($filterSection)) {
+    $attendanceLogs = array_filter($attendanceLogs, function($log) use ($profilesMap, $filterCourse, $filterSection, $filterEvent) {
+        if ($filterEvent !== '' && (string)($log['event_id'] ?? '') !== $filterEvent) return false;
+        $pid = $log['participant_id'] ?? '';
+        $profile = $profilesMap[$pid] ?? [];
+        $pCourse = strtoupper($profile['course'] ?? '');
+        $pSection = strtoupper($profile['section'] ?? '');
+
+        if (!empty($filterCourse) && $pCourse !== strtoupper($filterCourse)) return false;
+        if (!empty($filterSection) && $pSection !== strtoupper($filterSection)) return false;
+        return true;
+    });
+}
+
+// Helper function to safely format UTC strings to Manila Time
+function formatManilaTime($utcString) {
+    if (empty($utcString)) return 'N/A';
+    try {
+        $date = new DateTime($utcString);
+        $date->setTimezone(new DateTimeZone('Asia/Manila'));
+        return $date->format('M j, g:i A');
+    } catch (Exception $e) {
+        return 'Invalid Date';
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Logs - EMIS Organizer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .sidebar { min-height: 100vh; background-color: #343a40; color: white; }
+        .sidebar a { color: #cfd8dc; text-decoration: none; padding: 12px 20px; display: block; }
+        .sidebar a:hover, .sidebar a.active { background-color: #495057; color: white; border-left: 4px solid #0d6efd; }
+        .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
+        .snapshot-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
+        .snapshot-thumb:hover { transform: scale(3); }
+    </style>
+    <link rel="stylesheet" href="../css/portal-theme.css">
+</head>
+<body class="admin-portal organizer-portal">
+<?php require_once __DIR__ . '/../includes/organizer-nav.php'; ?>
+<main class="content-area admin-main-content">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> My Event Attendance Logs</h2>
+            <span class="badge bg-secondary fs-6">Showing: <?= count($attendanceLogs) ?> Records</span>
+        </div>
+
+        <!-- Filter Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <form method="GET" action="attendance-logs.php" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="course" class="form-label fw-bold small">Filter by Course</label>
+                        <select name="course" id="course" class="form-select">
+                            <option value="">All Courses (ACT, HM, CT)</option>
+                            <option value="ACT" <?= $filterCourse === 'ACT' ? 'selected' : '' ?>>ACT (Associate in Computer Technology)</option>
+                            <option value="HM" <?= $filterCourse === 'HM' ? 'selected' : '' ?>>HM (Hotel Management)</option>
+                            <option value="CT" <?= $filterCourse === 'CT' ? 'selected' : '' ?>>CT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="event_id" class="form-label fw-bold small">Filter by Event</label>
+                        <select name="event_id" id="event_id" class="form-select">
+                            <option value="">All Events</option>
+                            <?php foreach ($eventOptions as $eventId => $eventTitle): ?>
+                                <option value="<?= htmlspecialchars($eventId, ENT_QUOTES, 'UTF-8') ?>" <?= $filterEvent === (string)$eventId ? 'selected' : '' ?>><?= htmlspecialchars($eventTitle) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="section" class="form-label fw-bold small">Filter by Year & Section</label>
+                        <select name="section" id="section" class="form-select">
+                            <option value="">All Sections (1A-2C)</option>
+                            <optgroup label="Year 1">
+                                <option value="1A" <?= $filterSection === '1A' ? 'selected' : '' ?>>1A</option>
+                                <option value="1B" <?= $filterSection === '1B' ? 'selected' : '' ?>>1B</option>
+                                <option value="1C" <?= $filterSection === '1C' ? 'selected' : '' ?>>1C</option>
+                            </optgroup>
+                            <optgroup label="Year 2">
+                                <option value="2A" <?= $filterSection === '2A' ? 'selected' : '' ?>>2A</option>
+                                <option value="2B" <?= $filterSection === '2B' ? 'selected' : '' ?>>2B</option>
+                                <option value="2C" <?= $filterSection === '2C' ? 'selected' : '' ?>>2C</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary me-2"><i class="bi bi-filter me-1"></i> Apply Filter</button>
+                        <a href="attendance-logs.php" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Participant / ID</th>
+                                <th>Course & Section</th>
+                                <th>Event</th>
+                                <th>Time In (Face & GPS)</th>
+                                <th>Time Out (Face & GPS)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($attendanceLogs)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($attendanceLogs as $log): 
+                                    $pid = $log['participant_id'] ?? '';
+                                    $profile = $profilesMap[$pid] ?? [];
+                                    $courseName = $profile['course'] ?? 'ACT/HM/CT';
+                                    $sectionName = $profile['section'] ?? '1A';
+                                    $fullName = trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')) ?: 'Participant';
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <div><strong><?= htmlspecialchars($fullName) ?></strong></div>
+                                            <code class="small text-muted"><?= htmlspecialchars($pid) ?></code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark"><?= htmlspecialchars(strtoupper($courseName)) ?></span>
+                                            <span class="badge bg-secondary"><?= htmlspecialchars(strtoupper($sectionName)) ?></span>
+                                        </td>
+                                        <td>
+                                            <strong><?= htmlspecialchars($eventsMap[(string)($log['event_id'] ?? '')] ?? 'Unknown Event') ?></strong>
+                                            <div><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></div>
+                                        </td>
+                                        
+                                        <!-- Time In Details -->
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <?php if (!empty($log['photo_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['photo_url']) ?>" alt="Check-in Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                <?php else: ?>
+                                                    <span class="text-muted small">No photo</span>
+                                                <?php endif; ?>
+                                                <div>
+                                                    <div class="small fw-bold"><?= formatManilaTime($log['check_in_time'] ?? '') ?></div>
+                                                    <?php if (!empty($log['latitude']) && !empty($log['longitude'])): ?>
+                                                        <a href="https://www.google.com/maps?q=<?= $log['latitude'] ?>,<?= $log['longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                            <i class="bi bi-geo-alt-fill"></i> Map In
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Time Out Details -->
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <?php if (!empty($log['timeout_photo_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['timeout_photo_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                    <div>
+                                                        <div class="small fw-bold text-success"><?= formatManilaTime($log['time_out'] ?? '') ?></div>
+                                                        <?php if (!empty($log['timeout_latitude']) && !empty($log['timeout_longitude'])): ?>
+                                                            <a href="https://www.google.com/maps?q=<?= $log['timeout_latitude'] ?>,<?= $log['timeout_longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                                <i class="bi bi-geo-alt-fill"></i> Map Out
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark">Active / Not Timed Out</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span class="badge bg-success"><?= htmlspecialchars($log['status'] ?? 'Present') ?></span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
