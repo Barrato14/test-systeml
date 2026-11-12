@@ -4,17 +4,24 @@ date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-// Ensure user is logged in as an Administrator
-if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'administrator') {
-    header("Location: ../login.php");
-    exit;
+// Administrators and Event Organizers may access Attendance Logs.
+$currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
+if (
+    !isset($_SESSION['user_id']) ||
+    !in_array($currentRole, ['administrator', 'event organizer'], true)
+) {
+    http_response_code(403);
+    exit('Access denied.');
 }
 
-// Fetch attendance records, events, and profiles from Supabase
-$attendanceRes = supabaseRequest('attendance?select=*&order=check_in_time.desc', 'GET');
-$attendanceLogs = ($attendanceRes['code'] === 200 && is_array($attendanceRes['data'])) ? $attendanceRes['data'] : [];
-
-$eventsRes = supabaseRequest('events?select=id,title&order=start_datetime.desc', 'GET');
+// Fetch events visible to the current role.
+$eventsQuery = 'events?select=id,title&order=start_datetime.desc';
+if ($currentRole === 'event organizer') {
+    $eventsQuery = 'events?select=id,title&organizer_id=eq.'
+        . rawurlencode((string)$_SESSION['user_id'])
+        . '&order=start_datetime.desc';
+}
+$eventsRes = supabaseRequest($eventsQuery, 'GET');
 $eventsMap = [];
 $eventOptions = [];
 if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
@@ -24,6 +31,25 @@ if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
         $eventsMap[$eventId] = (string)($event['title'] ?? 'Untitled Event');
         $eventOptions[$eventId] = (string)($event['title'] ?? 'Untitled Event');
     }
+}
+
+// Fetch only attendance records belonging to the visible events.
+$visibleEventIds = array_keys($eventsMap);
+$attendanceLogs = [];
+if ($currentRole === 'administrator') {
+    $attendanceRes = supabaseRequest('attendance?select=*&order=check_in_time.desc', 'GET');
+    $attendanceLogs = (($attendanceRes['code'] ?? 500) < 400 && is_array($attendanceRes['data'] ?? null))
+        ? $attendanceRes['data']
+        : [];
+} elseif (!empty($visibleEventIds)) {
+    $encodedEventIds = array_map('rawurlencode', $visibleEventIds);
+    $attendanceRes = supabaseRequest(
+        'attendance?select=*&event_id=in.(' . implode(',', $encodedEventIds) . ')&order=check_in_time.desc',
+        'GET'
+    );
+    $attendanceLogs = (($attendanceRes['code'] ?? 500) < 400 && is_array($attendanceRes['data'] ?? null))
+        ? $attendanceRes['data']
+        : [];
 }
 
 // Fetch profiles to map course/section info if available
@@ -72,7 +98,7 @@ function formatManilaTime($utcString) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Logs - EMIS Admin</title>
+    <title>Attendance Logs - EMIS</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         .sidebar { min-height: 100vh; background-color: #343a40; color: white; }
