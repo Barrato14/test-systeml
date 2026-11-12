@@ -47,4 +47,53 @@ function supabaseRequest($endpoint, $method = 'GET', $data = null) {
         'data' => json_decode($response, true)
     ];
 }
+
+
+/**
+ * Server-only Supabase request using the service-role key.
+ * Never expose this key to browser JavaScript.
+ */
+function supabaseServiceRequest($endpoint, $method = 'GET', $data = null, $prefer = 'return=representation') {
+    global $supabaseUrl;
+
+    $envFilePath = __DIR__ . '/../.env';
+    $env = file_exists($envFilePath) ? parse_ini_file($envFilePath) : [];
+    $serviceKey = getenv('SUPABASE_SERVICE_ROLE_KEY') ?: ($env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
+
+    if ($serviceKey === '' || empty($supabaseUrl)) {
+        return ['code' => 500, 'data' => ['message' => 'Supabase server credentials are not configured.']];
+    }
+
+    $url = rtrim($supabaseUrl, '/') . '/rest/v1/' . ltrim($endpoint, '/');
+    $headers = [
+        'apikey: ' . $serviceKey,
+        'Authorization: Bearer ' . $serviceKey,
+        'Content-Type: application/json',
+        'Prefer: ' . $prefer
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => strtoupper($method),
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_TIMEOUT => 20
+    ]);
+
+    if ($data !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['code' => 500, 'data' => ['message' => $curlError ?: 'Supabase request failed.']];
+    }
+
+    return ['code' => $httpCode, 'data' => json_decode($response, true)];
+}
+
 ?>
