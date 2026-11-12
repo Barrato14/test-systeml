@@ -16,7 +16,7 @@ require_once 'config/database.php';
             <div class="auth-form-container">
                 <header class="form-header">
                     <h2>Completing sign in</h2>
-                    <p id="authStatus">Verifying your Google or Facebook account...</p>
+                    <p id="authStatus">Verifying your Google account...</p>
                 </header>
                 <div id="authError" class="alert-error" role="alert" hidden></div>
                 <form id="sessionForm" method="POST" action="set-session.php">
