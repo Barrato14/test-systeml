@@ -54,6 +54,8 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
     // remain included, and email deduplication prevents counting a profile and
     // its matching Supabase Auth user twice.
     $administratorEmails = [];
+    $profileRowsFetched = 0;
+    $authRowsFetched = 0;
 
     for ($offset = 0; ; $offset += 1000) {
         $profilesUrl = rtrim($supabaseUrl, '/') . '/rest/v1/profiles?select=id,email,role&order=id.asc&limit=1000&offset=' . $offset;
@@ -62,6 +64,8 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
         if (!is_array($profileRows)) {
             break;
         }
+
+        $profileRowsFetched += count($profileRows);
 
         foreach ($profileRows as $profileRow) {
             $emailKey = strtolower(trim((string)($profileRow['email'] ?? '')));
@@ -98,6 +102,8 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
             break;
         }
 
+        $authRowsFetched += count($authRows);
+
         foreach ($authRows as $authUser) {
             $emailKey = strtolower(trim((string)($authUser['email'] ?? '')));
             $accountId = trim((string)($authUser['id'] ?? ''));
@@ -119,6 +125,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
     }
 
     $totalUsers = count($totalUserAccounts);
+    error_log('EMIS Total Users counts: profiles fetched=' . $profileRowsFetched . ', Auth users fetched=' . $authRowsFetched . ', unique accounts counted=' . $totalUsers);
 } else {
     // Fallback for local setups: count every profile role except Administrator.
     $totalUsersResponse = supabaseRequest('profiles?select=id&role=neq.Administrator&limit=1000', 'GET');
