@@ -366,6 +366,7 @@ $calendarJson = json_encode(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Management - EMIS</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 
     <style>
@@ -450,6 +451,14 @@ $calendarJson = json_encode(
         .event-info-label { color: #94a3b8; font-size: .7rem; font-weight: 700; letter-spacing: .7px; }
         .event-info-item strong { color: #334155; font-size: .9rem; overflow-wrap: anywhere; }
         #modalMap { width: 100%; height: 220px; border: 0; border-radius: 10px; display: none; }
+        .event-location-map {
+            width: 100%;
+            height: 320px;
+            border: 1px solid #dce3ed;
+            border-radius: 10px;
+            z-index: 1;
+        }
+        .location-picker-help { color: #64748b; font-size: .85rem; }
         @media (max-width: 900px) {
             .sidebar { width: 205px !important; }
             .content-area { padding: 20px; }
@@ -727,13 +736,13 @@ $calendarJson = json_encode(
                             <input type="number" name="capacity" class="form-control" required min="1" value="100">
                         </div>
                     </div>
-                    <div class="row bg-light p-2 rounded mb-3 mx-0 border">
-                        <div class="col-12 mb-2">
-                            <label class="form-label fw-bold text-danger"><i class="bi bi-geo-alt-fill me-1"></i> Google Maps Pin (Optional)</label>
-                            <div class="form-text">Right-click a location in Google Maps and copy its latitude and longitude.</div>
-                        </div>
-                        <div class="col-md-6 mb-2"><input type="number" step="any" name="latitude" class="form-control" placeholder="Latitude"></div>
-                        <div class="col-md-6 mb-2"><input type="number" step="any" name="longitude" class="form-control" placeholder="Longitude"></div>
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
+                        <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <div id="createLocationMap" class="event-location-map"></div>
+                        <input type="hidden" name="latitude" id="create-lat">
+                        <input type="hidden" name="longitude" id="create-lng">
+                        <small id="create-location-status" class="text-muted d-block mt-2">No location selected yet.</small>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -797,12 +806,13 @@ $calendarJson = json_encode(
                             <input type="number" name="capacity" id="edit-cap" class="form-control" required min="1">
                         </div>
                     </div>
-                    <div class="row bg-light p-2 rounded mb-3 mx-0 border">
-                        <div class="col-12 mb-2">
-                            <label class="form-label fw-bold text-danger"><i class="bi bi-geo-alt-fill me-1"></i> Google Maps Pin (Optional)</label>
-                        </div>
-                        <div class="col-md-6 mb-2"><input type="number" step="any" name="latitude" id="edit-lat" class="form-control" placeholder="Latitude"></div>
-                        <div class="col-md-6 mb-2"><input type="number" step="any" name="longitude" id="edit-lng" class="form-control" placeholder="Longitude"></div>
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
+                        <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <div id="editLocationMap" class="event-location-map"></div>
+                        <input type="hidden" name="latitude" id="edit-lat">
+                        <input type="hidden" name="longitude" id="edit-lng">
+                        <small id="edit-location-status" class="text-muted d-block mt-2">No location selected yet.</small>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -833,13 +843,111 @@ $calendarJson = json_encode(
 
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const emisEvents = <?= $calendarJson ?: '[]' ?>;
 
 // Build an edit-modal lookup from the same event records already fetched by PHP.
 const editEventData = <?= json_encode(array_values($events), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?: '[]' ?>;
 
+// Interactive event location pickers. These only collect coordinates;
+// the existing Google Maps embeds and links elsewhere on this page remain unchanged.
+const eventLocationPickers = {};
+
+function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId) {
+    const mapElement = document.getElementById(mapId);
+    const latitudeInput = document.getElementById(latitudeId);
+    const longitudeInput = document.getElementById(longitudeId);
+    const statusElement = document.getElementById(statusId);
+
+    const map = L.map(mapElement).setView([15.225, 120.57], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    function updateSelection(latitude, longitude, shouldPan = false) {
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        latitudeInput.value = lat.toFixed(7);
+        longitudeInput.value = lng.toFixed(7);
+
+        const selectedPosition = [lat, lng];
+        if (!marker) {
+            marker = L.marker(selectedPosition, { draggable: true }).addTo(map);
+            marker.on('dragend', function () {
+                const position = marker.getLatLng();
+                updateSelection(position.lat, position.lng);
+            });
+        } else {
+            marker.setLatLng(selectedPosition);
+        }
+
+        if (shouldPan) {
+            map.setView(selectedPosition, Math.max(map.getZoom(), 16));
+        }
+
+        statusElement.textContent = 'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+    }
+
+    map.on('click', function (event) {
+        updateSelection(event.latlng.lat, event.latlng.lng);
+    });
+
+    return {
+        map,
+        updateSelection,
+        clearSelection: function () {
+            if (marker) {
+                map.removeLayer(marker);
+                marker = null;
+            }
+            latitudeInput.value = '';
+            longitudeInput.value = '';
+            statusElement.textContent = 'No location selected yet.';
+        },
+        refresh: function () {
+            map.invalidateSize();
+        }
+    };
+}
+
+
 document.addEventListener('DOMContentLoaded', function () {
+    const createModalElement = document.getElementById('createEventModal');
+    const editModalElement = document.getElementById('editEventModal');
+
+    createModalElement.addEventListener('shown.bs.modal', function () {
+        if (!eventLocationPickers.create) {
+            eventLocationPickers.create = createEventLocationPicker(
+                'createLocationMap', 'create-lat', 'create-lng', 'create-location-status'
+            );
+        }
+        eventLocationPickers.create.refresh();
+    });
+
+    editModalElement.addEventListener('shown.bs.modal', function () {
+        if (!eventLocationPickers.edit) {
+            eventLocationPickers.edit = createEventLocationPicker(
+                'editLocationMap', 'edit-lat', 'edit-lng', 'edit-location-status'
+            );
+        }
+        eventLocationPickers.edit.refresh();
+
+        const latitude = document.getElementById('edit-lat').value;
+        const longitude = document.getElementById('edit-lng').value;
+        if (latitude !== '' && longitude !== '') {
+            eventLocationPickers.edit.updateSelection(latitude, longitude, true);
+        } else {
+            eventLocationPickers.edit.clearSelection();
+        }
+    });
+
     const calendarElement = document.getElementById('calendar');
     const searchInput = document.getElementById('searchEvents');
     const eventModalElement = document.getElementById('eventDetailsModal');
