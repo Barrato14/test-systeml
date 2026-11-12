@@ -7,7 +7,7 @@ require_once '../includes/auth.php';
 require_once '../includes/mail.php';
 
 // Keep the same EMIS roles and permissions.
-$allowedRoles = ['administrator', 'staff'];
+$allowedRoles = ['administrator', 'staff', 'event organizer'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
 if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)) {
@@ -133,6 +133,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Missing event ID.');
             }
 
+            if ($currentRole === 'event organizer') {
+                $ownerCheck = supabaseRequest(
+                    'events?id=eq.' . rawurlencode($deleteId)
+                    . '&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id'])
+                    . '&select=id',
+                    'GET'
+                );
+                if (($ownerCheck['code'] ?? 500) >= 400 || empty($ownerCheck['data'])) {
+                    throw new Exception('You can only delete events assigned to you.');
+                }
+            }
+
             $response = supabaseRequest('events?id=eq.' . rawurlencode($deleteId), 'DELETE');
 
             if (($response['code'] ?? 500) >= 400) {
@@ -154,10 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Confirm the event exists before sending anything.
-            $eventCheck = supabaseRequest(
-                'events?id=eq.' . rawurlencode($notifyEventId) . '&select=id,title,venue,start_datetime',
-                'GET'
-            );
+            $eventCheckQuery = 'events?id=eq.' . rawurlencode($notifyEventId)
+                . '&select=id,title,venue,start_datetime';
+            if ($currentRole === 'event organizer') {
+                $eventCheckQuery .= '&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id']);
+            }
+            $eventCheck = supabaseRequest($eventCheckQuery, 'GET');
 
             if (($eventCheck['code'] ?? 500) >= 400 || empty($eventCheck['data'])) {
                 throw new Exception('The selected event could not be found.');
@@ -285,6 +299,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Please complete the event title and venue.');
             }
 
+            if ($currentRole === 'event organizer') {
+                $payload['organizer_id'] = (string)$_SESSION['user_id'];
+            }
+
             $response = supabaseRequest('events', 'POST', $payload);
 
             if (($response['code'] ?? 500) >= 400) {
@@ -355,6 +373,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Please complete the event title and venue.');
             }
 
+            if ($currentRole === 'event organizer') {
+                $ownerCheck = supabaseRequest(
+                    'events?id=eq.' . rawurlencode($updateId)
+                    . '&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id'])
+                    . '&select=id',
+                    'GET'
+                );
+                if (($ownerCheck['code'] ?? 500) >= 400 || empty($ownerCheck['data'])) {
+                    throw new Exception('You can only edit events assigned to you.');
+                }
+            }
+
             $response = supabaseRequest('events?id=eq.' . rawurlencode($updateId), 'PATCH', $payload);
 
             if (($response['code'] ?? 500) >= 400) {
@@ -369,7 +399,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch the original EMIS events. No category table or category_id is required.
-$getResponse = supabaseRequest('events?select=*&order=start_datetime.asc', 'GET');
+$eventQuery = 'events?select=*&order=start_datetime.asc';
+if ($currentRole === 'event organizer') {
+    $eventQuery = 'events?select=*&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id'])
+        . '&order=start_datetime.asc';
+}
+$getResponse = supabaseRequest($eventQuery, 'GET');
 $events = (($getResponse['code'] ?? 500) < 400 && is_array($getResponse['data'] ?? null))
     ? $getResponse['data']
     : [];
