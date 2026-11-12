@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
-require_once '../includes/face-recognition.php';
+require_once '../includes/face-service.php';
 
 function faceRegistrationRespond($success, $message, $status = 200) {
     http_response_code($status);
@@ -27,35 +27,24 @@ if (empty($_SESSION['face_registration_csrf']) || !hash_equals($_SESSION['face_r
     faceRegistrationRespond(false, 'Your session security check expired. Refresh the page and try again.', 403);
 }
 
-$descriptor = $input['face_descriptor'] ?? null;
-$consent = ($input['consent_given'] ?? false) === true;
-
-if (!$consent) {
+if (($input['consent_given'] ?? false) !== true) {
     faceRegistrationRespond(false, 'Please provide consent before registering your face.');
 }
 
-if (!validateFaceDescriptor($descriptor)) {
-    faceRegistrationRespond(false, 'A clear single-face scan is required. Please try again.');
+$imageData = $input['image_data'] ?? '';
+if (!is_string($imageData) || $imageData === '') {
+    faceRegistrationRespond(false, 'A camera image is required. Please try again.');
 }
 
-$participantId = $_SESSION['user_id'];
-$payload = [
-    'participant_id' => $participantId,
-    'face_descriptor' => array_values(array_map('floatval', $descriptor)),
-    'consent_given' => true,
-    'consent_given_at' => date('c'),
-    'updated_at' => date('c')
-];
+$response = callEmisFaceService('register', [
+    'participant_id' => (string)$_SESSION['user_id'],
+    'image_data' => $imageData,
+    'consent_given' => true
+]);
 
-$response = supabaseServiceRequest(
-    'participant_face_profiles?on_conflict=participant_id',
-    'POST',
-    $payload,
-    'resolution=merge-duplicates,return=representation'
-);
-
-if (($response['code'] ?? 500) >= 300) {
-    faceRegistrationRespond(false, 'Unable to save your face registration. Please check the server configuration and try again.', 500);
+$data = $response['data'] ?? [];
+if (($response['code'] ?? 500) >= 300 || empty($data['success'])) {
+    faceRegistrationRespond(false, $data['message'] ?? 'Unable to register your face. Please try again.', $response['code'] ?? 500);
 }
 
-faceRegistrationRespond(true, 'Your face has been registered to your EMIS account successfully.');
+faceRegistrationRespond(true, $data['message'] ?? 'Your face has been registered successfully.');
