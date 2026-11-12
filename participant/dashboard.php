@@ -330,6 +330,7 @@ $calendarJson = json_encode(
         }
     </style>
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/weather-widget.css">
 </head>
 <body class="bg-light participant-page">
 
@@ -349,6 +350,8 @@ $calendarJson = json_encode(
             <p class="text-muted">Perform your secure face-scan and GPS check-in/time-out for approved events here.</p>
         </div>
     </div>
+
+    <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
     <!-- Clickable calendar launcher: participants can view events, but cannot manage them. -->
     <div class="calendar-launch-card p-3 p-md-4 mb-4">
@@ -745,5 +748,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+<script src="../js/weather-widget.js" defer></script>
 </body>
 </html>
