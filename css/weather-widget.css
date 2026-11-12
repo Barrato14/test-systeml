@@ -356,3 +356,60 @@
     .emis-weather-drop,
     .emis-weather-panel { animation: none !important; transition: none !important; }
 }
+
+
+/* Compact icon-style launcher used on both dashboards */
+.emis-weather-widget {
+    width: auto;
+    display: inline-block;
+    margin: 0 0 1rem;
+}
+.emis-weather-trigger {
+    width: auto;
+    min-height: 0;
+    display: inline-flex;
+    justify-content: flex-start;
+    gap: .65rem;
+    padding: .55rem .85rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(30, 58, 138, .12);
+}
+.emis-weather-copy {
+    flex-direction: row;
+    align-items: center;
+    gap: .55rem;
+}
+.emis-weather-eyebrow {
+    margin: 0;
+    font-size: 0;
+    letter-spacing: 0;
+}
+.emis-weather-eyebrow i {
+    margin: 0;
+    font-size: 1.25rem;
+}
+.emis-weather-temperature {
+    font-size: 1.05rem;
+    letter-spacing: -.03em;
+}
+.emis-weather-description {
+    font-size: .78rem;
+    font-weight: 600;
+}
+.emis-weather-location,
+.emis-weather-scene,
+.emis-weather-view {
+    display: none;
+}
+.emis-weather-trigger:hover {
+    transform: none;
+    box-shadow: 0 5px 14px rgba(30, 58, 138, .2);
+}
+@media (max-width: 640px) {
+    .emis-weather-trigger {
+        min-height: 0;
+        padding: .5rem .75rem;
+    }
+    .emis-weather-scene { display: none; }
+    .emis-weather-view { display: none; }
+}
