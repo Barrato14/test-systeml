@@ -22,6 +22,7 @@ $participantNavItems = [
     ['browse-events.php', 'Browse Events', 'bi-calendar2-event'],
     ['my-events.php', 'My Events', 'bi-ticket-perforated'],
     ['equipment.php', 'Equipment', 'bi-box-seam'],
+    ['face-registration.php', 'Face Registration', 'bi-person-bounding-box'],
     // My Borrowings is intentionally omitted from the shared navigation.
 ];
 ?>
