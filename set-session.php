@@ -2,66 +2,130 @@
 session_start();
 require_once 'config/database.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['email'])) {
-    $email = strtolower(trim($_POST['email']));
-    $fullName = trim($_POST['full_name'] ?? 'Google User');
-
-    // Check if user profile already exists in Supabase
-    $response = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-    $rows = [];
-    if (is_array($response)) {
-        $rows = isset($response['data']) ? $response['data'] : $response;
-    }
-    
-    $user = (!empty($rows) && isset($rows[0])) ? $rows[0] : null;
-
-    // If user doesn't exist yet, auto-create their profile
-    if (!$user) {
-        $nameParts = explode(' ', $fullName, 2);
-        $payload = [
-            'first_name' => $nameParts[0],
-            'last_name' => $nameParts[1] ?? '',
-            'email' => $email,
-            'role' => 'Participant', // Default for brand new accounts
-            'is_verified' => true
-        ];
-        
-        // Insert new user
-        supabaseRequest('profiles', 'POST', $payload);
-        
-        // RE-FETCH the user to get their newly generated database ID!
-        $newResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
-        if (is_array($newResponse)) {
-            $newRows = isset($newResponse['data']) ? $newResponse['data'] : $newResponse;
-            $user = (!empty($newRows) && isset($newRows[0])) ? $newRows[0] : null;
-        }
-        
-        // Failsafe check
-        if (!$user) {
-            header('Location: login.php?error=creation_failed');
-            exit;
-        }
-    }
-
-    // Set session variables securely
-    session_regenerate_id(true);
-    
-    // Dynamically grab their actual role from the database
-    $userRole = $user['role'] ?? 'Participant';
-    
-    $_SESSION['user_id'] = $user['id'] ?? '';
-    $_SESSION['user_email'] = $email;
-    $_SESSION['user_role'] = $userRole; // Respects Admin if they are an admin!
-    $_SESSION['user_name'] = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
-
-    // Redirect to the correct dashboard based on their role
-    if (strtolower($userRole) === 'administrator') {
-        header('Location: admin/dashboard.php');
-    } else {
-        header('Location: participant/dashboard.php');
-    }
+function socialLoginFailure($message) {
+    http_response_code(401);
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Sign in failed</title><link rel="stylesheet" href="css/style.css"></head><body><main class="auth-layout"><section class="auth-form-wrapper"><div class="auth-form-container"><header class="form-header"><h2>Unable to sign in</h2><p>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</p></header><p class="register-prompt"><a href="login.php">Return to sign in</a></p></div></section></main></body></html>';
     exit;
 }
 
-header('Location: login.php');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: login.php');
+    exit;
+}
+
+$accessToken = trim($_POST['access_token'] ?? '');
+if ($accessToken === '') {
+    socialLoginFailure('The identity provider did not return an access token. Please try again.');
+}
+
+// Validate the token directly with Supabase Auth. Never trust an email or name
+// posted by the browser to establish an authenticated application session.
+$authUrl = rtrim($supabaseUrl, '/') . '/auth/v1/user';
+$ch = curl_init($authUrl);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPGET => true,
+    CURLOPT_HTTPHEADER => [
+        'apikey: ' . $apiKey,
+        'Authorization: Bearer ' . $accessToken,
+        'Accept: application/json'
+    ],
+    CURLOPT_TIMEOUT => 15
+]);
+$authResponse = curl_exec($ch);
+$authStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$authError = curl_error($ch);
+curl_close($ch);
+
+if ($authResponse === false || $authError || $authStatus !== 200) {
+    socialLoginFailure('Supabase could not verify your sign-in. Please try again.');
+}
+
+$authUser = json_decode($authResponse, true);
+$email = strtolower(trim($authUser['email'] ?? ''));
+$authUserId = $authUser['id'] ?? '';
+$emailConfirmed = !empty($authUser['email_confirmed_at']) || !empty($authUser['confirmed_at']);
+
+if ($email === '' || $authUserId === '') {
+    socialLoginFailure('The provider did not return an email address for this account. Check your provider permissions and try again.');
+}
+
+if (!$emailConfirmed) {
+    socialLoginFailure('Your Google or Facebook account did not return a confirmed email address. Please verify your email with that provider or use email registration.');
+}
+
+$metadata = $authUser['user_metadata'] ?? [];
+$fullName = trim($metadata['full_name'] ?? $metadata['name'] ?? '');
+if ($fullName === '') {
+    $first = trim($metadata['given_name'] ?? $metadata['first_name'] ?? '');
+    $last = trim($metadata['family_name'] ?? $metadata['last_name'] ?? '');
+    $fullName = trim($first . ' ' . $last);
+}
+if ($fullName === '') {
+    $fullName = strstr($email, '@', true) ?: 'Participant';
+}
+$nameParts = preg_split('/\s+/', $fullName, 2);
+$firstName = $nameParts[0] ?? 'Participant';
+$lastName = $nameParts[1] ?? '';
+
+$profileResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
+$profileRows = is_array($profileResponse) ? ($profileResponse['data'] ?? []) : [];
+$profile = (!empty($profileRows) && isset($profileRows[0]) && is_array($profileRows[0])) ? $profileRows[0] : null;
+
+if (!$profile) {
+    $payload = [
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+        'email' => $email,
+        'role' => 'Participant',
+        'is_verified' => true,
+        'verification_token' => null
+    ];
+
+    $insertResponse = supabaseRequest('profiles', 'POST', $payload);
+    if (($insertResponse['code'] ?? 500) >= 300) {
+        socialLoginFailure('Your identity was verified, but your EMIS profile could not be created. Please contact the administrator.');
+    }
+
+    $profileResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
+    $profileRows = is_array($profileResponse) ? ($profileResponse['data'] ?? []) : [];
+    $profile = (!empty($profileRows) && isset($profileRows[0]) && is_array($profileRows[0])) ? $profileRows[0] : null;
+
+    if (!$profile) {
+        socialLoginFailure('Your EMIS profile could not be loaded. Please try again.');
+    }
+} else {
+    // Provider-confirmed email is sufficient for social sign-in; synchronize
+    // an existing profile that was previously left unverified by registration.
+    $profileId = $profile['id'] ?? null;
+    if (!$profileId) {
+        socialLoginFailure('Your EMIS profile is missing its account ID. Please contact the administrator.');
+    }
+
+    $updateResponse = supabaseRequest('profiles?id=eq.' . urlencode($profileId), 'PATCH', [
+        'is_verified' => true,
+        'verification_token' => null
+    ]);
+
+    if (($updateResponse['code'] ?? 500) >= 300) {
+        socialLoginFailure('Your provider account is verified, but EMIS could not update your profile verification status. Please try again later.');
+    }
+}
+
+session_regenerate_id(true);
+$userRole = $profile['role'] ?? 'Participant';
+$_SESSION['user_id'] = $profile['id'] ?? '';
+$_SESSION['user_email'] = $email;
+$_SESSION['user_role'] = $userRole;
+$_SESSION['user_name'] = trim(($profile['first_name'] ?? $firstName) . ' ' . ($profile['last_name'] ?? $lastName));
+
+if (strtolower($userRole) === 'administrator') {
+    header('Location: admin/dashboard.php');
+} elseif (strtolower($userRole) === 'event organizer') {
+    header('Location: organizer/dashboard.php');
+} elseif (strtolower($userRole) === 'staff') {
+    header('Location: staff/dashboard.php');
+} else {
+    header('Location: participant/dashboard.php');
+}
 exit;
