@@ -150,6 +150,7 @@
 .emis-weather-scene[data-weather="clear"] .emis-weather-cloud { opacity: .35; }
 .emis-weather-scene[data-weather="fog"] .emis-weather-cloud { opacity: .55; filter: blur(1px); }
 .emis-weather-scene-large {
+    display: block;
     position: relative;
     top: auto;
     right: auto;
