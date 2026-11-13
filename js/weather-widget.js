@@ -78,9 +78,11 @@
 
         const trigger = widget.querySelector('.emis-weather-trigger');
         const currentPanel = widget.querySelector('.emis-weather-current');
+        const weatherPanel = widget.querySelector('.emis-weather-panel');
 
         if (trigger) trigger.dataset.weather = backgroundType;
         if (currentPanel) currentPanel.dataset.weather = backgroundType;
+        if (weatherPanel) weatherPanel.dataset.weather = backgroundType;
     }
 
     function formatHour(value) {
