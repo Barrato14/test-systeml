@@ -413,3 +413,39 @@
     .emis-weather-scene { display: none; }
     .emis-weather-view { display: none; }
 }
+
+
+/* Weather-responsive color themes */
+.emis-weather-trigger{--weather-a:#273b76;--weather-b:#394b91;--weather-glow:rgba(59,130,246,.18);background:linear-gradient(112deg,var(--weather-a),var(--weather-b))!important;box-shadow:0 10px 28px var(--weather-glow)}
+.emis-weather-trigger[data-weather="cold"]{--weather-a:#b9e4f5;--weather-b:#d9f0fb;--weather-glow:rgba(56,155,205,.16);color:#18384b}
+.emis-weather-trigger[data-weather="cool"]{--weather-a:#547fba;--weather-b:#79a8d2;--weather-glow:rgba(65,125,185,.2)}
+.emis-weather-trigger[data-weather="warm"]{--weather-a:#b87936;--weather-b:#dc9a4b;--weather-glow:rgba(210,139,55,.2)}
+.emis-weather-trigger[data-weather="hot"]{--weather-a:#a83f42;--weather-b:#d45a4f;--weather-glow:rgba(210,75,65,.22)}
+.emis-weather-trigger[data-weather="cloudy"]{--weather-a:#526174;--weather-b:#77879a;--weather-glow:rgba(100,116,139,.2)}
+.emis-weather-trigger[data-weather="fog"]{--weather-a:#718394;--weather-b:#a1b2bf;--weather-glow:rgba(120,145,160,.2)}
+.emis-weather-trigger[data-weather="rain"],.emis-weather-trigger[data-weather="drizzle"]{--weather-a:#245b83;--weather-b:#347da3;--weather-glow:rgba(42,120,170,.22)}
+.emis-weather-trigger[data-weather="storm"]{--weather-a:#34344f;--weather-b:#55506f;--weather-glow:rgba(75,65,110,.25)}
+.emis-weather-trigger[data-weather="cold"] .emis-weather-eyebrow,.emis-weather-trigger[data-weather="cold"] .emis-weather-location,.emis-weather-trigger[data-weather="cold"] .emis-weather-updated{color:#31566b}
+.emis-weather-trigger[data-weather="cold"] .emis-weather-description,.emis-weather-trigger[data-weather="cold"] .emis-weather-temperature{color:#18384b}
+.emis-weather-trigger[data-weather="cold"] .emis-weather-view{color:#23485c;border-color:rgba(35,72,92,.28);background:rgba(255,255,255,.38)}
+.emis-weather-trigger[data-weather="cold"] .emis-weather-sun{color:#fff1b8}
+.emis-weather-panel{background:#171222;color:#f4efff}
+.emis-weather-panel-header h2,.emis-weather-current-copy strong,.emis-weather-current-copy b,.emis-weather-hourly-heading h3,.emis-weather-hour strong{color:#f4efff}
+.emis-weather-panel-kicker,.emis-weather-panel-header p,.emis-weather-current-copy>span,.emis-weather-current-copy small,.emis-weather-hour span,.emis-weather-hour small{color:#b6a9c7}
+.emis-weather-current{background:#241a34}
+.emis-weather-stats>div{background:#21182e;border-color:#3b2d4d}
+.emis-weather-stats span{color:#b6a9c7}
+.emis-weather-stats strong{color:#f4efff}
+.emis-weather-hour{background:#241a34}
+.emis-weather-close{background:#30243f;color:#eee5fa}
+.emis-weather-refresh{color:#c7a5f3}
+.emis-weather-attribution,.emis-weather-attribution a{color:#a99bb9}
+html[data-admin-theme="light"] .emis-weather-panel,html[data-participant-theme="light"] .emis-weather-panel{background:#fff;color:#352a40}
+html[data-admin-theme="light"] .emis-weather-panel-header h2,html[data-participant-theme="light"] .emis-weather-panel-header h2,html[data-admin-theme="light"] .emis-weather-current-copy strong,html[data-participant-theme="light"] .emis-weather-current-copy strong,html[data-admin-theme="light"] .emis-weather-current-copy b,html[data-participant-theme="light"] .emis-weather-current-copy b,html[data-admin-theme="light"] .emis-weather-hourly-heading h3,html[data-participant-theme="light"] .emis-weather-hourly-heading h3,html[data-admin-theme="light"] .emis-weather-hour strong,html[data-participant-theme="light"] .emis-weather-hour strong{color:#352a40}
+html[data-admin-theme="light"] .emis-weather-current,html[data-participant-theme="light"] .emis-weather-current{background:#f2edf7}
+html[data-admin-theme="light"] .emis-weather-stats>div,html[data-participant-theme="light"] .emis-weather-stats>div{background:#faf8fc;border-color:#e7dfed}
+html[data-admin-theme="light"] .emis-weather-hour,html[data-participant-theme="light"] .emis-weather-hour{background:#f5f1f8}
+html[data-admin-theme="light"] .emis-weather-panel-kicker,html[data-participant-theme="light"] .emis-weather-panel-kicker,html[data-admin-theme="light"] .emis-weather-panel-header p,html[data-participant-theme="light"] .emis-weather-panel-header p,html[data-admin-theme="light"] .emis-weather-current-copy>span,html[data-participant-theme="light"] .emis-weather-current-copy>span,html[data-admin-theme="light"] .emis-weather-current-copy small,html[data-participant-theme="light"] .emis-weather-current-copy small,html[data-admin-theme="light"] .emis-weather-hour span,html[data-participant-theme="light"] .emis-weather-hour span,html[data-admin-theme="light"] .emis-weather-hour small,html[data-participant-theme="light"] .emis-weather-hour small{color:#786d83}
+html[data-admin-theme="light"] .emis-weather-close,html[data-participant-theme="light"] .emis-weather-close{background:#f0ebf5;color:#584766}
+html[data-admin-theme="light"] .emis-weather-refresh,html[data-participant-theme="light"] .emis-weather-refresh{color:#704795}
+html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-theme="light"] .emis-weather-attribution,html[data-admin-theme="light"] .emis-weather-attribution a,html[data-participant-theme="light"] .emis-weather-attribution a{color:#8a7e94}
