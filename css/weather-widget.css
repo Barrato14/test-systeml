@@ -727,3 +727,15 @@ html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-t
         animation: none !important;
     }
 }
+
+
+/* Keep the expanded weather illustration visible after compact-widget hide rules. */
+.emis-weather-panel .emis-weather-scene-large {
+    display: block !important;
+    visibility: visible;
+    opacity: 1;
+}
+.emis-weather-panel .emis-weather-scene-large .emis-weather-cloud {
+    display: block;
+    visibility: visible;
+}
