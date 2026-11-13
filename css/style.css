@@ -1214,3 +1214,17 @@ body.participant-page .card>.card-body{padding:22px}
 body.participant-page .container{padding-left:13px;padding-right:13px}
 body.participant-page .card>.card-body{padding:16px}
 }
+
+
+/* Coordinated participant light palette */
+html[data-participant-theme="light"] body.participant-page{background:#f5f2f8!important;color:#352a40!important}
+html[data-participant-theme="light"] .participant-page .card,html[data-participant-theme="light"] .participant-page .modal-content{background:#fff!important;border-color:#e5dceb!important;box-shadow:0 8px 24px rgba(54,35,70,.055)!important}
+html[data-participant-theme="light"] .participant-page .card-header,html[data-participant-theme="light"] .participant-page .modal-header,html[data-participant-theme="light"] .participant-page .modal-footer{background:#f8f5fa!important;border-color:#e9e1ee!important;color:#493b55!important}
+html[data-participant-theme="light"] .participant-page h1,html[data-participant-theme="light"] .participant-page h2,html[data-participant-theme="light"] .participant-page h3,html[data-participant-theme="light"] .participant-page h4,html[data-participant-theme="light"] .participant-page h5{color:#342640!important}
+html[data-participant-theme="light"] .participant-page p,html[data-participant-theme="light"] .participant-page .text-muted,html[data-participant-theme="light"] .participant-page .text-secondary{color:#786d83!important}
+html[data-participant-theme="light"] .participant-page .form-control,html[data-participant-theme="light"] .participant-page .form-select{background:#fff!important;color:#382b43!important;border-color:#dcd1e5!important}
+html[data-participant-theme="light"] .participant-page .table{--bs-table-bg:#fff;--bs-table-color:#51445c;--bs-table-border-color:#ebe4f0}
+html[data-participant-theme="light"] .participant-page .table thead th{background:#f2edf6!important;color:#604779!important}
+html[data-participant-theme="light"] .participant-notifications-dialog{background:#fff!important;border-color:#e5dceb!important}
+html[data-participant-theme="light"] .participant-notifications-header{background:#f8f5fa;border-color:#e9e1ee}
+html[data-participant-theme="light"] .participant-notification-mark{background:#f2eaf8;color:#704795;border-color:#ddcde9}
