@@ -562,3 +562,167 @@ html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-t
     --weather-text: #49445f; --weather-muted: #7d7895; --weather-accent: #6b6298; --weather-border: #d5d1e4;
     --weather-hero-a: #dfdced; --weather-hero-b: #c4bfdc;
 }
+
+
+/* Animated weather scenes inside both the dashboard launcher and full panel. */
+.emis-weather-scene { isolation: isolate; }
+.emis-weather-scene .emis-weather-sun,
+.emis-weather-scene .emis-weather-cloud { will-change: transform, opacity; }
+.emis-weather-scene[data-weather="cloudy"] .emis-weather-cloud {
+    opacity: 1;
+    color: #d7e1e9;
+    animation: emisCloudDrift 7s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="cloudy"]::before,
+.emis-weather-scene[data-weather="cloudy"]::after {
+    content: "☁";
+    position: absolute;
+    z-index: -1;
+    color: #aebdca;
+    font-size: 3.2rem;
+    opacity: .55;
+    animation: emisCloudLayer 9s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="cloudy"]::before { left: 42px; top: 8px; }
+.emis-weather-scene[data-weather="cloudy"]::after {
+    left: 70px;
+    top: 30px;
+    font-size: 2.3rem;
+    opacity: .35;
+    animation-delay: -4s;
+}
+.emis-weather-scene[data-weather="hot"] .emis-weather-sun,
+.emis-weather-scene[data-weather="warm"] .emis-weather-sun {
+    color: #ffe08a;
+    text-shadow: 0 0 18px rgba(255, 185, 65, .7), 0 0 38px rgba(255, 145, 45, .45);
+    animation: emisHotSun 3s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="hot"] .emis-weather-sun::before,
+.emis-weather-scene[data-weather="warm"] .emis-weather-sun::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -17px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, rgba(255,205,105,.85) 0deg 5deg, transparent 5deg 30deg);
+    -webkit-mask: radial-gradient(circle, transparent 0 48%, #000 52% 66%, transparent 70%);
+    mask: radial-gradient(circle, transparent 0 48%, #000 52% 66%, transparent 70%);
+    animation: emisSunRays 18s linear infinite;
+}
+.emis-weather-scene[data-weather="clear"] .emis-weather-sun {
+    animation: emisSunPulse 3.8s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="rain"] .emis-weather-cloud,
+.emis-weather-scene[data-weather="drizzle"] .emis-weather-cloud {
+    color: #d7e8f2;
+    animation: emisRainCloud 3.8s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="drizzle"] .emis-weather-drop {
+    height: 8px;
+    opacity: .75;
+    animation: emisRainFall 1.35s linear infinite;
+}
+.emis-weather-scene[data-weather="storm"] .emis-weather-cloud {
+    color: #c7c4d9;
+    text-shadow: 0 8px 20px rgba(25, 24, 48, .35);
+    animation: emisStormCloud 3.5s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="storm"]::after {
+    content: "ϟ";
+    position: absolute;
+    z-index: 2;
+    left: 76px;
+    top: 56px;
+    color: #ffe58a;
+    font-size: 2.5rem;
+    font-weight: 900;
+    opacity: 0;
+    text-shadow: 0 0 12px rgba(255,229,138,.9);
+    animation: emisLightning 4.5s steps(1, end) infinite;
+}
+.emis-weather-scene[data-weather="fog"] .emis-weather-cloud {
+    color: #d9e2e5;
+    filter: blur(2px);
+    animation: emisFogCloud 6s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="fog"]::before,
+.emis-weather-scene[data-weather="fog"]::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    width: 135px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(220, 232, 235, .65);
+    filter: blur(3px);
+    animation: emisFogDrift 5s ease-in-out infinite alternate;
+}
+.emis-weather-scene[data-weather="fog"]::before { top: 72px; }
+.emis-weather-scene[data-weather="fog"]::after { top: 91px; animation-delay: -2.5s; }
+.emis-weather-scene[data-weather="cold"] .emis-weather-sun {
+    color: #e6f8ff;
+    text-shadow: 0 0 22px rgba(178, 229, 250, .8);
+    animation: emisColdGlow 4s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="cold"]::before,
+.emis-weather-scene[data-weather="cold"]::after {
+    content: "✦";
+    position: absolute;
+    color: #d9f5ff;
+    font-size: 1.1rem;
+    text-shadow: 0 0 10px rgba(190,235,255,.9);
+    animation: emisFrostSparkle 3s ease-in-out infinite;
+}
+.emis-weather-scene[data-weather="cold"]::before { left: 18px; top: 18px; }
+.emis-weather-scene[data-weather="cold"]::after { right: 8px; bottom: 18px; animation-delay: -1.5s; }
+
+@keyframes emisCloudDrift {
+    0%, 100% { transform: translateX(-4px) translateY(0); }
+    50% { transform: translateX(9px) translateY(-5px); }
+}
+@keyframes emisCloudLayer {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(13px) translateY(3px); }
+}
+@keyframes emisHotSun {
+    0%, 100% { transform: scale(1) rotate(-5deg); }
+    50% { transform: scale(1.12) rotate(5deg); }
+}
+@keyframes emisSunRays { to { transform: rotate(360deg); } }
+@keyframes emisRainCloud {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+}
+@keyframes emisStormCloud {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(5px) translateY(3px); }
+}
+@keyframes emisLightning {
+    0%, 72%, 76%, 100% { opacity: 0; }
+    73%, 75% { opacity: 1; }
+}
+@keyframes emisFogCloud {
+    0%, 100% { transform: translateX(-3px); opacity: .55; }
+    50% { transform: translateX(7px); opacity: .85; }
+}
+@keyframes emisFogDrift {
+    from { transform: translateX(-8px); opacity: .35; }
+    to { transform: translateX(12px); opacity: .75; }
+}
+@keyframes emisColdGlow {
+    0%, 100% { transform: scale(.96); opacity: .8; }
+    50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes emisFrostSparkle {
+    0%, 100% { transform: scale(.7) rotate(0deg); opacity: .35; }
+    50% { transform: scale(1.15) rotate(35deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .emis-weather-scene::before,
+    .emis-weather-scene::after,
+    .emis-weather-scene .emis-weather-sun,
+    .emis-weather-scene .emis-weather-cloud,
+    .emis-weather-scene .emis-weather-drop {
+        animation: none !important;
+    }
+}
