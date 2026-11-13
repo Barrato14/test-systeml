@@ -406,3 +406,62 @@ html[data-participant-theme="light"] body.participant-page .calendar-launch-card
 html[data-participant-theme="light"] body.participant-page .calendar-launch-card p {
     color: #766b80 !important;
 }
+
+/* Dashboard calendar theme support */
+html[data-participant-theme="dark"] body.participant-page .calendar-launch-card {
+    background: var(--emis-surface);
+    border-color: var(--emis-border);
+    color: var(--emis-text);
+}
+html[data-participant-theme="dark"] body.participant-page .calendar-launch-card h5 {
+    color: var(--emis-text);
+}
+html[data-participant-theme="dark"] body.participant-page .calendar-launch-card p {
+    color: var(--emis-muted);
+}
+html[data-participant-theme="dark"] body.participant-page #participantCalendar {
+    background: var(--emis-surface);
+    color: var(--emis-text);
+}
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc,
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc-toolbar-title,
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc-col-header-cell-cushion,
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc-daygrid-day-number {
+    color: var(--emis-text);
+}
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc-scrollgrid,
+html[data-participant-theme="dark"] body.participant-page #participantCalendar td,
+html[data-participant-theme="dark"] body.participant-page #participantCalendar th {
+    border-color: var(--emis-border);
+}
+html[data-participant-theme="dark"] body.participant-page #participantCalendar .fc-button-primary {
+    background: var(--emis-raised);
+    color: var(--emis-text);
+    border-color: var(--emis-border);
+}
+html[data-participant-theme="light"] body.participant-page .modal-header.bg-dark {
+    background: #f8f5fa !important;
+    color: #493b55 !important;
+    border-bottom: 1px solid #e9e1ee;
+}
+html[data-participant-theme="light"] body.participant-page .modal-header.bg-dark .modal-title,
+html[data-participant-theme="light"] body.participant-page .modal-header.bg-dark small {
+    color: #493b55 !important;
+}
+html[data-participant-theme="light"] body.participant-page .modal-header.bg-dark .btn-close {
+    filter: none;
+}
+html[data-participant-theme="light"] body.participant-page #participantCalendar {
+    background: #fff;
+    color: #352640;
+}
+html[data-participant-theme="light"] body.participant-page #participantCalendar .fc-toolbar-title,
+html[data-participant-theme="light"] body.participant-page #participantCalendar .fc-col-header-cell-cushion,
+html[data-participant-theme="light"] body.participant-page #participantCalendar .fc-daygrid-day-number {
+    color: #493b55;
+}
+html[data-participant-theme="light"] body.participant-page #participantCalendar .fc-scrollgrid,
+html[data-participant-theme="light"] body.participant-page #participantCalendar td,
+html[data-participant-theme="light"] body.participant-page #participantCalendar th {
+    border-color: #e9e1ee;
+}
