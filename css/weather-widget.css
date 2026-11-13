@@ -462,3 +462,103 @@ html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-t
 .emis-weather-current[data-weather="cold"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="cold"] .emis-weather-current-copy b{color:#18384b}
 .emis-weather-current[data-weather="hot"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="hot"] .emis-weather-current-copy b{color:#853b35}
 .emis-weather-current[data-weather="rain"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="rain"] .emis-weather-current-copy b,.emis-weather-current[data-weather="drizzle"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="drizzle"] .emis-weather-current-copy b{color:#244b68}
+
+
+/* Full weather dialog palette: the entire opened view follows the live condition. */
+.emis-weather-panel[data-weather] {
+    --weather-panel-bg: #f4f0e7;
+    --weather-surface: #fffaf0;
+    --weather-card: #f8f2e5;
+    --weather-text: #493b2c;
+    --weather-muted: #88745d;
+    --weather-accent: #9b6a2c;
+    --weather-border: #e7d9bf;
+    background: var(--weather-panel-bg);
+    color: var(--weather-text);
+    transition: background .25s ease, color .25s ease;
+}
+.emis-weather-panel[data-weather] .emis-weather-panel-header h2,
+.emis-weather-panel[data-weather] .emis-weather-current-copy strong,
+.emis-weather-panel[data-weather] .emis-weather-current-copy b,
+.emis-weather-panel[data-weather] .emis-weather-hourly-heading h3,
+.emis-weather-panel[data-weather] .emis-weather-hour strong,
+.emis-weather-panel[data-weather] .emis-weather-stats strong {
+    color: var(--weather-text);
+}
+.emis-weather-panel[data-weather] .emis-weather-panel-kicker,
+.emis-weather-panel[data-weather] .emis-weather-panel-header p,
+.emis-weather-panel[data-weather] .emis-weather-current-copy > span,
+.emis-weather-panel[data-weather] .emis-weather-current-copy small,
+.emis-weather-panel[data-weather] .emis-weather-hour span,
+.emis-weather-panel[data-weather] .emis-weather-hour small,
+.emis-weather-panel[data-weather] .emis-weather-stats span {
+    color: var(--weather-muted);
+}
+.emis-weather-panel[data-weather] .emis-weather-current {
+    background: linear-gradient(115deg, var(--weather-hero-a, #f4dfb5), var(--weather-hero-b, #e9c98e));
+}
+.emis-weather-panel[data-weather] .emis-weather-stats > div,
+.emis-weather-panel[data-weather] .emis-weather-hour {
+    background: var(--weather-surface);
+    border-color: var(--weather-border);
+}
+.emis-weather-panel[data-weather] .emis-weather-stats i,
+.emis-weather-panel[data-weather] .emis-weather-hour b,
+.emis-weather-panel[data-weather] .emis-weather-refresh {
+    color: var(--weather-accent);
+}
+.emis-weather-panel[data-weather] .emis-weather-close {
+    background: var(--weather-card);
+    color: var(--weather-text);
+    border: 1px solid var(--weather-border);
+}
+.emis-weather-panel[data-weather] .emis-weather-attribution,
+.emis-weather-panel[data-weather] .emis-weather-attribution a {
+    color: var(--weather-muted);
+}
+.emis-weather-panel[data-weather="clear"] {
+    --weather-panel-bg: #fff5df; --weather-surface: #fffaf0; --weather-card: #f8e9c9;
+    --weather-text: #62451f; --weather-muted: #92734a; --weather-accent: #a96b19; --weather-border: #efdbb5;
+    --weather-hero-a: #f9e5b7; --weather-hero-b: #f1cf83;
+}
+.emis-weather-panel[data-weather="cold"] {
+    --weather-panel-bg: #eaf7fc; --weather-surface: #f7fcff; --weather-card: #dceff7;
+    --weather-text: #24495d; --weather-muted: #648397; --weather-accent: #397d9d; --weather-border: #c9e3ef;
+    --weather-hero-a: #d7eff8; --weather-hero-b: #b9dfef;
+}
+.emis-weather-panel[data-weather="cool"] {
+    --weather-panel-bg: #edf5fc; --weather-surface: #f8fbff; --weather-card: #dfebf7;
+    --weather-text: #294966; --weather-muted: #6b879f; --weather-accent: #3e75a4; --weather-border: #d0e1f0;
+    --weather-hero-a: #d9eafa; --weather-hero-b: #bad5ed;
+}
+.emis-weather-panel[data-weather="warm"] {
+    --weather-panel-bg: #fff3e1; --weather-surface: #fffaf2; --weather-card: #f8e6c9;
+    --weather-text: #654521; --weather-muted: #98734b; --weather-accent: #a96b2c; --weather-border: #eed8b5;
+    --weather-hero-a: #f8e3bd; --weather-hero-b: #efca91;
+}
+.emis-weather-panel[data-weather="hot"] {
+    --weather-panel-bg: #fff0eb; --weather-surface: #fff9f6; --weather-card: #f9ddd5;
+    --weather-text: #713c36; --weather-muted: #a16b63; --weather-accent: #b65343; --weather-border: #efc9c0;
+    --weather-hero-a: #f7d3c9; --weather-hero-b: #eda99b;
+}
+.emis-weather-panel[data-weather="cloudy"] {
+    --weather-panel-bg: #eef2f5; --weather-surface: #f9fbfc; --weather-card: #e0e7ed;
+    --weather-text: #3e5060; --weather-muted: #748594; --weather-accent: #5c788e; --weather-border: #d2dce4;
+    --weather-hero-a: #e0e8ee; --weather-hero-b: #c5d2dc;
+}
+.emis-weather-panel[data-weather="fog"] {
+    --weather-panel-bg: #f0f4f4; --weather-surface: #fafcfc; --weather-card: #e2ebeb;
+    --weather-text: #40585b; --weather-muted: #778f91; --weather-accent: #5d8588; --weather-border: #d4e1e1;
+    --weather-hero-a: #e2eded; --weather-hero-b: #cbdcdd;
+}
+.emis-weather-panel[data-weather="rain"],
+.emis-weather-panel[data-weather="drizzle"] {
+    --weather-panel-bg: #eaf4f9; --weather-surface: #f7fbfe; --weather-card: #d9eaf3;
+    --weather-text: #294b60; --weather-muted: #66869a; --weather-accent: #34799d; --weather-border: #c8dfe9;
+    --weather-hero-a: #d5eaf4; --weather-hero-b: #b4d6e7;
+}
+.emis-weather-panel[data-weather="storm"] {
+    --weather-panel-bg: #eeedf5; --weather-surface: #faf9fd; --weather-card: #dfddeb;
+    --weather-text: #49445f; --weather-muted: #7d7895; --weather-accent: #6b6298; --weather-border: #d5d1e4;
+    --weather-hero-a: #dfdced; --weather-hero-b: #c4bfdc;
+}
