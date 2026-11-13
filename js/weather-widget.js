@@ -65,6 +65,24 @@
         if (scene) scene.dataset.weather = type;
     }
 
+    function setWeatherBackground(type, temperature) {
+        let backgroundType = type;
+
+        if (type === 'clear') {
+            if (temperature <= 20) backgroundType = 'cold';
+            else if (temperature <= 25) backgroundType = 'cool';
+            else if (temperature >= 32) backgroundType = 'hot';
+            else if (temperature >= 28) backgroundType = 'warm';
+            else backgroundType = 'clear';
+        }
+
+        const trigger = widget.querySelector('.emis-weather-trigger');
+        const currentPanel = widget.querySelector('.emis-weather-current');
+
+        if (trigger) trigger.dataset.weather = backgroundType;
+        if (currentPanel) currentPanel.dataset.weather = backgroundType;
+    }
+
     function formatHour(value) {
         const hour = Number((value.split('T')[1] || '00:00').split(':')[0]);
         return new Date(2000, 0, 1, hour).toLocaleTimeString('en-PH', {
@@ -147,6 +165,7 @@
 
         setScene('[data-weather-scene]', type);
         setScene('[data-weather-modal-scene]', type);
+        setWeatherBackground(type, temperature);
         renderHourly(hourly, current.time);
     }
 
