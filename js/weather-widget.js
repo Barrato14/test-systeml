@@ -83,6 +83,10 @@
         if (trigger) trigger.dataset.weather = backgroundType;
         if (currentPanel) currentPanel.dataset.weather = backgroundType;
         if (weatherPanel) weatherPanel.dataset.weather = backgroundType;
+
+        widget.querySelectorAll('.emis-weather-scene').forEach(function (scene) {
+            scene.dataset.weather = backgroundType;
+        });
     }
 
     function formatHour(value) {
