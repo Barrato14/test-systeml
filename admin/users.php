@@ -882,6 +882,122 @@ $totalUsers = count($allUsers);
             }
         }
 
+
+        html[data-admin-theme="light"] body.admin-portal .users-page {
+            color: #352640;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-header h2,
+        html[data-admin-theme="light"] body.admin-portal .users-stat strong,
+        html[data-admin-theme="light"] body.admin-portal .user-name,
+        html[data-admin-theme="light"] body.admin-portal .detail-value {
+            color: #352640 !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-header p,
+        html[data-admin-theme="light"] body.admin-portal .users-stat span,
+        html[data-admin-theme="light"] body.admin-portal .users-field label,
+        html[data-admin-theme="light"] body.admin-portal .user-email,
+        html[data-admin-theme="light"] body.admin-portal .your-account,
+        html[data-admin-theme="light"] body.admin-portal .users-empty,
+        html[data-admin-theme="light"] body.admin-portal .detail-label {
+            color: #766b80 !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-stat,
+        html[data-admin-theme="light"] body.admin-portal .users-panel,
+        html[data-admin-theme="light"] body.admin-portal .users-modal {
+            background: #ffffff !important;
+            border-color: #e5dbea !important;
+            color: #352640 !important;
+            box-shadow: 0 7px 22px rgba(57, 39, 72, .055);
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-field input,
+        html[data-admin-theme="light"] body.admin-portal .users-field select,
+        html[data-admin-theme="light"] body.admin-portal .role-select {
+            background: #fbf9fd !important;
+            border-color: #ded2e8 !important;
+            color: #352640 !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-field input::placeholder {
+            color: #978ba1;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-table-wrap {
+            border-color: #e5dbea;
+            background: #ffffff;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-table th {
+            background: #f1eaf6 !important;
+            color: #655572 !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-table td {
+            background: #ffffff;
+            border-color: #eee7f2;
+            color: #493a55 !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-table tbody tr:hover td {
+            background: #f8f3fb !important;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .role-badge {
+            background: #eee5f8;
+            color: #69439a;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .status-active,
+        html[data-admin-theme="light"] body.admin-portal .verified {
+            background: #e2f4eb;
+            color: #176844;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .status-inactive {
+            background: #fbe8eb;
+            color: #a12e43;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .unverified {
+            background: #fff2d7;
+            color: #8a5a0a;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-btn-secondary {
+            background: #e9e1ef;
+            color: #514363;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-note {
+            background: #f2ebf7;
+            border-color: #e2d6eb;
+            color: #6f627b;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-modal-header,
+        html[data-admin-theme="light"] body.admin-portal .detail-row {
+            border-color: #eee7f2;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-modal-close {
+            color: #514363;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-alert.success {
+            background: #e7f5ed;
+            border-color: #b9e2c9;
+            color: #176844;
+        }
+
+        html[data-admin-theme="light"] body.admin-portal .users-alert.error {
+            background: #fbeaec;
+            border-color: #f0c4cb;
+            color: #a12e43;
+        }
+
     </style>
 
 </head>
