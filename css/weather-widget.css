@@ -449,3 +449,16 @@ html[data-admin-theme="light"] .emis-weather-panel-kicker,html[data-participant-
 html[data-admin-theme="light"] .emis-weather-close,html[data-participant-theme="light"] .emis-weather-close{background:#f0ebf5;color:#584766}
 html[data-admin-theme="light"] .emis-weather-refresh,html[data-participant-theme="light"] .emis-weather-refresh{color:#704795}
 html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-theme="light"] .emis-weather-attribution,html[data-admin-theme="light"] .emis-weather-attribution a,html[data-participant-theme="light"] .emis-weather-attribution a{color:#8a7e94}
+
+
+/* Match the detailed weather panel to the same live condition palette. */
+.emis-weather-current[data-weather="cold"]{background:linear-gradient(115deg,#d8f0fa,#b9e3f3)}
+.emis-weather-current[data-weather="cool"]{background:linear-gradient(115deg,#dceafa,#bfd8f1)}
+.emis-weather-current[data-weather="warm"]{background:linear-gradient(115deg,#fff0d8,#f7d6a7)}
+.emis-weather-current[data-weather="hot"]{background:linear-gradient(115deg,#ffe0d9,#f7b7a8)}
+.emis-weather-current[data-weather="rain"],.emis-weather-current[data-weather="drizzle"]{background:linear-gradient(115deg,#dcecf7,#c3ddeb)}
+.emis-weather-current[data-weather="storm"]{background:linear-gradient(115deg,#e5e2f0,#cbc6df)}
+.emis-weather-current[data-weather="cloudy"],.emis-weather-current[data-weather="fog"]{background:linear-gradient(115deg,#e8edf2,#d5dfe8)}
+.emis-weather-current[data-weather="cold"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="cold"] .emis-weather-current-copy b{color:#18384b}
+.emis-weather-current[data-weather="hot"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="hot"] .emis-weather-current-copy b{color:#853b35}
+.emis-weather-current[data-weather="rain"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="rain"] .emis-weather-current-copy b,.emis-weather-current[data-weather="drizzle"] .emis-weather-current-copy strong,.emis-weather-current[data-weather="drizzle"] .emis-weather-current-copy b{color:#244b68}
