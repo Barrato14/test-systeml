@@ -333,3 +333,76 @@ body.participant-page .participant-dashboard-hero h1 {
     .participant-dashboard-panel { padding: 17px; }
     .participant-dashboard-action-grid { grid-template-columns: 1fr; }
 }
+
+/* Participant dashboard light theme */
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-hero {
+    background: #ffffff;
+    border-color: #e6ddec;
+    box-shadow: 0 8px 24px rgba(57, 39, 72, .06);
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-hero h1,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-panel-heading h2,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-quick-links h2,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-next-event h3,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-empty strong,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-stat strong,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-announcement strong,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-activity strong {
+    color: #352640 !important;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-hero p,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-stat strong small,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-stat div span,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-event-description,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-event-details span,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-progress > p,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-progress-meta,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-announcement p,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-activity p,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-empty {
+    color: #766b80 !important;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-stat,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-panel,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid a,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid button {
+    background: #ffffff;
+    border-color: #e6ddec;
+    box-shadow: 0 6px 20px rgba(57, 39, 72, .045);
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-stat-icon,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-announcement-icon,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-activity-icon,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-icon-button {
+    background: #f1eafa;
+    border-color: #e3d5f0;
+    color: #7950a2;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-panel-heading > i,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-event-details i,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid a > i:first-child,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid button > i:first-child {
+    color: #7950a2;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-announcement,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-activity {
+    border-bottom-color: #eee7f2;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-announcement time,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-activity time,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid small {
+    color: #8a7e94;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-new-label {
+    color: #7950a2;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid a,
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-action-grid button {
+    color: #493a55 !important;
+}
+html[data-participant-theme="light"] body.participant-page .calendar-launch-card h5 {
+    color: #352640 !important;
+}
+html[data-participant-theme="light"] body.participant-page .calendar-launch-card p {
+    color: #766b80 !important;
+}
