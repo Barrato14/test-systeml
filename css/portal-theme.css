@@ -550,8 +550,6 @@
     transition:width .22s ease
 }
 .admin-sidebar:hover,.admin-sidebar:focus-within{width:258px}
-.admin-sidebar.is-collapsed-until-leave,.admin-sidebar.is-collapsed-until-leave:hover,.admin-sidebar.is-collapsed-until-leave:focus-within{width:72px}
-.admin-sidebar.is-collapsed-until-leave .admin-brand-copy,.admin-sidebar.is-collapsed-until-leave .admin-nav-caption,.admin-sidebar.is-collapsed-until-leave .admin-sidebar-link>span,.admin-sidebar.is-collapsed-until-leave .admin-command-trigger kbd,.admin-sidebar.is-collapsed-until-leave .admin-sidebar-user span{opacity:0}
 .admin-sidebar-inner{width:258px;height:100%;display:flex;flex-direction:column;padding:22px 13px 18px;overflow:hidden}
 .admin-brand{display:flex;align-items:center;gap:12px;min-height:48px;padding:2px 5px;margin-bottom:37px;color:#fff;text-decoration:none;white-space:nowrap}
 .admin-brand-mark{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border:1px solid #493365;border-radius:14px;background:linear-gradient(145deg,#34204d,#21152f);color:#d8baff;font-size:21px}
