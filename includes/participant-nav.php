@@ -14,6 +14,31 @@ if (!isset($notifications) && function_exists('supabaseRequest') && !empty($_SES
     }
 }
 ?>
+<style>
+/* Smooth navigation transitions across every page using the Participant portal. */
+@view-transition {
+    navigation: auto;
+}
+::view-transition-old(root) {
+    animation: participant-page-out 100ms ease both;
+}
+::view-transition-new(root) {
+    animation: participant-page-in 160ms ease both;
+}
+@keyframes participant-page-out {
+    to { opacity: 0; }
+}
+@keyframes participant-page-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
+</style>
 <?php
 $currentParticipantPage = basename($_SERVER['PHP_SELF'] ?? '');
 $participantName = $_SESSION['user_name'] ?? $_SESSION['first_name'] ?? 'Participant';
