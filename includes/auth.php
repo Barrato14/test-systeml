@@ -47,7 +47,7 @@ function redirectByRole($role) {
             break;
 
         case 'staff':
-            header("Location: staff/dashboard.php");
+            header("Location: admin/dashboard.php");
             break;
 
         default:
