@@ -739,3 +739,20 @@ html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-t
     display: block;
     visibility: visible;
 }
+
+
+/* Show the detected locality in the compact weather launcher. */
+.emis-weather-copy .emis-weather-location {
+    display: inline-flex;
+    font-size: .68rem;
+    margin: 0;
+    color: #dbeafe;
+}
+.emis-weather-copy .emis-weather-location [data-weather-location-label] {
+    font-weight: 600;
+}
+@media (max-width: 640px) {
+    .emis-weather-copy .emis-weather-location {
+        display: none;
+    }
+}
