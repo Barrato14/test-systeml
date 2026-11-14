@@ -24,6 +24,19 @@ foreach ($allEvents as $evt) {
     $eventsMap[$evt['id']] = $evt;
 }
 
+// Fetch this participant's attendance records to determine the correct action.
+$attendanceResponse = supabaseRequest(
+    'attendance?participant_id=eq.' . rawurlencode((string)$participantId) .
+    '&select=event_id,check_in_time,time_out',
+    'GET'
+);
+$attendanceByEvent = [];
+if (($attendanceResponse['code'] ?? 500) < 400 && is_array($attendanceResponse['data'] ?? null)) {
+    foreach ($attendanceResponse['data'] as $attendanceRecord) {
+        $attendanceByEvent[(string)($attendanceRecord['event_id'] ?? '')] = $attendanceRecord;
+    }
+}
+
 $manilaTimezone = new DateTimeZone('Asia/Manila');
 $now = new DateTimeImmutable('now', $manilaTimezone);
 
@@ -89,7 +102,24 @@ usort($myEvents, function($a, $b) {
    <article class="my-event-card">
     <div class="my-event-icon"><i class="bi bi-calendar-event"></i></div>
     <div class="my-event-info"><h2><?= htmlspecialchars($event['title']) ?></h2><p><i class="bi bi-clock"></i><?= $event['start_datetime']?date('M d, Y · h:i A',strtotime($event['start_datetime'])):'Date unavailable' ?></p><p><i class="bi bi-geo-alt"></i><?= htmlspecialchars($event['venue']) ?></p><small>Registered <?= $event['registered_at']?date('M d, Y',strtotime($event['registered_at'])):'date unavailable' ?></small></div>
-    <div class="my-event-actions"><span class="my-event-status my-event-status-<?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span><?php if(!empty($event['event_id'])): ?><a href="check-in.php?event_id=<?= rawurlencode((string)$event['event_id']) ?>" class="my-event-checkin"><i class="bi bi-camera"></i> Check in</a><?php else: ?><span class="my-event-unavailable">Check-in unavailable</span><?php endif; ?></div>
+    <div class="my-event-actions">
+     <span class="my-event-status my-event-status-<?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
+     <?php
+      $eventKey = (string)$event['event_id'];
+      $attendanceRecord = $attendanceByEvent[$eventKey] ?? null;
+      $hasCheckedIn = $attendanceRecord && !empty($attendanceRecord['check_in_time']);
+      $hasCheckedOut = $hasCheckedIn && !empty($attendanceRecord['time_out']);
+     ?>
+     <?php if ($hasCheckedOut): ?>
+      <span class="my-event-unavailable"><i class="bi bi-check2-circle"></i> Checked out</span>
+     <?php elseif ($hasCheckedIn): ?>
+      <a href="time-out.php?event_id=<?= rawurlencode($eventKey) ?>" class="my-event-checkin"><i class="bi bi-box-arrow-right"></i> Check out</a>
+     <?php elseif ($eventKey !== ''): ?>
+      <a href="check-in.php?event_id=<?= rawurlencode($eventKey) ?>" class="my-event-checkin"><i class="bi bi-camera"></i> Check in</a>
+     <?php else: ?>
+      <span class="my-event-unavailable">Attendance unavailable</span>
+     <?php endif; ?>
+    </div>
    </article>
   <?php endforeach; ?>
   </section>
