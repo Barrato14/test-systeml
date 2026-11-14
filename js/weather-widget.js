@@ -6,40 +6,27 @@
     const dialog = widget.querySelector('[data-weather-dialog]');
     const refreshButton = widget.querySelector('[data-weather-refresh]');
     const hourlyContainer = widget.querySelector('[data-weather-hourly]');
-    const geocodingUrl = 'https://geocoding-api.open-meteo.com/v1/search?name=Dau&count=10&language=en&format=json&countryCode=PH';
+    const fallbackLocation = {
+        latitude: 14.9886,
+        longitude: 120.5736,
+        label: 'Dau, Mabalacat (campus fallback)',
+        source: 'fallback'
+    };
+
     let cachedWeather = null;
     let lastLoadedAt = 0;
     let loadingPromise = null;
+    let detectedLocation = null;
 
     const weatherLabels = {
-        0: 'Clear sky',
-        1: 'Mainly clear',
-        2: 'Partly cloudy',
-        3: 'Overcast',
-        45: 'Fog',
-        48: 'Rime fog',
-        51: 'Light drizzle',
-        53: 'Drizzle',
-        55: 'Dense drizzle',
-        56: 'Freezing drizzle',
-        57: 'Heavy freezing drizzle',
-        61: 'Light rain',
-        63: 'Rain',
-        65: 'Heavy rain',
-        66: 'Freezing rain',
-        67: 'Heavy freezing rain',
-        71: 'Light snow',
-        73: 'Snow',
-        75: 'Heavy snow',
-        77: 'Snow grains',
-        80: 'Rain showers',
-        81: 'Rain showers',
-        82: 'Heavy rain showers',
-        85: 'Snow showers',
-        86: 'Heavy snow showers',
-        95: 'Thunderstorm',
-        96: 'Thunderstorm with hail',
-        99: 'Heavy thunderstorm'
+        0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+        45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle',
+        55: 'Dense drizzle', 56: 'Freezing drizzle', 57: 'Heavy freezing drizzle',
+        61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain',
+        67: 'Heavy freezing rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+        77: 'Snow grains', 80: 'Rain showers', 81: 'Rain showers',
+        82: 'Heavy rain showers', 85: 'Snow showers', 86: 'Heavy snow showers',
+        95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Heavy thunderstorm'
     };
 
     function weatherType(code, isDay) {
@@ -67,24 +54,19 @@
 
     function setWeatherBackground(type, temperature) {
         let backgroundType = type;
-
         if (type === 'clear') {
             if (temperature <= 20) backgroundType = 'cold';
             else if (temperature <= 25) backgroundType = 'cool';
             else if (temperature >= 32) backgroundType = 'hot';
             else if (temperature >= 28) backgroundType = 'warm';
-            else backgroundType = 'clear';
         }
-
         const trigger = widget.querySelector('.emis-weather-trigger');
         const currentPanel = widget.querySelector('.emis-weather-current');
         const weatherPanel = widget.querySelector('.emis-weather-panel');
-
         if (trigger) trigger.dataset.weather = backgroundType;
         if (currentPanel) currentPanel.dataset.weather = backgroundType;
         if (weatherPanel) weatherPanel.dataset.weather = backgroundType;
-
-        widget.querySelectorAll('.emis-weather-scene').forEach(function (scene) {
+        widget.querySelectorAll('.emis-weather-scene').forEach(scene => {
             scene.dataset.weather = backgroundType;
         });
     }
@@ -92,14 +74,8 @@
     function formatHour(value) {
         const hour = Number((value.split('T')[1] || '00:00').split(':')[0]);
         return new Date(2000, 0, 1, hour).toLocaleTimeString('en-PH', {
-            hour: 'numeric',
-            hour12: true
+            hour: 'numeric', hour12: true
         });
-    }
-
-    function formatTime(value) {
-        if (!value) return '--';
-        return formatHour(value);
     }
 
     function renderHourly(hourly, currentTime) {
@@ -107,12 +83,8 @@
             hourlyContainer.innerHTML = '<p class="emis-weather-error">Hourly forecast is unavailable.</p>';
             return;
         }
-
-        let startIndex = hourly.time.findIndex(function (time) {
-            return time >= currentTime;
-        });
+        let startIndex = hourly.time.findIndex(time => time >= currentTime);
         if (startIndex < 0) startIndex = 0;
-
         const items = [];
         for (let i = startIndex; i < Math.min(startIndex + 6, hourly.time.length); i++) {
             const code = hourly.weather_code?.[i] ?? 0;
@@ -130,24 +102,20 @@
                 '</div>'
             );
         }
-
-        hourlyContainer.innerHTML = items.length
-            ? items.join('')
-            : '<p class="emis-weather-loading">No more hourly forecast available today.</p>';
+        hourlyContainer.innerHTML = items.length ? items.join('') :
+            '<p class="emis-weather-loading">No more hourly forecast available today.</p>';
     }
 
     function renderWeather(data) {
         const current = data.current;
         const daily = data.daily;
-        const hourly = data.hourly;
         const temperature = Math.round(current.temperature_2m);
         const feelsLike = Math.round(current.apparent_temperature);
         const code = Number(current.weather_code);
         const type = weatherType(code, current.is_day === 1);
         const rainChance = daily.precipitation_probability_max?.[0];
         const updated = new Date().toLocaleTimeString('en-PH', {
-            hour: 'numeric',
-            minute: '2-digit'
+            hour: 'numeric', minute: '2-digit'
         });
 
         setText('[data-weather-temperature]', temperature + '°C');
@@ -162,17 +130,81 @@
 
         const high = daily.temperature_2m_max?.[0];
         const low = daily.temperature_2m_min?.[0];
-        setText('[data-weather-range]', high == null || low == null ? '--° / --°' : Math.round(high) + '° / ' + Math.round(low) + '°');
+        setText('[data-weather-range]', high == null || low == null
+            ? '--° / --°' : Math.round(high) + '° / ' + Math.round(low) + '°');
         setText('[data-weather-date]', new Date().toLocaleDateString('en-PH', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
+            weekday: 'long', month: 'long', day: 'numeric'
         }));
-
         setScene('[data-weather-scene]', type);
         setScene('[data-weather-modal-scene]', type);
         setWeatherBackground(type, temperature);
-        renderHourly(hourly, current.time);
+        renderHourly(data.hourly, current.time);
+    }
+
+    async function getLocationName(latitude, longitude) {
+        try {
+            const url = new URL('https://api.bigdatacloud.net/data/reverse-geocode-client');
+            url.search = new URLSearchParams({
+                latitude: latitude,
+                longitude: longitude,
+                localityLanguage: 'en'
+            }).toString();
+            const response = await fetch(url.toString());
+            if (!response.ok) throw new Error('Reverse geocoding unavailable');
+            const data = await response.json();
+            return data.city || data.locality || data.principalSubdivision || 'Your location';
+        } catch (error) {
+            return 'Your current location';
+        }
+    }
+
+    function getBrowserCoordinates() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported.'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                position => resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    source: 'device'
+                }),
+                error => reject(error),
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+            );
+        });
+    }
+
+    async function detectLocation() {
+        try {
+            const coordinates = await getBrowserCoordinates();
+            const label = await getLocationName(coordinates.latitude, coordinates.longitude);
+            return { ...coordinates, label };
+        } catch (error) {
+            // If permission is denied or GPS is unavailable, use IP-based locality.
+            try {
+                const response = await fetch(
+                    'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en'
+                );
+                if (!response.ok) throw new Error('IP location unavailable');
+                const data = await response.json();
+                if (Number.isFinite(Number(data.latitude)) &&
+                    Number.isFinite(Number(data.longitude)) &&
+                    (data.city || data.locality || data.principalSubdivision)) {
+                    return {
+                        latitude: Number(data.latitude),
+                        longitude: Number(data.longitude),
+                        label: (data.city || data.locality || data.principalSubdivision) +
+                            ' (approximate)',
+                        source: 'ip'
+                    };
+                }
+            } catch (fallbackError) {
+                // Continue to the campus fallback below.
+            }
+            return fallbackLocation;
+        }
     }
 
     async function loadWeather(force) {
@@ -182,37 +214,33 @@
         }
         if (loadingPromise) return loadingPromise;
 
-        setText('[data-weather-description]', 'Getting the latest forecast...');
-        if (hourlyContainer) hourlyContainer.innerHTML = '<p class="emis-weather-loading">Fetching the latest forecast...</p>';
+        setText('[data-weather-description]', 'Detecting your location...');
+        if (hourlyContainer) hourlyContainer.innerHTML =
+            '<p class="emis-weather-loading">Finding your location and forecast...</p>';
 
         loadingPromise = (async function () {
-            const locationResponse = await fetch(geocodingUrl);
-            if (!locationResponse.ok) throw new Error('Could not find the campus location.');
-            const locationData = await locationResponse.json();
-            const places = locationData.results || [];
-            const place = places.find(function (item) {
-                return item.country_code === 'PH' && item.name.toLowerCase() === 'dau';
-            }) || places.find(function (item) {
-                return item.country_code === 'PH';
-            });
-            if (!place) throw new Error('Dau, Mabalacat could not be found in the weather service.');
+            if (!detectedLocation) {
+                detectedLocation = await detectLocation();
+                setText('[data-weather-location-label]', detectedLocation.label);
+            }
 
             const params = new URLSearchParams({
-                latitude: place.latitude,
-                longitude: place.longitude,
+                latitude: detectedLocation.latitude,
+                longitude: detectedLocation.longitude,
                 current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m',
                 hourly: 'temperature_2m,precipitation_probability,weather_code',
                 daily: 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset',
                 timezone: 'Asia/Manila',
                 forecast_days: '1'
             });
-            const forecastResponse = await fetch('https://api.open-meteo.com/v1/forecast?' + params.toString());
+            const forecastResponse = await fetch(
+                'https://api.open-meteo.com/v1/forecast?' + params.toString()
+            );
             if (!forecastResponse.ok) throw new Error('The weather service is temporarily unavailable.');
             const forecast = await forecastResponse.json();
             if (!forecast.current || !forecast.daily || !forecast.hourly) {
                 throw new Error('The weather service returned incomplete data.');
             }
-
             cachedWeather = forecast;
             lastLoadedAt = Date.now();
             renderWeather(forecast);
@@ -223,7 +251,8 @@
             return await loadingPromise;
         } catch (error) {
             setText('[data-weather-description]', 'Weather is temporarily unavailable');
-            if (hourlyContainer) hourlyContainer.innerHTML = '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
+            if (hourlyContainer) hourlyContainer.innerHTML =
+                '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
             throw error;
         } finally {
             loadingPromise = null;
@@ -237,7 +266,7 @@
         document.body.classList.add('emis-weather-open');
         const closeButton = dialog.querySelector('[data-weather-close]');
         if (closeButton && closeButton.tagName === 'BUTTON') closeButton.focus();
-        loadWeather(false).catch(function () {});
+        loadWeather(false).catch(() => {});
     }
 
     function closeDialog() {
@@ -248,18 +277,18 @@
     }
 
     openButton.addEventListener('click', openDialog);
-    dialog.addEventListener('click', function (event) {
+    dialog.addEventListener('click', event => {
         if (event.target.closest('[data-weather-close]')) closeDialog();
     });
-    document.addEventListener('keydown', function (event) {
+    document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && !dialog.hidden) closeDialog();
     });
     if (refreshButton) {
         refreshButton.addEventListener('click', function () {
             refreshButton.disabled = true;
-            loadWeather(true).catch(function () {});
+            loadWeather(true).catch(() => {});
         });
     }
 
-    loadWeather(false).catch(function () {});
+    loadWeather(false).catch(() => {});
 })();
