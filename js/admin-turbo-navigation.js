@@ -20,25 +20,38 @@
             else link.removeAttribute('aria-current');
         });
 
-        // Keep sign-out and any non-workspace action as a normal browser navigation.
         document.querySelectorAll('a[href*="logout.php"]').forEach(function (link) {
             link.setAttribute('data-turbo', 'false');
         });
     });
 
-    // Never intercept downloads, external links, anchors, or links explicitly opted out.
+    // Explicitly route workspace clicks through Turbo. This avoids intermittent
+    // missed clicks caused by competing delegated handlers in the shared sidebar.
     document.addEventListener('click', function (event) {
-        const link = event.target.closest('a');
-        if (!link) return;
-        if (link.hasAttribute('download') || link.target === '_blank' ||
-            link.hasAttribute('data-turbo') && link.getAttribute('data-turbo') === 'false') return;
+        if (event.defaultPrevented || event.button !== 0 ||
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+        const link = event.target.closest(
+            '.admin-sidebar-nav a, .admin-mobile-menu-panel a, .admin-command-results a, .admin-brand, .admin-mobile-brand'
+        );
+        if (!link || link.hasAttribute('download') || link.target === '_blank' ||
+            link.getAttribute('data-turbo') === 'false') return;
+
         const href = link.getAttribute('href');
         if (!href || href.startsWith('#')) return;
+
         let url;
         try { url = new URL(href, window.location.href); } catch (error) { return; }
-        if (url.origin !== window.location.origin) return;
-        if (/logout\.php(?:$|\?)/i.test(url.pathname + url.search)) {
-            link.setAttribute('data-turbo', 'false');
+        if (url.origin !== window.location.origin ||
+            /logout\.php(?:$|\?)/i.test(url.pathname + url.search)) return;
+
+        if (url.href === window.location.href) {
+            event.preventDefault();
+            return;
         }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.Turbo.visit(url.href);
     }, true);
 })();
