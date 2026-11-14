@@ -108,7 +108,7 @@ function formatManilaTime($utcString) {
         .snapshot-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
         .snapshot-thumb:hover { transform: scale(3); }
     </style>
-    <link rel="stylesheet" href="../css/portal-theme.css">
+    <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
 </head>
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
