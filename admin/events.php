@@ -1127,7 +1127,11 @@ function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId, sea
 }
 
 
-document.addEventListener('DOMContentLoaded', function () {
+function initAdminEventsPage() {
+    const calendarElement = document.getElementById('calendar');
+    if (!calendarElement || calendarElement.dataset.emisInitialized === 'true') return;
+    calendarElement.dataset.emisInitialized = 'true';
+
     const createModalElement = document.getElementById('createEventModal');
     const editModalElement = document.getElementById('editEventModal');
 
@@ -1318,7 +1322,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-});
+}
+
+document.addEventListener('DOMContentLoaded', initAdminEventsPage);
+document.addEventListener('turbo:load', initAdminEventsPage);
+if (document.readyState !== 'loading') initAdminEventsPage();
 </script>
 </body>
 </html>
