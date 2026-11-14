@@ -560,9 +560,7 @@ if (!$isEventOrganizer) {
         <?= $isEventOrganizer ? 'Event Organizer Dashboard - EMIS' : ($isStaff ? 'Staff Dashboard - EMIS' : 'Admin Dashboard - EMIS') ?>
     </title>
 
-    <?php if ($isEventOrganizer || $isStaff): ?>
-        <meta http-equiv="refresh" content="30">
-    <?php endif; ?>
+    <!-- Dashboard stays loaded so weather requests are not restarted every 30 seconds. -->
 
     <link
         rel="stylesheet"
