@@ -17,6 +17,7 @@ if (
 }
 
 $isEventOrganizer = $currentRole === 'event organizer';
+$isStaff = $currentRole === 'staff';
 
 // ============================================================
 // TOTAL USERS
@@ -471,6 +472,79 @@ if (!$isEventOrganizer && !empty($ongoingEventMap)) {
 
 $pendingEquipment = 0;
 
+$equipmentItems = [];
+$equipmentItemsMap = [];
+$recentEquipmentBorrowings = [];
+$pendingBorrowRequests = 0;
+$currentBorrowedUnits = 0;
+$totalEquipmentUnits = 0;
+$availableEquipmentUnits = 0;
+
+if (!$isEventOrganizer) {
+    $equipmentItemsResponse = supabaseRequest(
+        'equipment_items?select=id,name,quantity,condition_status&order=name.asc&limit=1000',
+        'GET'
+    );
+    if (is_array($equipmentItemsResponse['data'] ?? null)) {
+        $equipmentItems = $equipmentItemsResponse['data'];
+        foreach ($equipmentItems as $equipmentItem) {
+            $equipmentId = (string)($equipmentItem['id'] ?? '');
+            if ($equipmentId !== '') $equipmentItemsMap[$equipmentId] = $equipmentItem;
+            $totalEquipmentUnits += max(0, (int)($equipmentItem['quantity'] ?? 0));
+        }
+    }
+
+    $borrowRequestsResponse = supabaseRequest(
+        'equipment_borrow_requests?select=id,equipment_id,participant_id,quantity,status,created_at,borrow_date,returned_at&order=created_at.desc&limit=1000',
+        'GET'
+    );
+    $borrowRequests = is_array($borrowRequestsResponse['data'] ?? null)
+        ? $borrowRequestsResponse['data'] : [];
+    $borrowedUnitsByEquipment = [];
+
+    foreach ($borrowRequests as $borrowRequest) {
+        $requestStatus = (string)($borrowRequest['status'] ?? '');
+        $equipmentId = (string)($borrowRequest['equipment_id'] ?? '');
+        $quantity = max(0, (int)($borrowRequest['quantity'] ?? 0));
+
+        if ($requestStatus === 'Pending') {
+            $pendingBorrowRequests++;
+        } elseif ($requestStatus === 'Approved') {
+            $currentBorrowedUnits += $quantity;
+            $borrowedUnitsByEquipment[$equipmentId] = ($borrowedUnitsByEquipment[$equipmentId] ?? 0) + $quantity;
+        }
+
+        if (!in_array($requestStatus, ['Approved', 'Returned'], true)) continue;
+
+        $profileId = (string)($borrowRequest['participant_id'] ?? '');
+        $borrowerProfile = $profilesMap[$profileId] ?? [];
+        $equipmentItem = $equipmentItemsMap[$equipmentId] ?? [];
+        $borrowRequest['borrower_name'] = trim(
+            (string)($borrowerProfile['first_name'] ?? '') . ' ' .
+            (string)($borrowerProfile['last_name'] ?? '')
+        ) ?: 'Participant';
+        $borrowRequest['equipment_name'] = (string)($equipmentItem['name'] ?? 'Equipment item');
+        $borrowRequest['activity_time'] = $requestStatus === 'Returned'
+            ? ($borrowRequest['returned_at'] ?? $borrowRequest['created_at'] ?? '')
+            : ($borrowRequest['created_at'] ?? $borrowRequest['borrow_date'] ?? '');
+        $recentEquipmentBorrowings[] = $borrowRequest;
+    }
+
+    usort($recentEquipmentBorrowings, function ($a, $b) {
+        return (strtotime((string)($b['activity_time'] ?? '')) ?: 0)
+            <=> (strtotime((string)($a['activity_time'] ?? '')) ?: 0);
+    });
+    $recentEquipmentBorrowings = array_slice($recentEquipmentBorrowings, 0, 8);
+
+    foreach ($equipmentItems as $equipmentItem) {
+        $equipmentId = (string)($equipmentItem['id'] ?? '');
+        $quantity = max(0, (int)($equipmentItem['quantity'] ?? 0));
+        if (($equipmentItem['condition_status'] ?? 'Available') === 'Available') {
+            $availableEquipmentUnits += max(0, $quantity - ($borrowedUnitsByEquipment[$equipmentId] ?? 0));
+        }
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -483,10 +557,10 @@ $pendingEquipment = 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
-        <?= $isEventOrganizer ? 'Event Organizer Dashboard - EMIS' : 'Admin Dashboard - EMIS' ?>
+        <?= $isEventOrganizer ? 'Event Organizer Dashboard - EMIS' : ($isStaff ? 'Staff Dashboard - EMIS' : 'Admin Dashboard - EMIS') ?>
     </title>
 
-    <?php if ($isEventOrganizer): ?>
+    <?php if ($isEventOrganizer || $isStaff): ?>
         <meta http-equiv="refresh" content="30">
     <?php endif; ?>
 
@@ -513,7 +587,7 @@ $pendingEquipment = 0;
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <h2 class="mb-0">
-            <?= $isEventOrganizer ? 'Event Organizer Overview' : 'Dashboard Overview' ?>
+            <?= $isEventOrganizer ? 'Event Organizer Overview' : ($isStaff ? 'Staff Overview' : 'Dashboard Overview') ?>
         </h2>
 
         <div class="d-flex align-items-center">
@@ -535,132 +609,19 @@ $pendingEquipment = 0;
     <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
 
-    <!-- ====================================================
-         METRIC CARDS
-         ==================================================== -->
-
+    <!-- ROLE-SPECIFIC DASHBOARD METRICS -->
     <div class="row mb-4">
-
-        <?php if (!$isEventOrganizer): ?>
-
-            <div class="col-md-3">
-
-                <div class="card stat-card shadow-sm mb-3">
-
-                    <div class="card-body">
-
-                        <h6 class="text-muted text-uppercase mb-2">
-                            Total Users
-                        </h6>
-
-                        <h2 class="mb-0">
-                            <?= $totalUsers ?>
-                        </h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+        <?php if ($isStaff): ?>
+            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Equipment Types</h6><h2 class="mb-0"><?= count($equipmentItems) ?></h2></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Available Units</h6><h2 class="mb-0"><?= $availableEquipmentUnits ?></h2></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Borrow Requests</h6><h2 class="mb-0"><?= $pendingBorrowRequests ?></h2></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#0dcaf0;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Currently Borrowed Units</h6><h2 class="mb-0"><?= $currentBorrowedUnits ?></h2></div></div></div>
+        <?php else: ?>
+            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Total Users</h6><h2 class="mb-0"><?= $totalUsers ?></h2></div></div></div>
+            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Events</h6><h2 class="mb-0"><?= $activeEvents ?></h2></div></div></div>
+            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2></div></div></div>
+            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#dc3545;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6><h2 class="mb-0"><?= $totalCheckIns ?></h2></div></div></div>
         <?php endif; ?>
-
-
-        <div class="col-md-3">
-
-            <div
-                class="card stat-card shadow-sm mb-3"
-                style="border-left-color: #198754;"
-            >
-
-                <div class="card-body">
-
-                    <h6 class="text-muted text-uppercase mb-2">
-
-                        <?= $isEventOrganizer ? 'Active Events' : 'Active Events' ?>
-
-                    </h6>
-
-                    <h2 class="mb-0">
-                        <?= $activeEvents ?>
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <?php if (!$isEventOrganizer): ?>
-
-            <div class="col-md-3">
-
-                <div
-                    class="card stat-card shadow-sm mb-3"
-                    style="border-left-color: #ffc107;"
-                >
-
-                    <div class="card-body">
-
-                        <h6 class="text-muted text-uppercase mb-2">
-                            Pending Equipment
-                        </h6>
-
-                        <h2 class="mb-0">
-                            <?= $pendingEquipment ?>
-                        </h2>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        <?php endif; ?>
-
-
-        <div class="col-md-3">
-
-            <div
-                class="card stat-card shadow-sm mb-3"
-                style="border-left-color: <?= $isEventOrganizer ? '#198754' : '#dc3545' ?>;"
-            >
-
-                <div class="card-body">
-
-                    <h6 class="text-muted text-uppercase mb-2">
-
-                        <?= $isEventOrganizer
-                            ? 'Students Currently Inside'
-                            : 'Active Event Check-Ins'
-                        ?>
-
-                    </h6>
-
-                    <h2 class="mb-0">
-
-                        <?= $isEventOrganizer
-                            ? $totalCurrentOccupancy
-                            : $totalCheckIns
-                        ?>
-
-                    </h2>
-
-                    <?php if ($isEventOrganizer): ?>
-
-                        <small class="text-muted">
-                            Across all ongoing events
-                        </small>
-
-                    <?php endif; ?>
-
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 
 
@@ -913,6 +874,12 @@ $pendingEquipment = 0;
 
                             </button>
 
+                            <button type="button" class="admin-activity-tab" id="equipmentBorrowingTab" role="tab" aria-selected="false" aria-controls="equipmentBorrowingPanel" data-activity-tab="equipment">
+                                <i class="bi bi-tools"></i>
+                                Equipment Borrowing
+                                <span><?= count($recentEquipmentBorrowings) ?></span>
+                            </button>
+
                         </div>
 
                     </div>
@@ -1159,6 +1126,33 @@ $pendingEquipment = 0;
 
                         </div>
 
+                        <div class="admin-activity-panel" id="equipmentBorrowingPanel" role="tabpanel" aria-labelledby="equipmentBorrowingTab" data-activity-panel="equipment" hidden>
+                            <?php if (empty($recentEquipmentBorrowings)): ?>
+                                <div class="admin-activity-empty">
+                                    <i class="bi bi-tools"></i>
+                                    <strong>No equipment borrowing activity yet</strong>
+                                    <span>Approved borrowings and completed returns will appear here.</span>
+                                </div>
+                            <?php else: ?>
+                                <div class="admin-activity-list">
+                                    <?php foreach ($recentEquipmentBorrowings as $borrowActivity): ?>
+                                        <article class="admin-activity-item">
+                                            <span class="admin-activity-icon event"><i class="bi bi-box-seam"></i></span>
+                                            <div class="admin-activity-copy">
+                                                <strong><?= htmlspecialchars($borrowActivity['borrower_name']) ?></strong>
+                                                <span><?= ($borrowActivity['status'] ?? '') === 'Returned' ? 'Returned' : 'Borrowed' ?> <?= htmlspecialchars($borrowActivity['equipment_name']) ?> · <?= (int)($borrowActivity['quantity'] ?? 0) ?> unit(s)</span>
+                                                <small><?= htmlspecialchars(formatDashboardActivityTime($borrowActivity['activity_time'] ?? '')) ?></small>
+                                            </div>
+                                            <span class="admin-attendance-label"><?= htmlspecialchars($borrowActivity['status'] ?? 'Approved') ?></span>
+                                        </article>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            <div class="admin-activity-footer">
+                                <a href="equipment.php?tab=history">View borrowing history <i class="bi bi-arrow-up-right"></i></a>
+                            </div>
+                        </div>
+
                     </div>
 
                 </section>
@@ -1188,50 +1182,16 @@ $pendingEquipment = 0;
                 <div class="card-body">
 
                     <div class="d-grid gap-3">
-
-                        <a
-                            href="events.php?action=new"
-                            class="btn btn-outline-primary text-start"
-                        >
-
-                            <i class="bi bi-plus-circle me-2"></i>
-
-                            <?= $isEventOrganizer
-                                ? 'Create Event'
-                                : 'Create New Event'
-                            ?>
-
-                        </a>
-
-
-                        <a
-                            href="attendance-logs.php"
-                            class="btn btn-outline-success text-start"
-                        >
-
-                            <i class="bi bi-person-bounding-box me-2"></i>
-
-                            View Face &amp; GPS Attendance
-
-                        </a>
-
-
-                        <?php if (!$isEventOrganizer): ?>
-
-                            <a
-                                href="equipment.php?action=approve"
-                                class="btn btn-outline-warning text-start"
-                            >
-
-                                <i class="bi bi-tools me-2"></i>
-
-                                Review Borrowing Requests
-
-                            </a>
-
+                        <?php if ($isStaff): ?>
+                            <a href="equipment.php?tab=requests" class="btn btn-outline-warning text-start"><i class="bi bi-inbox me-2"></i>Review Equipment Requests</a>
+                            <a href="equipment.php?tab=history" class="btn btn-outline-primary text-start"><i class="bi bi-clock-history me-2"></i>View Borrowing History</a>
+                            <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i>View Attendance Logs</a>
+                        <?php else: ?>
+                            <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i><?= $isEventOrganizer ? 'Create Event' : 'Create New Event' ?></a>
+                            <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i>View Face &amp; GPS Attendance</a>
+                            <a href="equipment.php?action=approve" class="btn btn-outline-warning text-start"><i class="bi bi-tools me-2"></i>Review Borrowing Requests</a>
                         <?php endif; ?>
-
-                    </div>
+                    </div>                    </div>
 
                 </div>
 
