@@ -102,6 +102,26 @@ if ($adminRole === 'event organizer') {
 
 <script data-turbo-eval="false">
 (function () {
+    // Collapse the hover-expanded sidebar after navigating to another workspace page.
+    const sidebar = document.getElementById('emis-admin-sidebar');
+    const collapseAfterNavigationKey = 'emis-admin-collapse-sidebar-after-navigation';
+    try {
+        if (sessionStorage.getItem(collapseAfterNavigationKey) === '1' && sidebar) {
+            sidebar.classList.add('is-collapsed-until-leave');
+            sidebar.addEventListener('pointerleave', function () {
+                sidebar.classList.remove('is-collapsed-until-leave');
+                try { sessionStorage.removeItem(collapseAfterNavigationKey); } catch (error) {}
+            }, { once: true });
+        }
+    } catch (error) {}
+    if (sidebar) {
+        sidebar.addEventListener('click', function (event) {
+            const link = event.target.closest('a');
+            if (!link || !sidebar.contains(link)) return;
+            try { sessionStorage.setItem(collapseAfterNavigationKey, '1'); } catch (error) {}
+        });
+    }
+
     // Warm same-origin workspace pages before a click to reduce navigation delay.
     const prefetchedPages = new Set();
     function prefetchWorkspaceLink(link) {
