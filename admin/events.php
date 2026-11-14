@@ -400,11 +400,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch the original EMIS events. No category table or category_id is required.
 $eventQuery = 'events?select=*&order=start_datetime.asc';
-if ($currentRole === 'event organizer') {
-    $eventQuery = 'events?select=*&organizer_id=eq.' . rawurlencode((string)$_SESSION['user_id'])
-        . '&order=start_datetime.asc';
-}
+
 $getResponse = supabaseRequest($eventQuery, 'GET');
+
 $events = (($getResponse['code'] ?? 500) < 400 && is_array($getResponse['data'] ?? null))
     ? $getResponse['data']
     : [];
