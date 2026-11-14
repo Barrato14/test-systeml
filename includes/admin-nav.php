@@ -87,7 +87,7 @@ if ($adminRole === 'event organizer') {
     </div>
 </header>
 
-<div id="emis-admin-command-overlay" data-turbo-permanent class="admin-command-overlay" id="adminCommandOverlay" aria-hidden="true">
+<div id="adminCommandOverlay" data-turbo-permanent class="admin-command-overlay" aria-hidden="true">
     <section class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandTitle">
         <div class="admin-command-search"><i class="bi bi-search"></i><input id="adminCommandInput" type="search" placeholder="Search workspace pages..." autocomplete="off"><kbd>ESC</kbd></div>
         <div class="admin-command-heading" id="adminCommandTitle">QUICK NAVIGATION</div>
