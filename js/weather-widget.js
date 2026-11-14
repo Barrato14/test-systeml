@@ -31,12 +31,29 @@
 
     let activeRequestController = null;
 
-    async function fetchWithTimeout(url, options = {}) {
-        const requestOptions = { ...options };
-        if (activeRequestController && !requestOptions.signal) {
-            requestOptions.signal = activeRequestController.signal;
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const parentSignal = activeRequestController?.signal;
+        const abortFromParent = () => controller.abort();
+
+        if (parentSignal) {
+            if (parentSignal.aborted) controller.abort();
+            else parentSignal.addEventListener('abort', abortFromParent, { once: true });
         }
-        return fetch(url, requestOptions);
+
+        const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            return await fetch(url, { ...options, signal: controller.signal });
+        } catch (error) {
+            if (controller.signal.aborted) {
+                throw new Error('Request timed out or was cancelled.');
+            }
+            throw error;
+        } finally {
+            window.clearTimeout(timeoutId);
+            if (parentSignal) parentSignal.removeEventListener('abort', abortFromParent);
+        }
     }
 
 
@@ -201,14 +218,32 @@
 
     async function detectLocation() {
         try {
+            // Start the forecast as soon as device coordinates are available.
+            // Reverse geocoding only improves the label and must not block weather.
             const coordinates = await getBrowserCoordinates();
-            const label = await getLocationName(coordinates.latitude, coordinates.longitude);
-            return { ...coordinates, label };
+            const location = {
+                ...coordinates,
+                label: 'Your current location'
+            };
+
+            getLocationName(coordinates.latitude, coordinates.longitude)
+                .then(label => {
+                    location.label = label;
+                    if (detectedLocation === location) {
+                        setText('[data-weather-location-label]', label);
+                        setText('[data-weather-description]', 'Weather for ' + label);
+                    }
+                })
+                .catch(() => {});
+
+            return location;
         } catch (error) {
-            // If permission is denied or GPS is unavailable, use IP-based locality.
+            // If device location is unavailable, use IP-based locality.
             try {
                 const response = await fetchWithTimeout(
-                    'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en'
+                    'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en',
+                    {},
+                    8000
                 );
                 if (!response.ok) throw new Error('IP location unavailable');
                 const data = await response.json();
@@ -218,19 +253,14 @@
                     return {
                         latitude: Number(data.latitude),
                         longitude: Number(data.longitude),
-                        label: (data.city || data.locality || data.principalSubdivision) +
-                            ' (approximate)',
+                        label: (data.city || data.locality || data.principalSubdivision) + ' (approximate)',
                         source: 'ip'
                     };
                 }
             } catch (fallbackError) {
                 // Continue to the campus fallback below.
             }
-            try {
-                return await fallbackLocation();
-            } catch (fallbackError) {
-                throw new Error('Your location and the campus fallback could not be determined.');
-            }
+            return await fallbackLocation();
         }
     }
 
@@ -277,9 +307,13 @@
                 forecast_days: '1'
             });
             const forecastResponse = await fetchWithTimeout(
-                'https://api.open-meteo.com/v1/forecast?' + params.toString()
+                'https://api.open-meteo.com/v1/forecast?' + params.toString(),
+                {},
+                18000
             );
-            if (!forecastResponse.ok) throw new Error('The weather service is temporarily unavailable.');
+            if (!forecastResponse.ok) {
+                throw new Error('Weather service returned HTTP ' + forecastResponse.status + '.');
+            }
             const forecast = await forecastResponse.json();
             if (!forecast.current || !forecast.daily || !forecast.hourly) {
                 throw new Error('The weather service returned incomplete data.');
