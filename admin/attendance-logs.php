@@ -8,7 +8,7 @@ require_once '../includes/auth.php';
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
 if (
     !isset($_SESSION['user_id']) ||
-    !in_array($currentRole, ['administrator', 'event organizer'], true)
+    !in_array($currentRole, ['administrator', 'staff'], true)
 ) {
     http_response_code(403);
     exit('Access denied.');
