@@ -72,6 +72,15 @@ foreach ($events as $event) {
     $eventTitle = (string)($event['title'] ?? 'EMIS Event');
     $eventVenue = (string)($event['venue'] ?? 'To be announced');
     $eventStart = reminderManilaTime($event['start_datetime'] ?? '');
+    try {
+        $eventStartDate = (new DateTimeImmutable($event['start_datetime']))
+            ->setTimezone(new DateTimeZone('Asia/Manila'))->format('Y-m-d');
+    } catch (Exception $e) {
+        reminderLog('Skipping event with invalid start date: ' . $eventId);
+        continue;
+    }
+    $reminderType = ($eventStartDate === $now->format('Y-m-d')) ? 'event_day' : '24_hours';
+    $reminderLabel = ($reminderType === 'event_day') ? 'today' : 'within the next 24 hours';
 
     $registrationsResponse = supabaseServiceRequest(
         'event_registrations?event_id=eq.' . rawurlencode($eventId) .
@@ -103,7 +112,7 @@ foreach ($events as $event) {
         // idempotency guard that prevents repeat in-app alerts and emails.
         $logQuery = 'event_reminder_logs?event_id=eq.' . rawurlencode($eventId) .
             '&participant_id=eq.' . rawurlencode($participantId) .
-            '&reminder_type=eq.24_hours&select=id,in_app_sent,email_sent,email_skipped';
+            '&reminder_type=eq.' . rawurlencode($reminderType) . '&select=id,in_app_sent,email_sent,email_skipped';
 
         $logResponse = supabaseServiceRequest($logQuery, 'GET');
 
@@ -117,7 +126,7 @@ foreach ($events as $event) {
             $createLog = supabaseServiceRequest('event_reminder_logs', 'POST', [
                 'event_id' => $eventId,
                 'participant_id' => $participantId,
-                'reminder_type' => '24_hours',
+                'reminder_type' => $reminderType,
                 'in_app_sent' => false,
                 'email_sent' => false,
                 'email_skipped' => false
@@ -143,8 +152,8 @@ foreach ($events as $event) {
             $notificationResponse = supabaseServiceRequest('notifications', 'POST', [
                 'participant_id' => $participantId,
                 'event_id' => $eventId,
-                'title' => 'Event Reminder: ' . $eventTitle,
-                'message' => 'Reminder: "' . $eventTitle . '" is scheduled to start within the next 24 hours, on ' .
+                'title' => (($reminderType === 'event_day') ? 'Event Today: ' : 'Event Reminder: ') . $eventTitle,
+                'message' => (($reminderType === 'event_day') ? 'Your event is happening today: "' : 'Reminder: "') . $eventTitle . '" is scheduled to start ' . $reminderLabel . ', on ' .
                     $eventStart . '. Venue: ' . $eventVenue . '. Please check the event details in EMIS.',
                 'is_read' => false
             ]);
@@ -187,7 +196,7 @@ foreach ($events as $event) {
                         </div>
                         <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
                             <h3 style="color:#4f46e5;">Your event is coming up!</h3>
-                            <p>This is a reminder that your registered event is scheduled to start within the next 24 hours.</p>
+                            <p>This is a reminder that your registered event is scheduled to start ' . $reminderLabel . '.</p>
                             <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
                             <p><strong>Starts:</strong> ' . $safeEventStart . ' (Philippine Time)</p>
                             <p><strong>Venue:</strong> ' . $safeEventVenue . '</p>
@@ -199,7 +208,7 @@ foreach ($events as $event) {
                 $emailResult = sendSystemEmail(
                     $recipientEmail,
                     'Participant',
-                    'Reminder: ' . $eventTitle . ' starts within 24 hours',
+                    (($reminderType === 'event_day') ? 'Event Today: ' . $eventTitle . ' starts today' : 'Reminder: ' . $eventTitle . ' starts within 24 hours'),
                     $emailHtml
                 );
 
