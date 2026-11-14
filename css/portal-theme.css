@@ -1079,8 +1079,8 @@ body.admin-portal .admin-activity-empty>i,body.admin-portal .admin-activity-empt
 }
 
 
-/* Coordinated admin light palette */
-.admin-portal{--admin-bg:#f5f2f8;--admin-panel:#ffffff;--admin-panel-raised:#f7f3fa;--admin-border:#e5dceb;--admin-text:#33283d;--admin-muted:#786d83;--admin-accent:#8050ad;--admin-accent-strong:#704093}
+/* Default admin dark palette; the light theme overrides these variables below. */
+.admin-portal{--admin-bg:#100a1c;--admin-panel:#1a1328;--admin-panel-raised:#211832;--admin-border:#382b50;--admin-text:#f4efff;--admin-muted:#aa9dbd;--admin-accent:#9b6be8;--admin-accent-strong:#7c3aed}
 html[data-admin-theme="light"] .admin-portal{background:var(--admin-bg)!important;color:var(--admin-text)!important}
 html[data-admin-theme="light"] .admin-portal .content-area,html[data-admin-theme="light"] .admin-portal .admin-main-content{background:var(--admin-bg)!important;color:var(--admin-text)!important}
 html[data-admin-theme="light"] .admin-portal .card,html[data-admin-theme="light"] .admin-portal .modal-content{background:var(--admin-panel)!important;color:var(--admin-text)!important;border-color:var(--admin-border)!important;box-shadow:0 8px 24px rgba(54,35,70,.055)!important}
