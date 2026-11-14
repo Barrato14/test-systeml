@@ -1183,7 +1183,7 @@ if (!$isEventOrganizer) {
 
                     <div class="d-grid gap-3">
                         <?php if ($isStaff): ?>
-                            <a href="equipment.php?tab=requests" class="btn btn-outline-warning text-start"><i class="bi bi-inbox me-2"></i>Review Equipment Requests</a>
+                            <a href="equipment.php?tab=requests" class="btn btn-outline-warning text-start"><i class="bi bi-inbox me-2"></i>View Borrow Requests</a>
                             <a href="equipment.php?tab=history" class="btn btn-outline-primary text-start"><i class="bi bi-clock-history me-2"></i>View Borrowing History</a>
                             <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i>View Attendance Logs</a>
                         <?php else: ?>
