@@ -618,7 +618,7 @@ if (!$isEventOrganizer) {
             <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#0dcaf0;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Currently Borrowed Units</h6><h2 class="mb-0"><?= $currentBorrowedUnits ?></h2></div></div></div>
         <?php else: ?>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Total Users</h6><h2 class="mb-0"><?= $totalUsers ?></h2></div></div></div>
-            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Events</h6><h2 class="mb-0"><?= $activeEvents ?></h2></div></div></div>
+            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2"><?= $isEventOrganizer ? 'Ongoing Events' : 'Active Events' ?></h6><h2 class="mb-0"><?= $isEventOrganizer ? count($ongoingEvents) : $activeEvents ?></h2></div></div></div>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2></div></div></div>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#dc3545;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6><h2 class="mb-0"><?= $totalCheckIns ?></h2></div></div></div>
         <?php endif; ?>
