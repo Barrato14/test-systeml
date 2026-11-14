@@ -5,7 +5,14 @@ $adminCurrentPage = basename($_SERVER['PHP_SELF'] ?? '');
 if ($adminRole === 'event organizer') {
     $adminNavItems = [
         ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
-        ['events.php', 'Event Management', 'bi-calendar-event'],
+        ['events.php', 'Event Management', 'bi-calendar-event']
+    ];
+    $adminHomePage = 'dashboard.php';
+    $adminWorkspaceLabel = 'Event Organizer Workspace';
+} elseif ($adminRole === 'staff') {
+    $adminNavItems = [
+        ['dashboard.php', 'Dashboard', 'bi-speedometer2'],
+        ['equipment.php', 'Equipment & Services', 'bi-tools'],
         ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
     ];
     $adminHomePage = 'dashboard.php';
