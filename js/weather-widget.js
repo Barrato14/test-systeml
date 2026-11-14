@@ -54,8 +54,9 @@
     }
 
     function setText(selector, value) {
-        const element = widget.querySelector(selector);
-        if (element) element.textContent = value;
+        widget.querySelectorAll(selector).forEach(function (element) {
+            element.textContent = value;
+        });
     }
 
     function setScene(selector, type) {
