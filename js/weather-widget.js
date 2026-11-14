@@ -277,14 +277,6 @@
 
         activeRequestController = new AbortController();
         setText('[data-weather-description]', 'Detecting your location...');
-        let requestTimeoutId;
-        const requestTimeout = new Promise((_, reject) => {
-            requestTimeoutId = window.setTimeout(() => {
-                if (activeRequestController) activeRequestController.abort();
-                reject(new Error('Weather request timed out after 15 seconds. Please try again.'));
-            }, 15000);
-        });
-
         loadingPromise = (async function () {
             if (!detectedLocation) {
                 detectedLocation = await detectLocation();
@@ -325,7 +317,7 @@
         })();
 
         try {
-            return await Promise.race([loadingPromise, requestTimeout]);
+            return await loadingPromise;
         } catch (error) {
             setText('[data-weather-description]', error.message.includes('timed out')
                 ? 'Weather request timed out' : 'Weather is temporarily unavailable');
@@ -333,7 +325,6 @@
                 '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
             throw error;
         } finally {
-            window.clearTimeout(requestTimeoutId);
             loadingPromise = null;
             activeRequestController = null;
             if (refreshButton) refreshButton.disabled = false;
