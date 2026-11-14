@@ -1163,7 +1163,6 @@ function initAdminEventsPage() {
         }
     });
 
-    const calendarElement = document.getElementById('calendar');
     const searchInput = document.getElementById('searchEvents');
     const eventModalElement = document.getElementById('eventDetailsModal');
     const detailsModal = bootstrap.Modal.getOrCreateInstance(eventModalElement);
