@@ -753,6 +753,7 @@ html[data-admin-theme="light"] .emis-weather-attribution,html[data-participant-t
 }
 @media (max-width: 640px) {
     .emis-weather-copy .emis-weather-location {
-        display: none;
+        display: inline-flex;
+        flex-wrap: wrap;
     }
 }
