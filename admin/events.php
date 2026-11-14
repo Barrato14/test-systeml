@@ -315,9 +315,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successMsg = 'Event created successfully!';
 
-            // Automatically announce newly created events to all participant accounts.
+            // Automatically notify verified participant accounts only.
+            // Staff, event organizers, and administrators are excluded by the role filter.
             $participantsResponse = supabaseRequest(
-                'profiles?role=eq.Participant&select=id&limit=1000',
+                'profiles?role=eq.Participant&is_verified=eq.true'
+                . '&select=id,email,first_name,last_name,is_active&limit=1000',
                 'GET'
             );
 
@@ -330,8 +332,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $announcementSent = 0;
                 $announcementFailed = 0;
+                $announcementEmailSent = 0;
+                $announcementEmailFailed = 0;
+                $announcementEmailSkipped = 0;
+
+                $safeAnnouncementTitle = h($automaticAnnouncementTitle);
+                $safeEventTitle = h($payload['title']);
+                $safeEventVenue = h($payload['venue'] ?: 'To be announced');
+                $safeEventDate = h(formatManilaTime($payload['start_datetime']));
+                $safeAnnouncementMessage = nl2br(h($automaticAnnouncementMessage));
 
                 foreach ($participantsResponse['data'] as $participant) {
+                    // Match User Management: a missing is_active value is treated as active.
+                    $isActive = !array_key_exists('is_active', $participant)
+                        || $participant['is_active'] === null
+                        || !in_array($participant['is_active'], [false, 0, '0', 'false'], true);
+
+                    if (!$isActive) {
+                        continue;
+                    }
+
                     $participantId = trim((string)($participant['id'] ?? ''));
                     if ($participantId === '') {
                         continue;
@@ -352,14 +372,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $announcementFailed++;
                     }
+
+                    $recipientEmail = trim((string)($participant['email'] ?? ''));
+                    if ($recipientEmail === '' || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                        $announcementEmailSkipped++;
+                        continue;
+                    }
+
+                    $recipientName = trim(
+                        (string)($participant['first_name'] ?? '') . ' ' .
+                        (string)($participant['last_name'] ?? '')
+                    );
+
+                    $emailHtml = '
+                        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#273449;line-height:1.6;">
+                            <div style="background:#343a40;color:#ffffff;padding:22px 26px;border-radius:10px 10px 0 0;">
+                                <h2 style="margin:0;color:#ffffff;">EMIS - New Event Announcement</h2>
+                            </div>
+                            <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
+                                <h3 style="color:#198754;">' . $safeAnnouncementTitle . '</h3>
+                                <p>' . $safeAnnouncementMessage . '</p>
+                                <hr style="border:0;border-top:1px solid #e8edf4;margin:22px 0;">
+                                <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
+                                <p><strong>Date &amp; time:</strong> ' . $safeEventDate . '</p>
+                                <p><strong>Venue:</strong> ' . $safeEventVenue . '</p>
+                                <p>Log in to EMIS and open Browse Events to view the details and register.</p>
+                                <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the EMIS Event System. Please do not reply to this email.</p>
+                            </div>
+                        </div>';
+
+                    $emailResult = sendSystemEmail(
+                        $recipientEmail,
+                        $recipientName !== '' ? $recipientName : 'Participant',
+                        $automaticAnnouncementTitle . ' - EMIS',
+                        $emailHtml
+                    );
+
+                    if ($emailResult === true) {
+                        $announcementEmailSent++;
+                    } else {
+                        $announcementEmailFailed++;
+                        error_log(
+                            'EMIS new-event email failed for participant ' . $participantId . ': ' .
+                            (string)$emailResult
+                        );
+                    }
                 }
 
-                $successMsg .= " Automatic announcements sent to {$announcementSent} participant(s).";
-                if ($announcementFailed > 0) {
-                    $successMsg .= " {$announcementFailed} could not be notified.";
-                }
+                $successMsg .= " New-event in-app notifications: {$announcementSent} sent, {$announcementFailed} failed.";
+                $successMsg .= " Email: {$announcementEmailSent} sent, {$announcementEmailFailed} failed, {$announcementEmailSkipped} skipped (missing/invalid email).";
             } else {
-                $successMsg .= ' The event was created, but automatic announcements could not be sent.';
+                $successMsg .= ' The event was created, but automatic participant notifications could not be sent because the participant list could not be retrieved.';
             }
         } elseif ($action === 'edit') {
             $updateId = trim($_POST['event_id'] ?? '');
