@@ -41,10 +41,15 @@ function reminderManilaTime($value) {
 $now = new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
 $cutoff = $now->modify('+24 hours');
 
+// PostgREST requires multiple filters on the same column to be grouped
+// inside an explicit "and" expression. Repeating start_datetime parameters
+// can cause one boundary to override the other.
+$timeWindowFilter = '(start_datetime.gt.' . $now->format('c')
+    . ',start_datetime.lte.' . $cutoff->format('c') . ')';
+
 $eventsResponse = supabaseServiceRequest(
-    'events?start_datetime=gt.' . rawurlencode($now->format('c')) .
-    '&start_datetime=lte.' . rawurlencode($cutoff->format('c')) .
-    '&select=id,title,venue,start_datetime&order=start_datetime.asc&limit=500',
+    'events?and=' . rawurlencode($timeWindowFilter)
+    . '&select=id,title,venue,start_datetime&order=start_datetime.asc&limit=500',
     'GET'
 );
 
