@@ -491,6 +491,8 @@ foreach ($events as $event) {
         'borderColor' => $color,
         'extendedProps' => [
             'description' => $event['description'] ?? '',
+            'start_datetime' => $event['start_datetime'] ?? null,
+            'end_datetime' => $event['end_datetime'] ?? null,
             'venue' => $event['venue'] ?? '',
             'capacity' => $event['capacity'] ?? '',
             'status' => $status,
@@ -1190,12 +1192,27 @@ document.addEventListener('DOMContentLoaded', function () {
             const dateOptions = { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric' };
             const timeOptions = { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' };
 
-            document.getElementById('modalStart').textContent = event.start
-                ? new Intl.DateTimeFormat('en-PH', {...dateOptions, ...timeOptions}).format(event.start)
-                : 'Not specified';
-            document.getElementById('modalEnd').textContent = event.end
-                ? new Intl.DateTimeFormat('en-PH', {...dateOptions, ...timeOptions}).format(event.end)
-                : 'Not specified';
+            // Format the original Supabase ISO timestamps directly.
+            // Do not use FullCalendar's event.start/event.end here: with named
+            // timezones and no timezone plugin, those Date objects can be UTC-coerced.
+            const formatEventManilaTime = value => {
+                if (!value) return 'Not specified';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return 'Not specified';
+                return new Intl.DateTimeFormat('en-PH', {
+                    timeZone: 'Asia/Manila',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                }).format(date);
+            };
+
+            document.getElementById('modalStart').textContent =
+                formatEventManilaTime(props.start_datetime);
+            document.getElementById('modalEnd').textContent =
+                formatEventManilaTime(props.end_datetime);
 
             const image = document.getElementById('modalImage');
             if (props.image_url) {
