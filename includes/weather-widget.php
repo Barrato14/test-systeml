@@ -3,10 +3,10 @@
 <section class="emis-weather-widget" data-weather-widget aria-label="Campus weather">
     <button class="emis-weather-trigger" type="button" data-weather-open aria-haspopup="dialog" aria-expanded="false">
         <span class="emis-weather-copy">
-            <span class="emis-weather-eyebrow"><i class="bi bi-cloud-sun"></i> CAMPUS WEATHER TODAY</span>
+            <span class="emis-weather-eyebrow"><i class="bi bi-cloud-sun"></i> LOCAL WEATHER</span>
             <strong class="emis-weather-temperature" data-weather-temperature>--°</strong>
             <span class="emis-weather-description" data-weather-description>Loading today's weather...</span>
-            <span class="emis-weather-location"><i class="bi bi-geo-alt"></i> Dau, Mabalacat <span class="emis-weather-updated" data-weather-updated></span></span>
+            <span class="emis-weather-location"><i class="bi bi-geo-alt"></i> <span data-weather-location-label>Detecting location...</span> <span class="emis-weather-updated" data-weather-updated></span></span>
         </span>
         <span class="emis-weather-scene" data-weather-scene data-weather="loading" aria-hidden="true">
             <span class="emis-weather-sun">☀</span>
@@ -25,8 +25,8 @@
             <header class="emis-weather-panel-header">
                 <div>
                     <span class="emis-weather-panel-kicker">WEATHER REPORT</span>
-                    <h2 id="emisWeatherTitle">Today's campus weather</h2>
-                    <p><i class="bi bi-geo-alt"></i> Dau, Mabalacat, Pampanga</p>
+                    <h2 id="emisWeatherTitle">Local weather report</h2>
+                    <p><i class="bi bi-geo-alt"></i> <span data-weather-location-label>Detecting location...</span></p>
                 </div>
                 <button class="emis-weather-close" type="button" data-weather-close aria-label="Close weather"><i class="bi bi-x-lg"></i></button>
             </header>
