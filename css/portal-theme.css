@@ -1141,3 +1141,47 @@ html[data-admin-theme="light"] body.admin-portal {
     background: #f4f1f8 !important;
     background-color: #f4f1f8 !important;
 }
+
+
+/* ==========================================================================
+   Smooth same-site navigation for the PHP workspace (Chrome/modern browsers)
+   ========================================================================== */
+
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root) {
+    animation: emis-page-out 100ms ease both;
+}
+
+::view-transition-new(root) {
+    animation: emis-page-in 160ms ease both;
+}
+
+@keyframes emis-page-out {
+    to { opacity: 0; }
+}
+
+@keyframes emis-page-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Keep the workspace rail visually anchored between document navigations. */
+.admin-sidebar {
+    view-transition-name: emis-workspace-sidebar;
+}
+
+::view-transition-old(emis-workspace-sidebar),
+::view-transition-new(emis-workspace-sidebar) {
+    animation: none;
+}
+
+/* Respect accessibility preferences. */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
+}
