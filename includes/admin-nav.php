@@ -102,6 +102,31 @@ if ($adminRole === 'event organizer') {
 
 <script>
 (function () {
+    // Warm same-origin workspace pages before a click to reduce navigation delay.
+    const prefetchedPages = new Set();
+    function prefetchWorkspaceLink(link) {
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || /^(?:https?:|mailto:|tel:|javascript:)/i.test(href)) return;
+        let url;
+        try { url = new URL(href, window.location.href); } catch (error) { return; }
+        if (url.origin !== window.location.origin || prefetchedPages.has(url.href)) return;
+        prefetchedPages.add(url.href);
+        const hint = document.createElement('link');
+        hint.rel = 'prefetch';
+        hint.href = url.href;
+        hint.as = 'document';
+        document.head.appendChild(hint);
+    }
+    document.addEventListener('pointerover', function (event) {
+        const link = event.target.closest('.admin-sidebar-nav a, .admin-mobile-menu-panel a, .admin-command-results a, .admin-brand, .admin-mobile-brand');
+        if (link) prefetchWorkspaceLink(link);
+    });
+    document.addEventListener('focusin', function (event) {
+        const link = event.target.closest('.admin-sidebar-nav a, .admin-mobile-menu-panel a, .admin-command-results a, .admin-brand, .admin-mobile-brand');
+        if (link) prefetchWorkspaceLink(link);
+    });
+
     const root = document.documentElement;
     const themeKey = 'emis-admin-theme';
     function applyAdminTheme(theme) {
