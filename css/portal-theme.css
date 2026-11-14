@@ -1106,3 +1106,38 @@ html[data-admin-theme="dark"] body.admin-portal .content-area,
 html[data-admin-theme="dark"] body.admin-portal .admin-main-content {
     background: transparent !important;
 }
+
+
+/* Admin theme canvas fix: keep the document background in sync with the selected theme. */
+html {
+    min-height: 100%;
+    background: #0d0916;
+}
+
+html[data-admin-theme="dark"] {
+    background: #0d0916 !important;
+    color-scheme: dark;
+}
+
+html[data-admin-theme="dark"] body.admin-portal {
+    min-height: 100vh;
+    margin: 0;
+    background: #0d0916 !important;
+    background-color: #0d0916 !important;
+}
+
+html[data-admin-theme="dark"] body.admin-portal,
+html[data-admin-theme="dark"] body.admin-portal .content-area,
+html[data-admin-theme="dark"] body.admin-portal .admin-main-content {
+    color-scheme: dark;
+}
+
+html[data-admin-theme="light"] {
+    background: #f4f1f8 !important;
+    color-scheme: light;
+}
+
+html[data-admin-theme="light"] body.admin-portal {
+    background: #f4f1f8 !important;
+    background-color: #f4f1f8 !important;
+}
