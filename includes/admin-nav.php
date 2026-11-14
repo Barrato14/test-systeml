@@ -29,7 +29,7 @@ if ($adminRole === 'event organizer') {
     $adminWorkspaceLabel = 'Admin Command Center';
 }
 ?>
-<aside id="emis-admin-sidebar" data-turbo-permanent class="admin-sidebar" aria-label="EMIS workspace navigation">
+<aside id="emis-admin-sidebar" class="admin-sidebar" aria-label="EMIS workspace navigation">
     <div class="admin-sidebar-inner">
         <a class="admin-brand" href="<?= htmlspecialchars($adminHomePage) ?>" aria-label="EMIS Workspace">
             <span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span>
@@ -63,7 +63,7 @@ if ($adminRole === 'event organizer') {
     </div>
 </aside>
 
-<header id="emis-admin-mobile-topbar" data-turbo-permanent class="admin-mobile-topbar">
+<header id="emis-admin-mobile-topbar" class="admin-mobile-topbar">
     <a class="admin-mobile-brand" href="<?= htmlspecialchars($adminHomePage) ?>"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>EMIS</strong><small><?= $adminRole === 'event organizer' ? 'Organizer' : 'Admin' ?></small></span></a>
     <div class="admin-mobile-actions">
         <button type="button" class="admin-mobile-icon" data-open-admin-command aria-label="Quick switcher"><i class="bi bi-search"></i></button>
@@ -87,7 +87,7 @@ if ($adminRole === 'event organizer') {
     </div>
 </header>
 
-<div id="adminCommandOverlay" data-turbo-permanent class="admin-command-overlay" aria-hidden="true">
+<div id="adminCommandOverlay" class="admin-command-overlay" aria-hidden="true">
     <section class="admin-command-dialog" role="dialog" aria-modal="true" aria-labelledby="adminCommandTitle">
         <div class="admin-command-search"><i class="bi bi-search"></i><input id="adminCommandInput" type="search" placeholder="Search workspace pages..." autocomplete="off"><kbd>ESC</kbd></div>
         <div class="admin-command-heading" id="adminCommandTitle">QUICK NAVIGATION</div>
@@ -201,5 +201,3 @@ if ($adminRole === 'event organizer') {
 })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" data-turbo-eval="false"></script>
-<script src="../js/admin-turbo-navigation.js" data-turbo-eval="false"></script>
