@@ -7,7 +7,7 @@
     const refreshButton = widget.querySelector('[data-weather-refresh]');
     const hourlyContainer = widget.querySelector('[data-weather-hourly]');
     const fallbackLocation = async function () {
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             'https://geocoding-api.open-meteo.com/v1/search?name=Dau&count=10&language=en&format=json&countryCode=PH'
         );
         if (!response.ok) throw new Error('Campus location lookup failed');
@@ -28,6 +28,17 @@
     let lastLoadedAt = 0;
     let loadingPromise = null;
     let detectedLocation = null;
+
+    let activeRequestController = null;
+
+    async function fetchWithTimeout(url, options = {}) {
+        const requestOptions = { ...options };
+        if (activeRequestController && !requestOptions.signal) {
+            requestOptions.signal = activeRequestController.signal;
+        }
+        return fetch(url, requestOptions);
+    }
+
 
     const weatherLabels = {
         0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
@@ -161,7 +172,7 @@
                 longitude: longitude,
                 localityLanguage: 'en'
             }).toString();
-            const response = await fetch(url.toString());
+            const response = await fetchWithTimeout(url.toString());
             if (!response.ok) throw new Error('Reverse geocoding unavailable');
             const data = await response.json();
             return data.city || data.locality || data.principalSubdivision || 'Your location';
@@ -196,7 +207,7 @@
         } catch (error) {
             // If permission is denied or GPS is unavailable, use IP-based locality.
             try {
-                const response = await fetch(
+                const response = await fetchWithTimeout(
                     'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en'
                 );
                 if (!response.ok) throw new Error('IP location unavailable');
@@ -234,11 +245,24 @@
         if (hourlyContainer) hourlyContainer.innerHTML =
             '<p class="emis-weather-loading">Finding your location and forecast...</p>';
 
+        activeRequestController = new AbortController();
+        setText('[data-weather-description]', 'Detecting your location...');
+        const requestTimeout = new Promise((_, reject) => {
+            window.setTimeout(() => {
+                if (activeRequestController) activeRequestController.abort();
+                reject(new Error('Weather request timed out. Please try again.'));
+            }, 12000);
+        });
+
         loadingPromise = (async function () {
             if (!detectedLocation) {
                 detectedLocation = await detectLocation();
                 setText('[data-weather-location-label]', detectedLocation.label);
             }
+
+            setText('[data-weather-description]', 'Fetching current weather...');
+            if (hourlyContainer) hourlyContainer.innerHTML =
+                '<p class="emis-weather-loading">Loading the latest forecast...</p>';
 
             const params = new URLSearchParams({
                 latitude: detectedLocation.latitude,
@@ -249,7 +273,7 @@
                 timezone: 'Asia/Manila',
                 forecast_days: '1'
             });
-            const forecastResponse = await fetch(
+            const forecastResponse = await fetchWithTimeout(
                 'https://api.open-meteo.com/v1/forecast?' + params.toString()
             );
             if (!forecastResponse.ok) throw new Error('The weather service is temporarily unavailable.');
@@ -264,14 +288,16 @@
         })();
 
         try {
-            return await loadingPromise;
+            return await Promise.race([loadingPromise, requestTimeout]);
         } catch (error) {
-            setText('[data-weather-description]', 'Weather is temporarily unavailable');
+            setText('[data-weather-description]', error.message.includes('timed out')
+                ? 'Weather request timed out' : 'Weather is temporarily unavailable');
             if (hourlyContainer) hourlyContainer.innerHTML =
                 '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
             throw error;
         } finally {
             loadingPromise = null;
+            activeRequestController = null;
             if (refreshButton) refreshButton.disabled = false;
         }
     }
