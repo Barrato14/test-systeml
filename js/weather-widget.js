@@ -6,11 +6,22 @@
     const dialog = widget.querySelector('[data-weather-dialog]');
     const refreshButton = widget.querySelector('[data-weather-refresh]');
     const hourlyContainer = widget.querySelector('[data-weather-hourly]');
-    const fallbackLocation = {
-        latitude: 14.9886,
-        longitude: 120.5736,
-        label: 'Dau, Mabalacat (campus fallback)',
-        source: 'fallback'
+    const fallbackLocation = async function () {
+        const response = await fetch(
+            'https://geocoding-api.open-meteo.com/v1/search?name=Dau&count=10&language=en&format=json&countryCode=PH'
+        );
+        if (!response.ok) throw new Error('Campus location lookup failed');
+        const data = await response.json();
+        const place = (data.results || []).find(item =>
+            item.country_code === 'PH' && item.name.toLowerCase() === 'dau'
+        );
+        if (!place) throw new Error('Campus location not found');
+        return {
+            latitude: place.latitude,
+            longitude: place.longitude,
+            label: 'Dau, Mabalacat (campus fallback)',
+            source: 'fallback'
+        };
     };
 
     let cachedWeather = null;
@@ -203,7 +214,11 @@
             } catch (fallbackError) {
                 // Continue to the campus fallback below.
             }
-            return fallbackLocation;
+            try {
+                return await fallbackLocation();
+            } catch (fallbackError) {
+                throw new Error('Your location and the campus fallback could not be determined.');
+            }
         }
     }
 
