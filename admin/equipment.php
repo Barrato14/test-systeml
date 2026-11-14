@@ -417,7 +417,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
             .content-area { width:100%; padding:14px; }
         }
     </style>
-    <link rel="stylesheet" href="../css/portal-theme.css">
+    <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
 </head>
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
