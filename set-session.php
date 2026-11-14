@@ -119,8 +119,9 @@ if (strtolower($userRole) === 'administrator') {
     header('Location: admin/dashboard.php');
 } elseif (strtolower(trim($userRole)) === 'event organizer') {
     header('Location: admin/dashboard.php');
-} elseif (strtolower($userRole) === 'staff') {
-    header('Location: staff/dashboard.php');
+} elseif (strtolower(trim($userRole)) === 'staff') {
+    // Staff uses the shared role-aware dashboard in the admin directory.
+    header('Location: admin/dashboard.php');
 } else {
     // First-time Google participants must complete their real student details.
     $hasStudentName = trim((string)($profile['first_name'] ?? '')) !== ''
