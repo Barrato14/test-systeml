@@ -1094,3 +1094,15 @@ html[data-admin-theme="light"] .admin-portal .table thead th{background:#f2edf6!
 html[data-admin-theme="light"] .admin-sidebar-link.is-active:not(:hover){color:#655773}
 html[data-admin-theme="light"] .admin-activity-tab{background:#f8f4fb!important;border-color:#e5dceb!important;color:#685477!important}
 html[data-admin-theme="light"] .admin-activity-tab.is-active{background:#eee4f7!important;border-color:#cdb5df!important;color:#54336f!important}
+
+/* Match the participant portal's dark-mode page background. */
+html[data-admin-theme="dark"] body.admin-portal,
+html[data-admin-theme="dark"] .admin-portal {
+    --admin-bg: #0d0916;
+    background: #0d0916 !important;
+}
+
+html[data-admin-theme="dark"] body.admin-portal .content-area,
+html[data-admin-theme="dark"] body.admin-portal .admin-main-content {
+    background: transparent !important;
+}
