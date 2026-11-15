@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="js/auth.js"></script>
-    <script src="js/legal-modals.js"></script>
+    <script src="js/legal-modals.js?v=2"></script>
     <script src="/js/pwa.js"></script>
 </body>
 </html>
