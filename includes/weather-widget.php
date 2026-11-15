@@ -62,7 +62,7 @@
             <div class="emis-weather-hourly" data-weather-hourly>
                 <p class="emis-weather-loading">Fetching the latest forecast...</p>
             </div>
-            <footer class="emis-weather-attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></footer>
+            <footer class="emis-weather-attribution">Weather data by <a href="https://www.met.no/en" target="_blank" rel="noopener noreferrer">MET Norway</a></footer>
         </section>
     </div>
 </section>
