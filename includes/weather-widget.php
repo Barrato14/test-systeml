@@ -49,7 +49,7 @@
             </div>
 
             <div class="emis-weather-stats">
-                <div><i class="bi bi-droplet-half"></i><span>Rain chance</span><strong data-weather-rain>--%</strong></div>
+                <div><i class="bi bi-droplet-half"></i><span>Expected rain</span><strong data-weather-rain>-- mm</strong></div>
                 <div><i class="bi bi-wind"></i><span>Wind</span><strong data-weather-wind>-- km/h</strong></div>
                 <div><i class="bi bi-moisture"></i><span>Humidity</span><strong data-weather-humidity>--%</strong></div>
                 <div><i class="bi bi-thermometer-half"></i><span>Today's range</span><strong data-weather-range>--° / --°</strong></div>
