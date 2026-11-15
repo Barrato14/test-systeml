@@ -1202,7 +1202,7 @@ if (!$isEventOrganizer) {
 </main>
 
 
-<script src="../js/weather-widget.js?v=20261115-4" defer></script>
+<script src="../js/weather-widget.js?v=20261115-5" defer></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
