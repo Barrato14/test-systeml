@@ -31,6 +31,8 @@ if ($latitude === false || $latitude === null ||
 // Cache forecasts per nearby area to avoid repeatedly hitting the provider's rate limit.
 $cacheKey = hash('sha256', round($latitude, 2) . ':' . round($longitude, 2));
 $cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'emis-weather-' . $cacheKey . '.json';
+$failureFile = $cacheFile . '.retry';
+
 $cachedPayload = null;
 $cachedAt = 0;
 
@@ -48,6 +50,24 @@ if (is_file($cacheFile)) {
             exit;
         }
     }
+}
+
+// Avoid repeatedly calling a provider that has just rate-limited this location.
+if (is_file($failureFile)) {
+    $retryAfter = (int) @file_get_contents($failureFile);
+    if ($retryAfter > time()) {
+        if ($cachedPayload !== null && time() - $cachedAt < 86400) {
+            header('X-EMIS-Weather-Cache: STALE');
+            header('Cache-Control: public, max-age=120');
+            echo json_encode($cachedPayload);
+            exit;
+        }
+        http_response_code(429);
+        header('Retry-After: ' . ($retryAfter - time()));
+        echo json_encode(['error' => 'Weather provider rate limit reached. Please try again later.']);
+        exit;
+    }
+    @unlink($failureFile);
 }
 
 $params = http_build_query([
@@ -81,11 +101,23 @@ curl_close($ch);
 if ($response === false || $status < 200 || $status >= 300) {
     error_log('EMIS weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
 
+    // Back off after an upstream rate limit instead of creating more requests.
+    if ($status === 429) {
+        @file_put_contents($failureFile, (string) (time() + 600), LOCK_EX);
+    }
+
     // If the provider rate-limits or temporarily fails, serve the last known forecast.
     if ($cachedPayload !== null && time() - $cachedAt < 86400) {
         header('X-EMIS-Weather-Cache: STALE');
         header('Cache-Control: public, max-age=120');
         echo json_encode($cachedPayload);
+        exit;
+    }
+
+    if ($status === 429) {
+        http_response_code(429);
+        header('Retry-After: 600');
+        echo json_encode(['error' => 'Weather provider rate limit reached. Please try again in about 10 minutes.']);
         exit;
     }
 
