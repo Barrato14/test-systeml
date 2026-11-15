@@ -188,7 +188,10 @@ try {
         $periodDetails = [];
         foreach (['next_1_hours', 'next_6_hours', 'next_12_hours'] as $periodKey) {
             $candidateDetails = $entry['data'][$periodKey]['details'] ?? [];
-            if (is_array($candidateDetails) && array_key_exists('probability_of_precipitation', $candidateDetails)) {
+            if (is_array($candidateDetails) && (
+                array_key_exists('probability_of_precipitation', $candidateDetails) ||
+                array_key_exists('precipitation_amount', $candidateDetails)
+            )) {
                 $periodDetails = $candidateDetails;
                 break;
             }
@@ -200,6 +203,8 @@ try {
             'weather_code' => emisWeatherCode($symbol),
             'precipitation_probability' => isset($periodDetails['probability_of_precipitation'])
                 ? (float) $periodDetails['probability_of_precipitation'] : null,
+            'precipitation_amount' => isset($periodDetails['precipitation_amount'])
+                ? (float) $periodDetails['precipitation_amount'] : null,
             'humidity' => isset($details['relative_humidity']) ? (float) $details['relative_humidity'] : null,
             'wind_speed' => isset($details['wind_speed']) ? (float) $details['wind_speed'] * 3.6 : null,
             'apparent_temperature' => (float) $details['air_temperature']
@@ -228,7 +233,7 @@ try {
     }
 
     $current = $normalized[$currentIndex];
-    $hourly = ['time' => [], 'temperature_2m' => [], 'weather_code' => [], 'precipitation_probability' => []];
+    $hourly = ['time' => [], 'temperature_2m' => [], 'weather_code' => [], 'precipitation_probability' => [], 'precipitation_amount' => []];
     foreach ($normalized as $item) {
         if (count($hourly['time']) >= 24) break;
         if ((new DateTimeImmutable($item['time'], $manila))->getTimestamp() < $now->getTimestamp() - 3600) continue;
@@ -236,6 +241,7 @@ try {
         $hourly['temperature_2m'][] = $item['temperature'];
         $hourly['weather_code'][] = $item['weather_code'];
         $hourly['precipitation_probability'][] = $item['precipitation_probability'];
+        $hourly['precipitation_amount'][] = $item['precipitation_amount'];
     }
 
     $dailyHigh = !empty($todayTemperatures) ? max($todayTemperatures) : null;
@@ -247,6 +253,7 @@ try {
             'apparent_temperature' => $current['apparent_temperature'],
             'is_day' => ((int) $now->format('G') >= 6 && (int) $now->format('G') < 18) ? 1 : 0,
             'weather_code' => $current['weather_code'],
+            'precipitation_amount' => $current['precipitation_amount'],
             'wind_speed_10m' => $current['wind_speed'] ?? 0,
             'relative_humidity_2m' => $current['humidity'] ?? 0
         ],
