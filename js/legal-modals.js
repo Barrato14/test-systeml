@@ -1,1 +1,42 @@
-(function(){'use strict';const dialogs=Array.from(document.querySelectorAll('[data-legal-dialog]'));const openButtons=document.querySelectorAll('[data-legal-open]');let activeDialog=null;let lastFocusedElement=null;function openDialog(type,trigger){const dialog=dialogs.find(item=>item.dataset.legalDialog===type);if(!dialog)return;if(activeDialog)closeDialog();lastFocusedElement=trigger||document.activeElement;activeDialog=dialog;dialog.hidden=false;document.body.classList.add('auth-legal-open');const closeButton=dialog.querySelector('.auth-legal-close');const panel=dialog.querySelector('[role="dialog"]');if(closeButton)closeButton.focus();else if(panel)panel.focus()}function closeDialog(){if(!activeDialog)return;activeDialog.hidden=true;activeDialog=null;document.body.classList.remove('auth-legal-open');if(lastFocusedElement&&typeof lastFocusedElement.focus==='function')lastFocusedElement.focus()}openButtons.forEach(button=>button.addEventListener('click',()=>openDialog(button.dataset.legalOpen,button)));dialogs.forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target.closest('[data-legal-close]'))closeDialog()}));document.addEventListener('keydown',event=>{if(!activeDialog)return;if(event.key==='Escape'){event.preventDefault();closeDialog()}if(event.key==='Tab'){const focusable=Array.from(activeDialog.querySelectorAll('button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])'));if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}})})();
+(function () {
+    const dialogs = document.querySelectorAll('[data-legal-dialog]');
+    const openButtons = document.querySelectorAll('[data-legal-open]');
+    let activeDialog = null;
+    let lastFocused = null;
+
+    function openDialog(type, button) {
+        const dialog = document.querySelector('[data-legal-dialog="' + type + '"]');
+        if (!dialog) return;
+        lastFocused = button;
+        activeDialog = dialog;
+        dialog.hidden = false;
+        document.body.classList.add('auth-legal-open');
+        const closeButton = dialog.querySelector('.auth-legal-close');
+        if (closeButton) closeButton.focus();
+    }
+
+    function closeDialog() {
+        if (!activeDialog) return;
+        activeDialog.hidden = true;
+        activeDialog = null;
+        document.body.classList.remove('auth-legal-open');
+        if (lastFocused) lastFocused.focus();
+    }
+
+    openButtons.forEach(button => {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            openDialog(button.dataset.legalOpen, button);
+        });
+    });
+
+    dialogs.forEach(dialog => {
+        dialog.addEventListener('click', function (event) {
+            if (event.target.closest('[data-legal-close]')) closeDialog();
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && activeDialog) closeDialog();
+    });
+})();
