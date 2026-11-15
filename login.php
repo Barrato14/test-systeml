@@ -201,14 +201,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <footer class="auth-footer">
                 <p>&copy; <?= date('Y') ?> Eventora. All rights reserved.</p>
                 <div class="footer-links">
-                    <a href="privacy.php">Privacy Policy</a>
-                    <a href="terms.php">Terms of Service</a>
+                    <button type="button" class="auth-legal-link" data-legal-open="privacy">Privacy Policy</button>
+                    <button type="button" class="auth-legal-link" data-legal-open="terms">Terms of Service</button>
                 </div>
             </footer>
         </section>
     </main>
 
+
+    <div class="auth-legal-dialog" data-legal-dialog="privacy" hidden>
+        <div class="auth-legal-backdrop" data-legal-close></div>
+        <section class="auth-legal-panel" role="dialog" aria-modal="true" aria-labelledby="privacyPolicyTitle" tabindex="-1">
+            <header class="auth-legal-header"><div><span class="auth-legal-eyebrow">EVENTORA · EMIS</span><h2 id="privacyPolicyTitle">Privacy Policy</h2><p>How we collect, use, and protect your information.</p></div><button type="button" class="auth-legal-close" data-legal-close aria-label="Close Privacy Policy"><i class="ph ph-x"></i></button></header>
+            <div class="auth-legal-content">
+                <p class="auth-legal-updated">Last updated: November 15, 2026</p>
+                <p>Eventora is the user-facing platform of the Event Management and Information System (EMIS). This policy explains how information is handled when you use the system to access campus events and attendance services.</p>
+                <h3>1. Information We Collect</h3><p>Depending on the features you use, EMIS may process:</p>
+                <ul><li><strong>Account information:</strong> your name, email address, password hash, course, section, account role, and account verification or status information.</li><li><strong>Event information:</strong> events you browse, register for, or attend, including related registration and attendance records.</li><li><strong>Attendance information:</strong> check-in and time-out timestamps, attendance status, and the event associated with the record.</li><li><strong>Camera and face-verification information:</strong> images submitted during attendance verification and a mathematical face descriptor created when you register your face. The descriptor is used to compare your identity during attendance checks.</li><li><strong>Location information:</strong> GPS coordinates submitted during check-in or time-out when you use location-enabled attendance features.</li><li><strong>Technical and communication information:</strong> session information needed to keep you signed in, and email addresses and messages used for account verification and system notifications.</li></ul>
+                <h3>2. How We Use Information</h3><p>Information is used to create and manage accounts, verify email addresses, provide event registration, verify attendance, maintain event and attendance records, send relevant notifications, and protect the system against unauthorized use.</p>
+                <h3>3. Face Verification, Photos, and Location</h3><p>Camera access is used when you choose face registration or camera-based attendance verification. Face registration creates a face descriptor for matching; attendance submissions may include a camera image. Location coordinates may be recorded with an attendance submission. These features should only be used for their stated EMIS purposes and in accordance with applicable school policies and laws.</p>
+                <h3>4. Storage and Service Providers</h3><p>EMIS uses Supabase services for application data and related storage. The system also uses an email delivery provider to send verification and notification messages, and a face-verification service to process face images and descriptors. Information may be processed by these providers to operate the features you request.</p>
+                <h3>5. Access, Security, and Retention</h3><p>Access to records is controlled through the system's account and role checks. Reasonable technical and organizational measures are used to help protect information. No online service can guarantee absolute security. Records may be retained for as long as needed for event administration, attendance documentation, security, and legitimate institutional requirements, subject to applicable retention rules.</p>
+                <h3>6. Your Choices</h3><p>You can choose whether to use optional camera and location-enabled features, although attendance functions that require them may not work without the relevant permission or submission. Keep your login credentials private and contact your school's EMIS administrator or designated data protection contact to request access, correction, or clarification about your information.</p>
+                <h3>7. Changes to This Policy</h3><p>This policy may be updated when EMIS features or information practices change. The latest version will be made available through the login screen.</p>
+                <h3>8. Contact</h3><p>For questions or requests concerning this policy or your information, contact your school's EMIS administrator or designated data protection contact.</p>
+            </div>
+            <footer class="auth-legal-footer"><span>Eventora · EMIS</span><button type="button" class="auth-legal-done" data-legal-close>Close</button></footer>
+        </section>
+    </div>
+    <div class="auth-legal-dialog" data-legal-dialog="terms" hidden>
+        <div class="auth-legal-backdrop" data-legal-close></div>
+        <section class="auth-legal-panel" role="dialog" aria-modal="true" aria-labelledby="termsOfServiceTitle" tabindex="-1">
+            <header class="auth-legal-header"><div><span class="auth-legal-eyebrow">EVENTORA · EMIS</span><h2 id="termsOfServiceTitle">Terms of Service</h2><p>Rules for using the campus event management system.</p></div><button type="button" class="auth-legal-close" data-legal-close aria-label="Close Terms of Service"><i class="ph ph-x"></i></button></header>
+            <div class="auth-legal-content">
+                <p class="auth-legal-updated">Effective date: November 15, 2026</p><p>By accessing or using Eventora (EMIS), you agree to these terms. If you do not agree, do not use the system.</p>
+                <h3>1. Purpose of the System</h3><p>EMIS supports campus event management, participant registration, event information, notifications, and attendance recording for authorized users.</p>
+                <h3>2. Account Responsibilities</h3><ul><li>Provide accurate and current information when creating or using an account.</li><li>Keep your password and sign-in methods secure.</li><li>Do not share your account or allow another person to record attendance under your identity.</li><li>Notify the school's EMIS administrator if you believe your account has been accessed without permission.</li></ul>
+                <h3>3. Acceptable Use</h3><p>Use EMIS only for legitimate school and event-related purposes. Do not attempt to access another user's account or records, interfere with system operations, upload malicious content, submit false information, or misuse event, attendance, camera, face-verification, or location features.</p>
+                <h3>4. Event Registration and Attendance</h3><p>Event availability, eligibility, schedules, and participation requirements may be determined by the event organizer or school. Registering for an event does not guarantee admission unless the event details say otherwise. Attendance records must reflect your own participation. Do not falsify, manipulate, or submit another person's face image or location information.</p>
+                <h3>5. Camera, Face Verification, and Location Features</h3><p>Some attendance workflows require camera access, face verification, and/or location coordinates. You are responsible for granting the relevant device permissions when using those features. Attempts to bypass or deceive attendance verification are prohibited. If verification fails or your device cannot provide the required information, contact the event organizer or EMIS administrator for assistance.</p>
+                <h3>6. Notifications and System Availability</h3><p>EMIS may send account verification messages, event announcements, reminders, and service notifications. Delivery may depend on external providers. The system may be updated, temporarily unavailable, or changed to maintain and improve its services.</p>
+                <h3>7. Privacy</h3><p>Your use of EMIS is also subject to the Privacy Policy, which explains the information processed by the system, including account, event, attendance, face-verification, and location information.</p>
+                <h3>8. Suspension or Restriction</h3><p>Access may be restricted or an account may be deactivated by authorized school personnel when required for security, policy enforcement, or legitimate administrative reasons.</p>
+                <h3>9. Disclaimer</h3><p>EMIS is provided to support school event operations. While reasonable efforts are made to keep information accurate and the service available, uninterrupted operation and error-free records cannot be guaranteed. Report suspected errors to the event organizer or EMIS administrator.</p>
+                <h3>10. Changes to These Terms</h3><p>These terms may be revised as the system or school requirements change. Continued use after updated terms are published means you acknowledge the revised terms.</p>
+                <h3>11. Contact</h3><p>For questions about these terms or use of the system, contact your school's EMIS administrator or designated system contact.</p>
+            </div>
+            <footer class="auth-legal-footer"><span>Eventora · EMIS</span><button type="button" class="auth-legal-done" data-legal-close>Close</button></footer>
+        </section>
+    </div>
+
     <script src="js/auth.js"></script>
+    <script src="js/legal-modals.js"></script>
     <script src="/js/pwa.js"></script>
 </body>
 </html>
