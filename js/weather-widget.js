@@ -241,7 +241,6 @@
             } catch (error) {
                 lastError = error;
                 if (error.message.includes('HTTP ') &&
-                    !error.message.includes('HTTP 429') &&
                     !/HTTP 5\d\d/.test(error.message)) {
                     throw error;
                 }
