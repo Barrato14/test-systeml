@@ -208,10 +208,11 @@
                 position => resolve({
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
                     source: 'device'
                 }),
                 error => reject(error),
-                { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         });
     }
@@ -220,6 +221,13 @@
         try {
             // Prefer precise device GPS whenever the user grants permission.
             const coordinates = await getBrowserCoordinates();
+
+            // Very broad browser estimates can jump between nearby cities.
+            // Prefer the IP-based fallback when the reported accuracy is worse than 10 km.
+            if (Number.isFinite(coordinates.accuracy) && coordinates.accuracy > 10000) {
+                throw new Error('Device location is too imprecise.');
+            }
+
             const location = {
                 ...coordinates,
                 label: 'Your current location'
