@@ -217,51 +217,14 @@
     }
 
     async function detectLocation() {
-        try {
-            // Start the forecast as soon as device coordinates are available.
-            // Reverse geocoding only improves the label and must not block weather.
-            const coordinates = await getBrowserCoordinates();
-            const location = {
-                ...coordinates,
-                label: 'Your current location'
-            };
-
-            getLocationName(coordinates.latitude, coordinates.longitude)
-                .then(label => {
-                    location.label = label;
-                    if (detectedLocation === location) {
-                        // Updating the place name must never overwrite the forecast status.
-                        setText('[data-weather-location-label]', label);
-                    }
-                })
-                .catch(() => {});
-
-            return location;
-        } catch (error) {
-            // If device location is unavailable, use IP-based locality.
-            try {
-                const response = await fetchWithTimeout(
-                    'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en',
-                    {},
-                    8000
-                );
-                if (!response.ok) throw new Error('IP location unavailable');
-                const data = await response.json();
-                if (Number.isFinite(Number(data.latitude)) &&
-                    Number.isFinite(Number(data.longitude)) &&
-                    (data.city || data.locality || data.principalSubdivision)) {
-                    return {
-                        latitude: Number(data.latitude),
-                        longitude: Number(data.longitude),
-                        label: (data.city || data.locality || data.principalSubdivision) + ' (approximate)',
-                        source: 'ip'
-                    };
-                }
-            } catch (fallbackError) {
-                // Continue to the campus fallback below.
-            }
-            return await fallbackLocation();
-        }
+        // This is a campus weather widget, so always use the campus area.
+        // Do not let device GPS or approximate IP geolocation change the campus forecast.
+        return {
+            latitude: 15.1746,
+            longitude: 120.5813,
+            label: 'Dau, Mabalacat (campus)',
+            source: 'campus'
+        };
     }
 
     async function fetchForecastWithRetry(url) {
@@ -273,7 +236,7 @@
                 if (response.ok) return response;
 
                 const error = new Error('Weather service returned HTTP ' + response.status + '.');
-                if (response.status < 500 && response.status !== 429) throw error;
+                if (response.status < 500) throw error;
                 lastError = error;
             } catch (error) {
                 lastError = error;
