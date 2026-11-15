@@ -768,6 +768,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-<script src="../js/weather-widget.js?v=20261115-4" defer></script>
+<script src="../js/weather-widget.js?v=20261115-5" defer></script>
 </body>
 </html>
