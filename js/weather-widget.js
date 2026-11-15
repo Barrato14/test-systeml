@@ -217,14 +217,52 @@
     }
 
     async function detectLocation() {
-        // This is a campus weather widget, so always use the campus area.
-        // Do not let device GPS or approximate IP geolocation change the campus forecast.
-        return {
-            latitude: 15.1746,
-            longitude: 120.5813,
-            label: 'Dau, Mabalacat (campus)',
-            source: 'campus'
-        };
+        try {
+            // Prefer precise device GPS whenever the user grants permission.
+            const coordinates = await getBrowserCoordinates();
+            const location = {
+                ...coordinates,
+                label: 'Your current location'
+            };
+
+            getLocationName(coordinates.latitude, coordinates.longitude)
+                .then(label => {
+                    location.label = label;
+                    if (detectedLocation === location) {
+                        setText('[data-weather-location-label]', label);
+                        setText('[data-weather-description]', cachedWeather
+                            ? 'Showing weather for ' + label
+                            : 'Fetching weather for ' + label + '...');
+                    }
+                })
+                .catch(() => {});
+
+            return location;
+        } catch (error) {
+            // If GPS permission is denied or unavailable, use approximate IP location.
+            try {
+                const response = await fetchWithTimeout(
+                    'https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en',
+                    {},
+                    8000
+                );
+                if (!response.ok) throw new Error('IP location unavailable');
+                const data = await response.json();
+                if (Number.isFinite(Number(data.latitude)) &&
+                    Number.isFinite(Number(data.longitude)) &&
+                    (data.city || data.locality || data.principalSubdivision)) {
+                    return {
+                        latitude: Number(data.latitude),
+                        longitude: Number(data.longitude),
+                        label: (data.city || data.locality || data.principalSubdivision) + ' (approximate)',
+                        source: 'ip'
+                    };
+                }
+            } catch (fallbackError) {
+                // No hard-coded campus location: report that location could not be determined.
+            }
+            throw new Error('Could not determine your location. Please allow location access and try again.');
+        }
     }
 
     async function fetchForecastWithRetry(url) {
