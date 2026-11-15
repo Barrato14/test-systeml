@@ -230,8 +230,8 @@
                 .then(label => {
                     location.label = label;
                     if (detectedLocation === location) {
+                        // Updating the place name must never overwrite the forecast status.
                         setText('[data-weather-location-label]', label);
-                        setText('[data-weather-description]', 'Weather for ' + label);
                     }
                 })
                 .catch(() => {});
@@ -264,6 +264,34 @@
         }
     }
 
+    async function fetchForecastWithRetry(url) {
+        let lastError;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const response = await fetchWithTimeout(url, {}, 18000);
+                if (response.ok) return response;
+
+                const error = new Error('Weather service returned HTTP ' + response.status + '.');
+                if (response.status < 500 && response.status !== 429) throw error;
+                lastError = error;
+            } catch (error) {
+                lastError = error;
+                if (error.message.includes('HTTP ') &&
+                    !error.message.includes('HTTP 429') &&
+                    !/HTTP 5\d\d/.test(error.message)) {
+                    throw error;
+                }
+            }
+
+            if (attempt < 2) {
+                await new Promise(resolve => window.setTimeout(resolve, attempt === 0 ? 1200 : 2500));
+            }
+        }
+
+        throw lastError || new Error('Weather service is temporarily unavailable.');
+    }
+
     async function loadWeather(force) {
         if (!force && cachedWeather && Date.now() - lastLoadedAt < 15 * 60 * 1000) {
             renderWeather(cachedWeather);
@@ -284,8 +312,11 @@
             }
 
             setText('[data-weather-description]', 'Fetching weather for ' + detectedLocation.label + '...');
-            setText('[data-weather-temperature]', '--°');
-            setText('[data-weather-modal-description]', 'Fetching current weather...');
+            // Keep the last successful reading visible while refreshing.
+            if (!cachedWeather) {
+                setText('[data-weather-temperature]', '--°');
+                setText('[data-weather-modal-description]', 'Fetching current weather...');
+            }
             if (hourlyContainer) hourlyContainer.innerHTML =
                 '<p class="emis-weather-loading">Loading the latest forecast...</p>';
 
@@ -298,14 +329,9 @@
                 timezone: 'Asia/Manila',
                 forecast_days: '1'
             });
-            const forecastResponse = await fetchWithTimeout(
-                'https://api.open-meteo.com/v1/forecast?' + params.toString(),
-                {},
-                18000
+            const forecastResponse = await fetchForecastWithRetry(
+                'https://api.open-meteo.com/v1/forecast?' + params.toString()
             );
-            if (!forecastResponse.ok) {
-                throw new Error('Weather service returned HTTP ' + forecastResponse.status + '.');
-            }
             const forecast = await forecastResponse.json();
             if (!forecast.current || !forecast.daily || !forecast.hourly) {
                 throw new Error('The weather service returned incomplete data.');
@@ -319,10 +345,18 @@
         try {
             return await loadingPromise;
         } catch (error) {
-            setText('[data-weather-description]', error.message.includes('timed out')
-                ? 'Weather request timed out' : 'Weather is temporarily unavailable');
-            if (hourlyContainer) hourlyContainer.innerHTML =
-                '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
+            if (cachedWeather) {
+                // A temporary outage should not blank a previously successful forecast.
+                renderWeather(cachedWeather);
+                setText('[data-weather-description]', 'Showing last available weather');
+                if (hourlyContainer) hourlyContainer.innerHTML =
+                    '<p class="emis-weather-error">Could not update the forecast right now. Showing the last successful reading.</p>';
+            } else {
+                setText('[data-weather-description]', error.message.includes('timed out')
+                    ? 'Weather request timed out' : 'Weather is temporarily unavailable');
+                if (hourlyContainer) hourlyContainer.innerHTML =
+                    '<p class="emis-weather-error">' + error.message + ' Please try refreshing.</p>';
+            }
             throw error;
         } finally {
             loadingPromise = null;
