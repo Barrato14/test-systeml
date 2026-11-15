@@ -322,15 +322,12 @@
 
             const params = new URLSearchParams({
                 latitude: detectedLocation.latitude,
-                longitude: detectedLocation.longitude,
-                current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m',
-                hourly: 'temperature_2m,precipitation_probability,weather_code',
-                daily: 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset',
-                timezone: 'Asia/Manila',
-                forecast_days: '1'
+                longitude: detectedLocation.longitude
             });
+            // Route weather requests through EMIS so the phone does not need
+            // direct access to Open-Meteo.
             const forecastResponse = await fetchForecastWithRetry(
-                'https://api.open-meteo.com/v1/forecast?' + params.toString()
+                '../api/weather.php?' + params.toString()
             );
             const forecast = await forecastResponse.json();
             if (!forecast.current || !forecast.daily || !forecast.hourly) {
