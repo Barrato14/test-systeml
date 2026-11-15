@@ -315,14 +315,7 @@
         setText('[data-weather-description]', 'Detecting your location...');
         loadingPromise = (async function () {
             if (!detectedLocation) {
-                // Temporary fixed test location: Tacloban City, Leyte.
-                // This bypasses browser/IP location so rainfall can be tested consistently.
-                detectedLocation = {
-                    latitude: 11.2440,
-                    longitude: 125.0030,
-                    label: 'Tacloban City (test location)',
-                    source: 'test'
-                };
+                detectedLocation = await detectLocation();
                 setText('[data-weather-location-label]', detectedLocation.label);
             }
 
