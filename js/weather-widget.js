@@ -129,7 +129,7 @@
         for (let i = startIndex; i < Math.min(startIndex + 6, hourly.time.length); i++) {
             const code = hourly.weather_code?.[i] ?? 0;
             const temperature = hourly.temperature_2m?.[i];
-            const rainChance = hourly.precipitation_probability?.[i];
+            const rainAmount = hourly.precipitation_amount?.[i];
             const symbol = code >= 95 ? '⛈' :
                 ([61, 63, 65, 80, 81, 82, 51, 53, 55].includes(code) ? '🌧' :
                 ([1, 2, 3, 45, 48].includes(code) ? '☁️' : '☀️'));
@@ -138,7 +138,7 @@
                     '<span>' + formatHour(hourly.time[i]) + '</span>' +
                     '<strong aria-label="' + labelFor(code) + '">' + symbol + '</strong>' +
                     '<small>' + (temperature == null ? '--' : Math.round(temperature) + '°') + '</small>' +
-                    '<b>' + (rainChance == null ? '--' : rainChance + '%') + ' rain</b>' +
+                    '<b>' + (rainAmount == null ? '--' : Number(rainAmount).toFixed(1) + ' mm') + ' expected</b>' +
                 '</div>'
             );
         }
@@ -153,7 +153,7 @@
         const feelsLike = Math.round(current.apparent_temperature);
         const code = Number(current.weather_code);
         const type = weatherType(code, current.is_day === 1);
-        const rainChance = daily.precipitation_probability_max?.[0];
+        const rainAmount = current.precipitation_amount;
         const updated = new Date().toLocaleTimeString('en-PH', {
             hour: 'numeric', minute: '2-digit'
         });
@@ -164,7 +164,7 @@
         setText('[data-weather-modal-temperature]', temperature + '°C');
         setText('[data-weather-modal-description]', labelFor(code));
         setText('[data-weather-feels-like]', feelsLike + '°C');
-        setText('[data-weather-rain]', rainChance == null ? '--' : rainChance + '%');
+        setText('[data-weather-rain]', rainAmount == null ? '--' : Number(rainAmount).toFixed(1) + ' mm');
         setText('[data-weather-wind]', Math.round(current.wind_speed_10m) + ' km/h');
         setText('[data-weather-humidity]', current.relative_humidity_2m + '%');
 
