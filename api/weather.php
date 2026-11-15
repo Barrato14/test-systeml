@@ -53,10 +53,10 @@ curl_setopt_array($ch, [
 $response = curl_exec($ch);
 $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $error = curl_error($ch);
+$curlErrno = curl_errno($ch);
 curl_close($ch);
 
 if ($response === false || $status < 200 || $status >= 300) {
-    $curlErrno = curl_errno($ch);
     error_log('EMIS weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
     http_response_code(502);
     echo json_encode([
