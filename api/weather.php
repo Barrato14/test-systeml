@@ -183,10 +183,16 @@ try {
             ?? $entry['data']['next_6_hours']['summary']['symbol_code']
             ?? $entry['data']['next_12_hours']['summary']['symbol_code']
             ?? '';
-        $periodDetails = $entry['data']['next_1_hours']['details']
-            ?? $entry['data']['next_6_hours']['details']
-            ?? $entry['data']['next_12_hours']['details']
-            ?? [];
+        // Precipitation probability may be supplied in any available forecast window.
+        // Check each window for the actual field instead of stopping at the first details object.
+        $periodDetails = [];
+        foreach (['next_1_hours', 'next_6_hours', 'next_12_hours'] as $periodKey) {
+            $candidateDetails = $entry['data'][$periodKey]['details'] ?? [];
+            if (is_array($candidateDetails) && array_key_exists('probability_of_precipitation', $candidateDetails)) {
+                $periodDetails = $candidateDetails;
+                break;
+            }
+        }
 
         $normalized[] = [
             'time' => $localTime->format('Y-m-d\TH:i'),
