@@ -148,7 +148,7 @@ function emisWeatherCode($symbol) {
         'lightsnow' => 71, 'snow' => 73, 'heavysnow' => 75,
         'lightsnowshowers' => 85, 'snowshowers' => 85, 'heavysnowshowers' => 86,
         'lightrainandthunder' => 95, 'rainandthunder' => 95,
-        'heavyrainandthunder' => 99, 'lightsleetandthunder' => 95,
+        'heavyrainandthunder' => 99, 'lightrainshowersandthunder' => 95,\n        'rainshowersandthunder' => 95, 'heavyrainshowersandthunder' => 99, 'lightsleetandthunder' => 95,
         'sleetandthunder' => 95, 'heavysleetandthunder' => 99,
         'lightsnowandthunder' => 95, 'snowandthunder' => 95,
         'heavysnowandthunder' => 99
@@ -224,7 +224,7 @@ try {
     $hourly = ['time' => [], 'temperature_2m' => [], 'weather_code' => [], 'precipitation_probability' => []];
     foreach ($normalized as $item) {
         if (count($hourly['time']) >= 24) break;
-        if (strtotime($item['time']) < $now->getTimestamp() - 3600) continue;
+        if ((new DateTimeImmutable($item['time'], $manila))->getTimestamp() < $now->getTimestamp() - 3600) continue;
         $hourly['time'][] = $item['time'];
         $hourly['temperature_2m'][] = $item['temperature'];
         $hourly['weather_code'][] = $item['weather_code'];
