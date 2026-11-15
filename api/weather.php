@@ -56,9 +56,17 @@ $error = curl_error($ch);
 curl_close($ch);
 
 if ($response === false || $status < 200 || $status >= 300) {
-    error_log('EMIS weather proxy failed. HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
+    $curlErrno = curl_errno($ch);
+    error_log('EMIS weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
     http_response_code(502);
-    echo json_encode(['error' => 'The weather provider could not be reached from the server.']);
+    echo json_encode([
+        'error' => 'The weather provider could not be reached from the server.',
+        'diagnostic' => [
+            'curl_errno' => $curlErrno,
+            'curl_error' => $error ?: null,
+            'http_status' => $status ?: null
+        ]
+    ]);
     exit;
 }
 
