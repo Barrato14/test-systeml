@@ -148,7 +148,8 @@ function emisWeatherCode($symbol) {
         'lightsnow' => 71, 'snow' => 73, 'heavysnow' => 75,
         'lightsnowshowers' => 85, 'snowshowers' => 85, 'heavysnowshowers' => 86,
         'lightrainandthunder' => 95, 'rainandthunder' => 95,
-        'heavyrainandthunder' => 99, 'lightrainshowersandthunder' => 95,\n        'rainshowersandthunder' => 95, 'heavyrainshowersandthunder' => 99, 'lightsleetandthunder' => 95,
+        'heavyrainandthunder' => 99, 'lightrainshowersandthunder' => 95,
+        'rainshowersandthunder' => 95, 'heavyrainshowersandthunder' => 99, 'lightsleetandthunder' => 95,
         'sleetandthunder' => 95, 'heavysleetandthunder' => 99,
         'lightsnowandthunder' => 95, 'snowandthunder' => 95,
         'heavysnowandthunder' => 99
