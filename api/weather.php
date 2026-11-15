@@ -28,6 +28,28 @@ if ($latitude === false || $latitude === null ||
     exit;
 }
 
+// Cache forecasts per nearby area to avoid repeatedly hitting the provider's rate limit.
+$cacheKey = hash('sha256', round($latitude, 2) . ':' . round($longitude, 2));
+$cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'emis-weather-' . $cacheKey . '.json';
+$cachedPayload = null;
+$cachedAt = 0;
+
+if (is_file($cacheFile)) {
+    $cacheContents = @file_get_contents($cacheFile);
+    $cacheRecord = $cacheContents ? json_decode($cacheContents, true) : null;
+    if (is_array($cacheRecord) && isset($cacheRecord['data'], $cacheRecord['saved_at']) &&
+        is_array($cacheRecord['data'])) {
+        $cachedPayload = $cacheRecord['data'];
+        $cachedAt = (int) $cacheRecord['saved_at'];
+        if (time() - $cachedAt < 600) {
+            header('X-EMIS-Weather-Cache: HIT');
+            header('Cache-Control: public, max-age=300');
+            echo json_encode($cachedPayload);
+            exit;
+        }
+    }
+}
+
 $params = http_build_query([
     'latitude' => $latitude,
     'longitude' => $longitude,
@@ -58,6 +80,15 @@ curl_close($ch);
 
 if ($response === false || $status < 200 || $status >= 300) {
     error_log('EMIS weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
+
+    // If the provider rate-limits or temporarily fails, serve the last known forecast.
+    if ($cachedPayload !== null && time() - $cachedAt < 86400) {
+        header('X-EMIS-Weather-Cache: STALE');
+        header('Cache-Control: public, max-age=120');
+        echo json_encode($cachedPayload);
+        exit;
+    }
+
     http_response_code(502);
     echo json_encode([
         'error' => 'The weather provider could not be reached from the server.',
@@ -78,5 +109,10 @@ if (!is_array($data) || empty($data['current']) || empty($data['daily']) || empt
     exit;
 }
 
+@file_put_contents($cacheFile, json_encode([
+    'saved_at' => time(),
+    'data' => $data
+]), LOCK_EX);
+header('X-EMIS-Weather-Cache: MISS');
 header('Cache-Control: public, max-age=300');
 echo json_encode($data);
