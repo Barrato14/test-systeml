@@ -27,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lastName = trim((string)($_POST['last_name'] ?? ''));
     $course = trim((string)($_POST['course'] ?? ''));
     $section = trim((string)($_POST['section'] ?? ''));
+    $password = (string)($_POST['password'] ?? '');
+    $confirmPassword = (string)($_POST['confirm_password'] ?? '');
 
     if ($csrfToken === '' || !hash_equals($csrfToken, $submittedToken)) {
         $error = 'Your session expired. Please refresh this page and try again.';
@@ -36,6 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please select a valid course.';
     } elseif (!in_array($section, ['1A', '1B', '1C', '2A', '2B', '2C'], true)) {
         $error = 'Please select a valid year and section.';
+    } elseif (strlen($password) < 8) {
+        $error = 'Your Zentrix password must be at least 8 characters long.';
+    } elseif ($password !== $confirmPassword) {
+        $error = 'Your password and confirmation do not match.';
     } else {
         $existingProfileResponse = supabaseServiceRequest(
             'profiles?id=eq.' . urlencode($profileId) . '&select=id',
@@ -49,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'first_name' => $firstName,
             'last_name' => $lastName,
             'email' => $email,
-            'password_hash' => password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT),
+            'password_hash' => password_hash($password, PASSWORD_BCRYPT),
             'course' => $course,
             'section' => $section,
             'role' => 'Participant',
@@ -158,6 +164,14 @@ $displayEmail = $profile['email'] ?? $email;
                     <div class="input-group">
                         <label for="email">Google Account Email</label>
                         <div class="input-wrapper"><i class="ph ph-envelope-simple input-icon"></i><input type="email" id="email" value="<?= htmlspecialchars($displayEmail) ?>" readonly></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Create Zentrix Password</label>
+                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required></div>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirm_password">Confirm Zentrix Password</label>
+                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" minlength="8" autocomplete="new-password" required></div>
                     </div>
                     <button type="submit" class="btn-primary auth-register-submit"><span class="btn-text">Save Student Details</span><i class="ph-bold ph-arrow-right"></i></button>
                 </form>
