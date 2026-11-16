@@ -1,6 +1,6 @@
 {
-  "name": "Student Services and School Activity Management System",
-  "short_name": "Student Services",
+  "name": "Zentrix",
+  "short_name": "Zentrix",
   "description": "A web-based student services and school activity management system.",
   "start_url": "/login.php",
   "scope": "/",
