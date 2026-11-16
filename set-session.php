@@ -108,9 +108,22 @@ if (!$profile) {
     }
 }
 
+if (!$profile) {
+    // Keep first-time Google identities pending until their Zentrix profile is
+    // completed. They must not receive an authenticated app session yet.
+    session_regenerate_id(true);
+    $_SESSION['pending_google_user_id'] = $authUserId;
+    $_SESSION['pending_google_email'] = $email;
+    $_SESSION['pending_google_first_name'] = $firstName;
+    $_SESSION['pending_google_last_name'] = $lastName;
+    $_SESSION['google_profile_csrf'] = bin2hex(random_bytes(32));
+    header('Location: complete-google-profile.php');
+    exit;
+}
+
 session_regenerate_id(true);
 $userRole = $profile['role'] ?? 'Participant';
-$_SESSION['user_id'] = $profile['id'] ?? $authUserId;
+$_SESSION['user_id'] = $profile['id'];
 $_SESSION['user_email'] = $email;
 $_SESSION['user_role'] = $userRole;
 $_SESSION['user_name'] = trim(($profile['first_name'] ?? $firstName) . ' ' . ($profile['last_name'] ?? $lastName));
@@ -120,10 +133,8 @@ if (strtolower($userRole) === 'administrator') {
 } elseif (strtolower(trim($userRole)) === 'event organizer') {
     header('Location: admin/dashboard.php');
 } elseif (strtolower(trim($userRole)) === 'staff') {
-    // Staff uses the shared role-aware dashboard in the admin directory.
     header('Location: admin/dashboard.php');
 } else {
-    // First-time Google participants must complete their real student details.
     $hasStudentName = trim((string)($profile['first_name'] ?? '')) !== ''
         && trim((string)($profile['last_name'] ?? '')) !== '';
     $hasCourseDetails = trim((string)($profile['course'] ?? '')) !== ''
