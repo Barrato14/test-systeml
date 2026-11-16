@@ -29,11 +29,11 @@ if ($adminRole === 'event organizer') {
     $adminWorkspaceLabel = 'Admin Command Center';
 }
 ?>
-<aside id="emis-admin-sidebar" class="admin-sidebar" aria-label="EMIS workspace navigation">
+<aside id="emis-admin-sidebar" class="admin-sidebar" aria-label="Zentrix workspace navigation">
     <div class="admin-sidebar-inner">
-        <a class="admin-brand" href="<?= htmlspecialchars($adminHomePage) ?>" aria-label="EMIS Workspace">
+        <a class="admin-brand" href="<?= htmlspecialchars($adminHomePage) ?>" aria-label="Zentrix Workspace">
             <span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span>
-            <span class="admin-brand-copy"><strong>EMIS</strong><small><?= htmlspecialchars($adminWorkspaceLabel) ?></small></span>
+            <span class="admin-brand-copy"><strong>Zentrix</strong><small><?= htmlspecialchars($adminWorkspaceLabel) ?></small></span>
         </a>
         <div class="admin-nav-caption">WORKSPACE</div>
         <nav class="admin-sidebar-nav">
@@ -61,7 +61,7 @@ if ($adminRole === 'event organizer') {
 </aside>
 
 <header id="emis-admin-mobile-topbar" class="admin-mobile-topbar">
-    <a class="admin-mobile-brand" href="<?= htmlspecialchars($adminHomePage) ?>"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>EMIS</strong><small><?= $adminRole === 'event organizer' ? 'Organizer' : 'Admin' ?></small></span></a>
+    <a class="admin-mobile-brand" href="<?= htmlspecialchars($adminHomePage) ?>"><span class="admin-brand-mark"><i class="bi bi-shield-check"></i></span><span><strong>Zentrix</strong><small><?= $adminRole === 'event organizer' ? 'Organizer' : 'Admin' ?></small></span></a>
     <div class="admin-mobile-actions">
         <details class="admin-mobile-settings">
             <summary aria-label="Settings"><i class="bi bi-gear"></i></summary>
