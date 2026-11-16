@@ -1715,7 +1715,7 @@ $totalUsers = count($allUsers);
                                             method="POST"
                                             action="users.php"
                                             class="role-form"
-                                            onsubmit="return confirm('Are you sure you want to change this user role?');"
+                                            data-user-confirm="role"
                                         >
 
                                             <input
@@ -1771,7 +1771,7 @@ $totalUsers = count($allUsers);
                                             method="POST"
                                             action="users.php"
                                             class="status-form"
-                                            onsubmit="return confirm('PERMANENTLY DELETE this account? This cannot be undone. Personal registrations, attendance records and photos, face data, borrowing requests, notifications, and reminder records will be removed. Audit history will be anonymized. Events and equipment content will be preserved.');"
+                                            data-user-confirm="delete"
                                         >
                                             <input type="hidden" name="csrf_token" value="<?= userH($csrfToken) ?>">
                                             <input type="hidden" name="action" value="delete_user">
@@ -1789,7 +1789,7 @@ $totalUsers = count($allUsers);
                                             method="POST"
                                             action="users.php"
                                             class="status-form"
-                                            onsubmit="return confirm('Are you sure you want to <?= $isActive ? 'deactivate' : 'activate' ?> this account?');"
+                                            data-user-confirm="<?= $isActive ? 'deactivate' : 'activate' ?>"
                                         >
 
                                             <input
@@ -1984,6 +1984,34 @@ $totalUsers = count($allUsers);
 
 </div>
 
+<!-- ZENTRIX ACTION CONFIRMATION MODAL -->
+<div class="users-confirm-overlay" id="usersConfirmModal" aria-hidden="true">
+    <section class="users-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="usersConfirmTitle" aria-describedby="usersConfirmMessage">
+        <div class="users-confirm-icon" id="usersConfirmIcon"><i class="bi bi-shield-exclamation"></i></div>
+        <h3 id="usersConfirmTitle">Confirm action</h3>
+        <p id="usersConfirmMessage">Are you sure you want to continue?</p>
+        <div class="users-confirm-actions">
+            <button type="button" class="users-confirm-cancel" id="usersConfirmCancel">Cancel</button>
+            <button type="button" class="users-confirm-submit" id="usersConfirmProceed">Continue</button>
+        </div>
+    </section>
+</div>
+<style>
+.users-confirm-overlay{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(7,4,13,.78);backdrop-filter:blur(6px)}
+.users-confirm-overlay.is-open{display:flex}
+.users-confirm-dialog{width:min(100%,430px);padding:28px;border:1px solid #49345f;border-radius:18px;background:#171222;color:#f7f0ff;box-shadow:0 24px 80px rgba(0,0,0,.5);text-align:center}
+.users-confirm-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 15px;border-radius:15px;background:rgba(124,58,237,.18);color:#c4a5fd;font-size:23px}
+.users-confirm-dialog h3{margin:0 0 9px;color:#f7f0ff;font-size:20px;font-weight:800}
+.users-confirm-dialog p{margin:0;color:#bbaecb;font-size:13px;line-height:1.65}
+.users-confirm-actions{display:flex;justify-content:center;gap:10px;margin-top:24px}
+.users-confirm-actions button{min-width:112px;padding:10px 16px;border-radius:9px;font-size:13px;font-weight:750;cursor:pointer}
+.users-confirm-cancel{border:1px solid #59436d;background:#261b32;color:#e8d8f8}
+.users-confirm-submit{border:1px solid #7c3aed;background:#7c3aed;color:#fff}
+.users-confirm-submit.is-danger{border-color:#dc3545;background:#dc3545}
+.users-confirm-actions button:hover{filter:brightness(1.12)}
+@media(max-width:480px){.users-confirm-dialog{padding:22px}.users-confirm-actions{flex-direction:column-reverse}.users-confirm-actions button{width:100%}}
+</style>
+
 <script>
 
 /* =========================================================
@@ -2092,6 +2120,87 @@ document.addEventListener('keydown', function(event) {
     }
 
 });
+
+
+// Zentrix-styled confirmation for account management actions.
+(function () {
+    const modal = document.getElementById('usersConfirmModal');
+    const title = document.getElementById('usersConfirmTitle');
+    const message = document.getElementById('usersConfirmMessage');
+    const icon = document.getElementById('usersConfirmIcon');
+    const cancel = document.getElementById('usersConfirmCancel');
+    const proceed = document.getElementById('usersConfirmProceed');
+    let pendingForm = null;
+
+    const settings = {
+        role: {
+            title: 'Save role changes?',
+            message: 'This will update the selected user’s role and permissions.',
+            button: 'Save changes',
+            icon: 'bi-person-gear',
+            danger: false
+        },
+        delete: {
+            title: 'Permanently delete account?',
+            message: 'This cannot be undone. Personal registrations, attendance records and photos, face data, borrowing requests, notifications, and reminder records will be removed. Audit history will be anonymized. Shared events and equipment content will be preserved.',
+            button: 'Delete account',
+            icon: 'bi-trash3',
+            danger: true
+        },
+        deactivate: {
+            title: 'Deactivate this account?',
+            message: 'The user will no longer be able to access Zentrix while the account is deactivated.',
+            button: 'Deactivate',
+            icon: 'bi-person-x',
+            danger: true
+        },
+        activate: {
+            title: 'Activate this account?',
+            message: 'The user will be able to access Zentrix again, subject to their account permissions.',
+            button: 'Activate',
+            icon: 'bi-person-check',
+            danger: false
+        }
+    };
+
+    function closeModal() {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        pendingForm = null;
+    }
+
+    document.querySelectorAll('form[data-user-confirm]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const config = settings[form.dataset.userConfirm];
+            if (!config) return;
+            pendingForm = form;
+            title.textContent = config.title;
+            message.textContent = config.message;
+            proceed.textContent = config.button;
+            proceed.classList.toggle('is-danger', config.danger);
+            icon.innerHTML = '<i class="bi ' + config.icon + '"></i>';
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            cancel.focus();
+        });
+    });
+
+    proceed.addEventListener('click', function () {
+        if (!pendingForm) return;
+        const form = pendingForm;
+        closeModal();
+        form.submit();
+    });
+
+    cancel.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+})();
 
 </script>
 
