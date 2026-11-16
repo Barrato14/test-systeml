@@ -189,12 +189,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            $deleteBeforeResponse = supabaseRequest('events?id=eq.' . rawurlencode($deleteId) . '&select=*', 'GET');
+            $deleteBefore = $deleteBeforeResponse['data'][0] ?? [];
             $response = supabaseRequest('events?id=eq.' . rawurlencode($deleteId), 'DELETE');
 
             if (($response['code'] ?? 500) >= 400) {
                 throw new Exception('Failed to delete event. It may be linked to existing attendance records.');
             }
 
+            logAudit($_SESSION['user_id'], 'event_deleted', 'Event deleted: ' . ($deleteBefore['title'] ?? $deleteId) . ' | Previous record: ' . json_encode($deleteBefore));
             $successMsg = 'Event deleted successfully!';
         } elseif ($action === 'send_notification') {
             if (!in_array($currentRole, ['administrator', 'event organizer'], true)) {
@@ -330,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            logAudit($_SESSION['user_id'], 'event_notification_sent', 'Notification sent for event ' . ($selectedEvent['title'] ?? $notifyEventId) . '. Recipients: ' . count($recipientIds) . '; in-app sent: ' . $inAppSentCount . '; email sent: ' . $emailSentCount . '.');
             $successMsg = "In-app: {$inAppSentCount} sent, {$inAppFailedCount} failed. ";
             $successMsg .= "Email: {$emailSentCount} sent, {$emailFailedCount} failed, {$emailSkippedCount} skipped (missing/invalid email).";
 
@@ -357,6 +361,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? $response['data'][0]
                 : null;
 
+            logAudit($_SESSION['user_id'], 'event_created', 'Event created: ' . ($createdEvent['title'] ?? $payload['title']) . ' | Event record: ' . json_encode($createdEvent ?: $payload));
             $successMsg = 'Event created successfully!';
 
             // Automatically notify verified participant accounts only.
@@ -474,6 +479,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Missing event ID.');
             }
 
+            $beforeEditResponse = supabaseRequest('events?id=eq.' . rawurlencode($updateId) . '&select=*', 'GET');
+            $beforeEdit = $beforeEditResponse['data'][0] ?? [];
             $payload = buildEventPayload();
 
             if ($payload['title'] === '' || $payload['venue'] === '') {
@@ -498,6 +505,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception(getSupabaseEventError($response, 'update'));
             }
 
+            logAudit($_SESSION['user_id'], 'event_updated', 'Event ' . ($beforeEdit['title'] ?? $updateId) . ' updated. Previous: ' . json_encode($beforeEdit) . ' | New: ' . json_encode($payload));
             $successMsg = 'Event updated successfully!';
         }
     } catch (Exception $e) {
