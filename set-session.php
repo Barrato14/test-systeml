@@ -95,7 +95,7 @@ if (!$profile) {
     // an existing profile that was previously left unverified by registration.
     $profileId = $profile['id'] ?? null;
     if (!$profileId) {
-        socialLoginFailure('Your EMIS profile is missing its account ID. Please contact the administrator.');
+        socialLoginFailure('Your Zentrix profile is missing its account ID. Please contact the administrator.');
     }
 
     $updateResponse = supabaseRequest('profiles?id=eq.' . urlencode($profileId), 'PATCH', [
@@ -104,7 +104,7 @@ if (!$profile) {
     ]);
 
     if (($updateResponse['code'] ?? 500) >= 300) {
-        socialLoginFailure('Your provider account is verified, but EMIS could not update your profile verification status. Please try again later.');
+        socialLoginFailure('Your provider account is verified, but Zentrix could not update your profile verification status. Please try again later.');
     }
 }
 
