@@ -52,7 +52,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
 
         if ($response === false || $status < 200 || $status >= 300) {
             error_log(
-                'EMIS Total Users Supabase request failed. HTTP status: '
+                'Zentrix Total Users Supabase request failed. HTTP status: '
                 . $status
                 . '; cURL error: '
                 . ($curlError !== '' ? $curlError : 'none')
@@ -69,7 +69,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
 
         if (!is_array($decoded)) {
             error_log(
-                'EMIS Total Users Supabase response was not valid JSON.'
+                'Zentrix Total Users Supabase response was not valid JSON.'
             );
 
             return null;
@@ -145,7 +145,7 @@ if ($serviceKey !== '' && !empty($supabaseUrl)) {
     $totalUsers = count($totalUserAccounts);
 
     error_log(
-        'EMIS Total Users counts: profiles fetched=' . $profileRowsFetched
+        'Zentrix Total Users counts: profiles fetched=' . $profileRowsFetched
         . ', verified participants with complete names=' . $eligibleParticipants
         . ', staff and event organizers with complete names=' . $eligibleStaffAndOrganizers
         . ', eligible unique accounts counted=' . $totalUsers
@@ -557,7 +557,7 @@ if (!$isEventOrganizer) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
-        <?= $isEventOrganizer ? 'Event Organizer Dashboard - EMIS' : ($isStaff ? 'Staff Dashboard - EMIS' : 'Admin Dashboard - EMIS') ?>
+        <?= $isEventOrganizer ? 'Event Organizer Dashboard - Zentrix' : ($isStaff ? 'Staff Dashboard - Zentrix' : 'Admin Dashboard - Zentrix') ?>
     </title>
 
     <!-- Dashboard stays loaded so weather requests are not restarted every 30 seconds. -->
