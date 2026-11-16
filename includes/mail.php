@@ -10,7 +10,7 @@ function sendSystemEmail($toEmail, $toName, $subject, $htmlBody, $attachmentData
     
     $data = [
         'sender' => [
-            'name' => 'EMIS Event System',
+            'name' => 'Zentrix',
             'email' => 'barratobien@gmail.com' 
         ],
         'to' => [
