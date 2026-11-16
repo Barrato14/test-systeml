@@ -71,7 +71,7 @@ if ($now >= $eventEnd) {
     respond(false, 'Check-in is closed. This event ended on ' . $eventEnd->format('F j, Y, g:i A') . ' (PHT).');
 }
 
-// Enforce the 100-meter event geofence on the server before face verification.
+// Enforce the 50-meter event geofence on the server before face verification.
 $geofence = checkEventGeofence($event, $latitude, $longitude, $gpsAccuracy);
 if (!$geofence['allowed']) {
     respond(false, $geofence['message']);
