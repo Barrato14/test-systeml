@@ -165,6 +165,161 @@ function usersWriteAudit($action, $details)
     }
 }
 
+
+function usersAuthDelete($userId)
+{
+    global $supabaseUrl, $serviceKey;
+
+    $url = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users/' . rawurlencode($userId);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $serviceKey,
+            'Authorization: Bearer ' . $serviceKey,
+            'Content-Type: application/json'
+        ],
+        CURLOPT_TIMEOUT => 30
+    ]);
+
+    $body = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($body === false) {
+        throw new Exception('Supabase Auth deletion request failed: ' . $curlError);
+    }
+
+    // A missing Auth user is acceptable during a retry after a partial deletion.
+    if ($httpCode === 404) {
+        return;
+    }
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        $decoded = json_decode($body, true);
+        $message = is_array($decoded)
+            ? ($decoded['msg'] ?? $decoded['message'] ?? 'Supabase Auth rejected the deletion.')
+            : 'Supabase Auth rejected the deletion.';
+        throw new Exception($message);
+    }
+}
+
+function usersDeleteAttendancePhoto($photoUrl, $targetId)
+{
+    global $supabaseUrl, $serviceKey;
+
+    if (!is_string($photoUrl) || $photoUrl === '') return;
+
+    $photoParts = parse_url($photoUrl);
+    $baseParts = parse_url($supabaseUrl);
+
+    if (
+        !is_array($photoParts) ||
+        !is_array($baseParts) ||
+        empty($photoParts['host']) ||
+        empty($baseParts['host']) ||
+        strtolower($photoParts['host']) !== strtolower($baseParts['host'])
+    ) {
+        throw new Exception('An attendance photo URL did not match this Supabase project. No database records were deleted.');
+    }
+
+    $prefix = '/storage/v1/object/public/attendance-photos/';
+    $path = $photoParts['path'] ?? '';
+
+    if (strpos($path, $prefix) !== 0) {
+        // Time-out photos may be stored as data URLs; those are removed with the attendance row.
+        if (strpos($photoUrl, 'data:image/') === 0) return;
+        throw new Exception('An attendance photo was not in the expected attendance-photos bucket. No database records were deleted.');
+    }
+
+    $objectPath = rawurldecode(substr($path, strlen($prefix)));
+    $segments = explode('/', $objectPath);
+    $fileName = end($segments);
+
+    // Check-in uploads are stored as {event_id}/{participant_id}_{timestamp}.{extension}.
+    if (
+        count($segments) !== 2 ||
+        !preg_match('/^[0-9a-f-]{36}$/i', $segments[0]) ||
+        strpos($fileName, $targetId . '_') !== 0
+    ) {
+        throw new Exception('An attendance photo path did not match the selected user. No database records were deleted.');
+    }
+
+    $encodedPath = implode('/', array_map('rawurlencode', $segments));
+    $url = rtrim($supabaseUrl, '/') . '/storage/v1/object/attendance-photos/' . $encodedPath;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => 'DELETE',
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . $serviceKey,
+            'Authorization: Bearer ' . $serviceKey
+        ],
+        CURLOPT_TIMEOUT => 30
+    ]);
+
+    $body = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($body === false) {
+        throw new Exception('Could not remove an attendance photo: ' . $curlError);
+    }
+
+    // Missing objects are already effectively deleted.
+    if ($httpCode === 404) return;
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+        throw new Exception('Supabase Storage could not delete an attendance photo (HTTP ' . $httpCode . ').');
+    }
+}
+
+function usersPermanentlyDeleteAccount($targetId)
+{
+    // Collect photo URLs before deleting attendance rows.
+    $attendanceRows = usersApiRequest(
+        'attendance?participant_id=eq.' . rawurlencode($targetId)
+        . '&select=id,photo_url,timeout_photo_url'
+    );
+
+    foreach ($attendanceRows as $attendance) {
+        usersDeleteAttendancePhoto($attendance['photo_url'] ?? '', $targetId);
+        usersDeleteAttendancePhoto($attendance['timeout_photo_url'] ?? '', $targetId);
+    }
+
+    // Remove records that do not have a profile foreign key.
+    usersApiRequest('attendance?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+    usersApiRequest('equipment_borrow_requests?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+    usersApiRequest('notifications?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+    usersApiRequest('event_reminder_logs?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+
+    // Retain audit events, but remove identifying details from the deleted user's own history.
+    usersApiRequest(
+        'audit_logs?profile_id=eq.' . rawurlencode($targetId),
+        'PATCH',
+        ['details' => 'Account activity retained; the associated user identity has been anonymized.']
+    );
+
+    // Auth is deleted before the profile. If a later step fails, this action can be safely retried:
+    // an already-missing Auth user is treated as success.
+    usersAuthDelete($targetId);
+
+    // Existing FK rules handle the remaining records safely:
+    // registrations and face profiles CASCADE; audit_logs and events.organizer_id SET NULL.
+    usersApiRequest('profiles?id=eq.' . rawurlencode($targetId), 'DELETE');
+
+    $remainingProfile = usersApiRequest(
+        'profiles?id=eq.' . rawurlencode($targetId) . '&select=id'
+    );
+
+    if (!empty($remainingProfile)) {
+        throw new Exception('The Auth account was deleted, but the profile still exists. Retry the deletion to finish database cleanup.');
+    }
+}
+
 /* =========================================================
    5. ALLOWED ROLES
 ========================================================= */
@@ -200,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!in_array(
             $action,
-            ['update_role', 'toggle_status'],
+            ['update_role', 'toggle_status', 'delete_user'],
             true
         )) {
             throw new Exception('Invalid action.');
@@ -233,6 +388,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $oldRole = $targetUser['role'] ?? '';
         $oldStatus = userAccountIsActive($targetUser);
+
+        /* -----------------------------------------
+           ACTION 0: PERMANENTLY DELETE ACCOUNT
+        ----------------------------------------- */
+
+        if ($action === 'delete_user') {
+
+            if (
+                $oldRole === 'Administrator' &&
+                userAccountIsActive($targetUser)
+            ) {
+                $activeAdmins = usersApiRequest(
+                    'profiles?role=eq.Administrator&is_active=eq.true&select=id'
+                );
+
+                if (count($activeAdmins) <= 1) {
+                    throw new Exception('You cannot delete the last active administrator.');
+                }
+            }
+
+            $confirmation = $_POST['delete_confirmation'] ?? '';
+            if ($confirmation !== 'DELETE') {
+                throw new Exception('Permanent deletion was not confirmed.');
+            }
+
+            usersPermanentlyDeleteAccount($targetId);
+
+            usersWriteAudit(
+                'User account permanently deleted',
+                'Permanently deleted a user account and removed its associated personal records. Shared events and equipment content were preserved.'
+            );
+
+            $successMsg = 'User account permanently deleted. Personal records were removed; shared events and equipment content were preserved.';
+        }
 
         /* -----------------------------------------
            ACTION A: CHANGE ROLE
@@ -1476,6 +1665,24 @@ $totalUsers = count($allUsers);
 
                                         </form>
 
+                                        <!-- PERMANENT DELETE -->
+
+                                        <form
+                                            method="POST"
+                                            action="users.php"
+                                            class="status-form"
+                                            onsubmit="return confirm('PERMANENTLY DELETE this account? This cannot be undone. Personal registrations, attendance records and photos, face data, borrowing requests, notifications, and reminder records will be removed. Audit history will be anonymized. Events and equipment content will be preserved.');"
+                                        >
+                                            <input type="hidden" name="csrf_token" value="<?= userH($csrfToken) ?>">
+                                            <input type="hidden" name="action" value="delete_user">
+                                            <input type="hidden" name="user_id" value="<?= userH($userId) ?>">
+                                            <input type="hidden" name="delete_confirmation" value="DELETE">
+                                            <button type="submit" class="users-btn users-btn-danger">
+                                                <i class="bi bi-trash3"></i>
+                                                Delete
+                                            </button>
+                                        </form>
+
                                         <!-- ACTIVATE / DEACTIVATE -->
 
                                         <form
@@ -1614,7 +1821,7 @@ $totalUsers = count($allUsers);
             <strong>Account Management:</strong>
 
             Only administrators can manage account roles and statuses.
-            You cannot change your own role or deactivate your own account.
+            You cannot change or delete your own account. Permanent deletion removes personal records and the Auth account; shared events and equipment content are preserved.
             The last active administrator is protected.
 
             <br>
