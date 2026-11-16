@@ -4,6 +4,7 @@ date_default_timezone_set('Asia/Manila');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/daily-attendance.php';
 
 // Ensure the user is logged in and is a Participant.
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'participant') {
@@ -154,6 +155,13 @@ if (($attendanceRes['code'] ?? 500) === 200 && is_array($attendanceRes['data'] ?
     }
 }
 
+$dailyAttendanceRes = supabaseServiceRequest(
+    'daily_attendance?participant_id=eq.' . rawurlencode((string)$participant_id) . '&select=event_id,attendance_date,check_in_time,time_out,status&order=check_in_time.desc',
+    'GET'
+);
+$participantDailyAttendance = (($dailyAttendanceRes['code'] ?? 500) < 400 && is_array($dailyAttendanceRes['data'] ?? null))
+    ? $dailyAttendanceRes['data'] : [];
+
 // Fetch this participant's notifications, newest first.
 $notificationsResponse = supabaseRequest(
     'notifications?participant_id=eq.' . rawurlencode((string)$participant_id) .
@@ -256,6 +264,18 @@ foreach ($participantAttendance as $attendanceRecord) {
     }
 }
 
+foreach ($participantDailyAttendance as $dailyRecord) {
+    if (empty($dailyRecord['check_in_time'])) continue;
+    $dashboardAttendedCount++;
+    if (!empty($dailyRecord['time_out'])) {
+        try {
+            $dailyIn = new DateTimeImmutable($dailyRecord['check_in_time']);
+            $dailyOut = new DateTimeImmutable($dailyRecord['time_out']);
+            if ($dailyOut > $dailyIn) $dashboardAttendanceMinutes += (int)(($dailyOut->getTimestamp() - $dailyIn->getTimestamp()) / 60);
+        } catch (Exception $e) {}
+    }
+}
+
 $dashboardRegistrationCount = count($registrations);
 $dashboardAttendanceRate = $dashboardRegistrationCount > 0
     ? min(100, (int)round(($dashboardAttendedCount / $dashboardRegistrationCount) * 100))
@@ -286,6 +306,18 @@ foreach ($participantAttendance as $attendanceEventId => $attendanceRecord) {
         'message' => $activityEvent['title'] ?? 'Event attendance',
         'date' => $attendanceRecord['time_out'] ?: $attendanceRecord['check_in_time'],
         'icon' => 'bi-check2-circle',
+        'kind' => 'attendance'
+    ];
+}
+
+foreach ($participantDailyAttendance as $dailyRecord) {
+    if (empty($dailyRecord['check_in_time'])) continue;
+    $dailyEvent = $eventsMap[(string)($dailyRecord['event_id'] ?? '')] ?? [];
+    $dashboardActivities[] = [
+        'title' => 'Daily attendance recorded',
+        'message' => ($dailyEvent['title'] ?? 'Event attendance') . ' · ' . date('M j, Y', strtotime($dailyRecord['attendance_date'])),
+        'date' => $dailyRecord['time_out'] ?: $dailyRecord['check_in_time'],
+        'icon' => 'bi-calendar-check',
         'kind' => 'attendance'
     ];
 }
