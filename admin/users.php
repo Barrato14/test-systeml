@@ -280,6 +280,10 @@ function usersDeleteAttendancePhoto($photoUrl, $targetId)
 
     if (!is_string($photoUrl) || $photoUrl === '') return;
 
+    // Time-out evidence is currently stored as a data URL in the attendance row,
+    // not as a separate Storage object. Deleting that row removes the image.
+    if (strpos($photoUrl, 'data:image/') === 0) return;
+
     $photoParts = parse_url($photoUrl);
     $baseParts = parse_url($supabaseUrl);
 
@@ -297,8 +301,6 @@ function usersDeleteAttendancePhoto($photoUrl, $targetId)
     $path = $photoParts['path'] ?? '';
 
     if (strpos($path, $prefix) !== 0) {
-        // Time-out photos may be stored as data URLs; those are removed with the attendance row.
-        if (strpos($photoUrl, 'data:image/') === 0) return;
         throw new Exception('An attendance photo was not in the expected attendance-photos bucket. No database records were deleted.');
     }
 
@@ -361,6 +363,12 @@ function usersPermanentlyDeleteAccount($targetId, $targetUser)
     // Remove records that do not have a profile foreign key.
     usersApiRequest('attendance?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
     usersApiRequest('equipment_borrow_requests?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+    // Preserve other users' borrowing requests while anonymizing this user's reviewer reference.
+    usersApiRequest(
+        'equipment_borrow_requests?reviewed_by=eq.' . rawurlencode($targetId),
+        'PATCH',
+        ['reviewed_by' => 'Deleted user']
+    );
     usersApiRequest('notifications?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
     usersApiRequest('event_reminder_logs?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
 
