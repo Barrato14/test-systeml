@@ -397,7 +397,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .equipment-card-grid { row-gap:18px; }
         .equipment-item-card { min-width:0; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
         .equipment-item-card:hover { border-color:#8054c0; transform:translateY(-2px); }
-        .equipment-card-image-wrap { position:relative; height:230px; min-height:210px; overflow:hidden; background:rgba(125,95,160,.10); }
+        .equipment-card-image-wrap { position:relative; height:230px; min-height:300px; overflow:hidden; background:rgba(125,95,160,.10); }
         .equipment-card-image { display:block; width:100%; height:100%; object-fit:cover; }
         .equipment-card-image-placeholder { display:flex; align-items:center; justify-content:center; color:var(--admin-muted,#aaa0ba); font-size:42px; }
         @media(max-width:600px) {
