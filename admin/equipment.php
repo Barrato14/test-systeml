@@ -565,9 +565,9 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <div class="col-md-8"><input type="search" id="equipmentSearch" class="form-control" placeholder="Search equipment by name, category, or description..."></div>
                     <div class="col-md-4"><select id="availabilityFilter" class="form-select"><option value="">All availability</option><option value="Available">Available</option><option value="Borrowed">Borrowed</option><option value="Maintenance">Under maintenance</option><option value="Unavailable">Unavailable</option></select></div>
                 </div>
-                <div class="row g-4 equipment-card-grid" id="equipmentTable">
+                <div class="equipment-card-grid" id="equipmentTable">
                     <?php if (!$equipment): ?>
-                        <div class="col-12 equipment-empty-state">
+                        <div class="equipment-empty-state">
                             <i class="bi bi-box-seam"></i>
                             <strong>No equipment added yet</strong>
                             <span>Select “Add Equipment” to create your first item.</span>
@@ -583,7 +583,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                         $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
                         $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
                     ?>
-                        <div class="col-sm-6 col-lg-3 equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                        <div class="equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
                             <article class="equipment-item-card h-100">
                                 <div class="equipment-card-image-wrap">
                                     <?php if (!empty($item['image_url'])): ?>
