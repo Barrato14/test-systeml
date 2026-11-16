@@ -107,6 +107,10 @@ function formatManilaTime($utcString) {
         .content-area { padding: 30px; background-color: #f8f9fa; min-height: 100vh; }
         .snapshot-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; transition: transform 0.2s; }
         .snapshot-thumb:hover { transform: scale(3); }
+        .attendance-map-trigger { display:inline-flex; align-items:center; gap:4px; padding:0; border:0; background:transparent; color:#0d6efd; font:inherit; font-size:.875rem; cursor:pointer; }
+        .attendance-map-trigger:hover { color:#084298; text-decoration:underline; }
+        .attendance-location-map { display:block; width:100%; height:min(58vh,460px); min-height:280px; border:0; border-radius:12px; background:#f1edf5; }
+        .attendance-map-coordinate { color:#a99bbd; font-size:.78rem; }
     </style>
     <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
 </head>
@@ -217,10 +221,14 @@ function formatManilaTime($utcString) {
                                                 <?php endif; ?>
                                                 <div>
                                                     <div class="small fw-bold"><?= formatManilaTime($log['check_in_time'] ?? '') ?></div>
-                                                    <?php if (!empty($log['latitude']) && !empty($log['longitude'])): ?>
-                                                        <a href="https://www.google.com/maps?q=<?= $log['latitude'] ?>,<?= $log['longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                    <?php if (is_numeric($log['latitude'] ?? null) && is_numeric($log['longitude'] ?? null)): ?>
+                                                        <button type="button" class="attendance-map-trigger" data-attendance-map
+                                                            data-map-lat="<?= htmlspecialchars((string)$log['latitude'], ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-map-lng="<?= htmlspecialchars((string)$log['longitude'], ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-map-title="Check-in Location"
+                                                            data-map-participant="<?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>">
                                                             <i class="bi bi-geo-alt-fill"></i> Map In
-                                                        </a>
+                                                        </button>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -233,10 +241,14 @@ function formatManilaTime($utcString) {
                                                     <img src="<?= htmlspecialchars($log['timeout_photo_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
                                                     <div>
                                                         <div class="small fw-bold text-success"><?= formatManilaTime($log['time_out'] ?? '') ?></div>
-                                                        <?php if (!empty($log['timeout_latitude']) && !empty($log['timeout_longitude'])): ?>
-                                                            <a href="https://www.google.com/maps?q=<?= $log['timeout_latitude'] ?>,<?= $log['timeout_longitude'] ?>" target="_blank" class="small text-primary text-decoration-none">
+                                                        <?php if (is_numeric($log['timeout_latitude'] ?? null) && is_numeric($log['timeout_longitude'] ?? null)): ?>
+                                                            <button type="button" class="attendance-map-trigger" data-attendance-map
+                                                                data-map-lat="<?= htmlspecialchars((string)$log['timeout_latitude'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-map-lng="<?= htmlspecialchars((string)$log['timeout_longitude'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-map-title="Time-out Location"
+                                                                data-map-participant="<?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>">
                                                                 <i class="bi bi-geo-alt-fill"></i> Map Out
-                                                            </a>
+                                                            </button>
                                                         <?php endif; ?>
                                                     </div>
                                                 <?php else: ?>
@@ -258,7 +270,75 @@ function formatManilaTime($utcString) {
         </div>
     </div>
 
+    <div class="modal fade" id="attendanceLocationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <div>
+                        <span class="small text-uppercase fw-bold text-primary">ATTENDANCE GPS</span>
+                        <h5 class="modal-title mb-1" id="attendanceLocationTitle">Participant Location</h5>
+                        <div class="small text-muted" id="attendanceLocationParticipant"></div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="attendanceLocationFrame" class="attendance-location-map"
+                        title="Participant attendance location map" loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                        <span class="attendance-map-coordinate" id="attendanceLocationCoordinates"></span>
+                        <a id="attendanceGoogleMapsLink" href="#" target="_blank" rel="noopener noreferrer"
+                            class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Open in Google Maps
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalElement = document.getElementById('attendanceLocationModal');
+    if (!modalElement || typeof bootstrap === 'undefined') return;
+
+    const mapModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    const mapFrame = document.getElementById('attendanceLocationFrame');
+    const googleMapsLink = document.getElementById('attendanceGoogleMapsLink');
+
+    document.querySelectorAll('[data-attendance-map]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const latitude = Number(button.dataset.mapLat);
+            const longitude = Number(button.dataset.mapLng);
+
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+                latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                return;
+            }
+
+            const coordinates = latitude + ',' + longitude;
+            document.getElementById('attendanceLocationTitle').textContent =
+                button.dataset.mapTitle || 'Participant Location';
+            document.getElementById('attendanceLocationParticipant').textContent =
+                button.dataset.mapParticipant || 'Participant';
+            document.getElementById('attendanceLocationCoordinates').textContent =
+                'Coordinates: ' + coordinates;
+            mapFrame.src = 'https://maps.google.com/maps?q=' +
+                encodeURIComponent(coordinates) + '&z=17&output=embed';
+            googleMapsLink.href = 'https://www.google.com/maps?q=' +
+                encodeURIComponent(coordinates);
+            mapModal.show();
+        });
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        mapFrame.removeAttribute('src');
+    });
+});
+</script>
 </body>
 </html>
