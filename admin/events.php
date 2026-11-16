@@ -912,7 +912,7 @@ $calendarJson = json_encode(
                     </div>
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
-                        <p class="location-picker-help mb-2">Click to set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 100m outside.</p>
+                        <p class="location-picker-help mb-2">Click to set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 50m outside.</p>
                         <div class="input-group mb-2">
                             <input type="search" id="create-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
                             <button type="button" id="create-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
@@ -987,7 +987,7 @@ $calendarJson = json_encode(
                     </div>
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
-                        <p class="location-picker-help mb-2">Set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 100m outside.</p>
+                        <p class="location-picker-help mb-2">Set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 50m outside.</p>
                         <div class="input-group mb-2">
                             <input type="search" id="edit-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
                             <button type="button" id="edit-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
@@ -1073,7 +1073,7 @@ function createEventLocationPicker(mapId, latitudeId, longitudeId, boundaryId, s
         const ring = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
         const points = ring.map(point => [Number(point.lat.toFixed(7)), Number(point.lng.toFixed(7))]);
         boundaryInput.value = JSON.stringify(points);
-        statusElement.textContent = 'Venue boundary saved with ' + points.length + ' points. Attendance allowed inside and up to 100m outside.';
+        statusElement.textContent = 'Venue boundary saved with ' + points.length + ' points. Attendance allowed inside and up to 50m outside.';
     }
 
     function updateSelection(latitude, longitude, shouldPan = false) {
