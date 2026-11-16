@@ -71,7 +71,7 @@ if ($now >= $eventEnd) {
     respond(false, 'Time-out is closed. This event ended on ' . $eventEnd->format('F j, Y, g:i A') . ' (PHT).');
 }
 
-// Enforce the same 100-meter event geofence before allowing time-out.
+// Enforce the same 50-meter event geofence before allowing time-out.
 $geofence = checkEventGeofence($event, $latitude, $longitude, $gpsAccuracy);
 if (!$geofence['allowed']) {
     respond(false, $geofence['message']);
