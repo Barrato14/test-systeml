@@ -617,7 +617,9 @@ if (!$isEventOrganizer) {
         <?php else: ?>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Total Users</h6><h2 class="mb-0"><?= $totalUsers ?></h2></div></div></div>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2"><?= $isEventOrganizer ? 'Ongoing Events' : 'Active Events' ?></h6><h2 class="mb-0"><?= $isEventOrganizer ? count($ongoingEvents) : $activeEvents ?></h2></div></div></div>
-            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2></div></div></div>
+            <?php if (!$isEventOrganizer): ?>
+                <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2></div></div></div>
+            <?php endif; ?>
             <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#dc3545;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6><h2 class="mb-0"><?= $totalCheckIns ?></h2></div></div></div>
         <?php endif; ?>
     </div>
@@ -1195,8 +1197,10 @@ if (!$isEventOrganizer) {
                             <a href="equipment.php?tab=requests" class="btn btn-outline-warning text-start"><i class="bi bi-inbox me-2"></i>View Borrow Requests</a>
                             <a href="equipment.php?tab=history" class="btn btn-outline-primary text-start"><i class="bi bi-clock-history me-2"></i>View Borrowing History</a>
                             <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i>View Attendance Logs</a>
+                        <?php elseif ($isEventOrganizer): ?>
+                            <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i>Create Event</a>
                         <?php else: ?>
-                            <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i><?= $isEventOrganizer ? 'Create Event' : 'Create New Event' ?></a>
+                            <a href="events.php?action=new" class="btn btn-outline-primary text-start"><i class="bi bi-plus-circle me-2"></i>Create New Event</a>
                             <a href="attendance-logs.php" class="btn btn-outline-success text-start"><i class="bi bi-person-bounding-box me-2"></i>View Face &amp; GPS Attendance</a>
                             <a href="equipment.php?action=approve" class="btn btn-outline-warning text-start"><i class="bi bi-tools me-2"></i>Review Borrowing Requests</a>
                         <?php endif; ?>
