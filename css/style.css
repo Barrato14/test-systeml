@@ -1282,8 +1282,11 @@ body.participant-page,body.admin-portal{overflow-x:hidden}
 .participant-page main,.participant-page .container,.admin-portal main,.admin-portal .content-area{min-width:0}
 .participant-page img,.participant-page video,.admin-portal img{max-width:100%}
 .participant-page .card,.participant-page .modal-content,.admin-portal .card,.admin-portal .modal-content{min-width:0}
-.participant-page .btn,.admin-portal .btn{max-width:100%;white-space:normal}
+.participant-page .btn,.admin-portal .btn{max-width:100%}
 .participant-page .form-control,.participant-page .form-select,.admin-portal .form-control,.admin-portal .form-select{min-width:0;max-width:100%}
+@media(max-width:575px){
+    .participant-page .btn,.admin-portal .btn{white-space:normal}
+}
 @media(max-width:360px){
     .participant-topbar-inner{padding-inline:10px;gap:8px}
     .participant-brand{gap:7px}
