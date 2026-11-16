@@ -33,6 +33,8 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
         .face-registration-card { max-width: 720px; margin: 35px auto; padding: 28px; background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(15,23,42,.07); }
         #faceRegistrationVideo { width: 100%; max-height: 420px; background: #111827; border-radius: 12px; object-fit: cover; transform: scaleX(-1); }
         .face-privacy-note { font-size: .9rem; color: #64748b; }
+        @media (max-width: 600px) { .face-registration-card { margin: 18px auto; padding: 18px; } #faceRegistrationVideo { max-height: 58vh; } }
+        @media (max-width: 360px) { .face-registration-card { margin: 12px auto; padding: 13px; border-radius: 11px; } .face-registration-card .d-flex.align-items-center { align-items: flex-start !important; gap: 10px !important; } .face-registration-card .btn { width: 100%; white-space: normal; } }
     </style>
 </head>
 <body class="participant-page">
