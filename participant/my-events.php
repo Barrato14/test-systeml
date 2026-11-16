@@ -132,6 +132,7 @@ usort($myEvents, function($a, $b) {
     </p><small>Registered <?= $event['registered_at']?date('M d, Y',strtotime($event['registered_at'])):'date unavailable' ?></small></div>
     <div class="my-event-actions">
      <span class="my-event-status my-event-status-<?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
+     <a href="attendance.php?event_id=<?= rawurlencode((string)$event['event_id']) ?>" class="my-event-checkin" style="margin-top:7px"><i class="bi bi-clipboard2-check"></i> View attendance</a>
      <?php
       $eventKey = (string)$event['event_id'];
       $todayRecord = $dailyAttendanceByEventDate[$eventKey][$now->format('Y-m-d')] ?? null;
