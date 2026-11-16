@@ -66,6 +66,7 @@ foreach ($registrations as $reg) {
         'venue' => $eventData['venue'] ?? 'N/A',
         'latitude' => $eventData['latitude'] ?? null,
         'longitude' => $eventData['longitude'] ?? null,
+        'venue_boundary' => $eventData['venue_boundary'] ?? null,
         'registration_status' => $reg['status'] ?? 'Approved',
         'registered_at' => $reg['registered_at'] ?? date('Y-m-d')
     ];
@@ -87,6 +88,7 @@ usort($myEvents, function($a, $b) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="bg-light participant-page">
 <?php include '../includes/participant-nav.php'; ?>
@@ -109,6 +111,7 @@ usort($myEvents, function($a, $b) {
        data-map-lat="<?= htmlspecialchars((string)$event['latitude'], ENT_QUOTES, 'UTF-8') ?>"
        data-map-lng="<?= htmlspecialchars((string)$event['longitude'], ENT_QUOTES, 'UTF-8') ?>"
        data-map-title="<?= htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8') ?>"
+       data-map-boundary="<?= htmlspecialchars(json_encode($event['venue_boundary'] ?? null), ENT_QUOTES, 'UTF-8') ?>"
        aria-label="View location for <?= htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8') ?>">
        <i class="bi bi-map"></i> View map
       </button>
@@ -144,7 +147,8 @@ usort($myEvents, function($a, $b) {
    <button type="button" class="my-event-map-close" data-close-event-map aria-label="Close map"><i class="bi bi-x-lg"></i></button>
   </header>
   <div class="my-event-map-body">
-   <iframe id="myEventMapFrame" title="Event location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+   <div id="myEventMapFrame" class="participant-venue-map" role="img" aria-label="Event venue boundary map"></div>
+   <div class="participant-map-legend"><span><i class="legend-venue"></i> Marked venue</span><span><i class="legend-buffer"></i> Allowed area (50m outside)</span><span><i class="legend-pin"></i> Event pin</span></div>
    <div class="my-event-map-actions">
     <span id="myEventMapCoordinates"></span>
     <a id="myEventGoogleMaps" href="#" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
@@ -152,10 +156,13 @@ usort($myEvents, function($a, $b) {
   </div>
  </section>
 </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script>
 (function () {
  const overlay = document.getElementById('myEventMapOverlay');
- const frame = document.getElementById('myEventMapFrame');
+ const mapElement = document.getElementById('myEventMapFrame');
+ let venueMap = null;
  const title = document.getElementById('myEventMapTitle');
  const coordinates = document.getElementById('myEventMapCoordinates');
  const externalLink = document.getElementById('myEventGoogleMaps');
@@ -163,7 +170,8 @@ usort($myEvents, function($a, $b) {
  function closeMap() {
   overlay.classList.remove('is-open');
   overlay.setAttribute('aria-hidden', 'true');
-  frame.removeAttribute('src');
+  if (venueMap) { venueMap.remove(); venueMap = null; }
+  mapElement.innerHTML = '';
  }
 
  document.querySelectorAll('[data-my-event-map]').forEach(function (button) {
@@ -174,7 +182,24 @@ usort($myEvents, function($a, $b) {
    const point = lat + ',' + lng;
    title.textContent = button.dataset.mapTitle || 'Event location';
    coordinates.textContent = 'Coordinates: ' + point;
-   frame.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(point) + '&z=16&output=embed';
+if (venueMap) venueMap.remove();
+            mapElement.innerHTML = '';
+            venueMap = L.map(mapElement).setView([lat, lng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' }).addTo(venueMap);
+            L.marker([lat, lng]).addTo(venueMap).bindPopup('Event location');
+            let boundary = null;
+            try { boundary = JSON.parse(button.dataset.mapBoundary || 'null'); } catch (error) {}
+            if (Array.isArray(boundary) && boundary.length >= 3) {
+                const ring = boundary.map(p => [Number(p[1]), Number(p[0])]);
+                if (ring.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
+                    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+                    const feature = turf.polygon([ring]);
+                    const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
+                    L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                    L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
+                    venueMap.fitBounds(L.geoJSON(allowedArea).getBounds(), { padding: [20, 20] });
+                }
+            }
    externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
    overlay.classList.add('is-open');
    overlay.setAttribute('aria-hidden', 'false');
@@ -204,11 +229,15 @@ usort($myEvents, function($a, $b) {
 .my-event-map-header h2 { margin:5px 0 0; color:#f7f0ff; font-size:19px; font-weight:750; }
 .my-event-map-close { width:34px; height:34px; border:1px solid #59436d; border-radius:9px; background:#261b32; color:#e8d8f8; cursor:pointer; }
 .my-event-map-body { padding:18px; }
-.my-event-map-body iframe { display:block; width:100%; height:min(55vh,430px); min-height:260px; border:0; border-radius:11px; background:#eee; }
+.participant-venue-map { display:block; width:100%; height:min(55vh,430px); min-height:260px; border:0; border-radius:11px; background:#21172e; z-index:1; }
+.participant-map-legend { display:flex; flex-wrap:wrap; gap:14px; padding-top:12px; color:#cbbbdc; font-size:11px; }
+.participant-map-legend span { display:inline-flex; align-items:center; gap:6px; }
+.participant-map-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; }
+.legend-venue { background:#4ade80; } .legend-buffer { background:#a78bfa; } .legend-pin { background:#ef4444; }
 .my-event-map-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:14px; color:#bbaecb; font-size:11px; }
 .my-event-map-actions a { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid #76519a; border-radius:8px; color:#dfc5ff; text-decoration:none; font-weight:700; }
 .my-event-map-actions a:hover { background:#30203f; color:#fff; }
-@media(max-width:600px) { .my-event-map-overlay { padding:10px; } .my-event-map-body { padding:12px; } .my-event-map-body iframe { min-height:230px; } }
+@media(max-width:600px) { .my-event-map-overlay { padding:10px; } .my-event-map-body { padding:12px; } .participant-venue-map { min-height:230px; } }
 </style>
 </body>
 </html>
