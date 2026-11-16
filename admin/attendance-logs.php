@@ -55,10 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
         $attendanceActionMessage = 'Invalid attendance record.';
     } else {
         // Confirm that the record belongs to an event this account is allowed to manage.
-        $recordRes = supabaseRequest(
-            $attendanceSource . '?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId),
-            'GET'
-        );
+        $recordRes = $attendanceSource === 'daily_attendance'
+            ? supabaseServiceRequest($attendanceSource . '?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId), 'GET')
+            : supabaseRequest($attendanceSource . '?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId), 'GET');
         $record = (($recordRes['code'] ?? 500) === 200 && is_array($recordRes['data'] ?? null))
             ? ($recordRes['data'][0] ?? null)
             : null;
