@@ -52,12 +52,12 @@ if ($now >= $eventEnd) {
 
 // Verify active check-in exists and has not timed out.
 $dailyMode = isMultiDayAttendanceEvent($event);
-$checkExisting = $dailyMode ? supabaseServiceRequest(
-    (isMultiDayAttendanceEvent($event)
-        ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($now->format('Y-m-d')) . '&select=id,time_out'
-        : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out'),
-    'GET'
-);
+$attendanceLookup = $dailyMode
+    ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($now->format('Y-m-d')) . '&select=id,time_out'
+    : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out';
+$checkExisting = $dailyMode
+    ? supabaseServiceRequest($attendanceLookup, 'GET')
+    : supabaseRequest($attendanceLookup, 'GET');
 
 if (($checkExisting['code'] ?? 500) !== 200 || empty($checkExisting['data'])) {
     die("Error: You must check in first before you can time out.");
