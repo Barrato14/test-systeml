@@ -1335,7 +1335,7 @@ function initAdminEventsPage() {
         eventDisplay: 'block',
         customButtons: {
             jumpToDate: {
-                text: 'Jump to date',
+                text: 'Jump',
                 click: function () {
                     openCalendarJump();
                 }
