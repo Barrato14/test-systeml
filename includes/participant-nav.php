@@ -29,9 +29,9 @@ $participantNavItems = [
 ?>
 <aside class="participant-sidebar" aria-label="Participant sidebar">
  <div class="participant-sidebar-inner">
-  <a class="participant-brand" href="dashboard.php" aria-label="EMIS Participant Dashboard">
+  <a class="participant-brand" href="dashboard.php" aria-label="Zentrix Participant Dashboard">
    <span class="participant-brand-mark"><i class="bi bi-calendar2-check"></i></span>
-   <span class="participant-brand-copy"><strong>EMIS</strong><small>Participant Portal</small></span>
+   <span class="participant-brand-copy"><strong>Zentrix</strong><small>Participant Portal</small></span>
   </a>
   <span class="participant-sidebar-caption">WORKSPACE</span>
   <nav class="participant-sidebar-nav" aria-label="Participant navigation">
@@ -57,9 +57,9 @@ $participantNavItems = [
 </aside>
 
 <header class="participant-mobile-topbar">
- <a class="participant-brand" href="dashboard.php" aria-label="EMIS Participant Dashboard">
+ <a class="participant-brand" href="dashboard.php" aria-label="Zentrix Participant Dashboard">
   <span class="participant-brand-mark"><i class="bi bi-calendar2-check"></i></span>
-  <span class="participant-brand-copy"><strong>EMIS</strong><small>Participant Portal</small></span>
+  <span class="participant-brand-copy"><strong>Zentrix</strong><small>Participant Portal</small></span>
  </a>
  <div class="participant-topbar-actions">
   <button type="button" class="participant-icon-button position-relative" data-open-notifications aria-label="Open notifications"><i class="bi bi-bell"></i><span class="participant-notification-count" data-unread-count hidden></span></button>
