@@ -6,7 +6,8 @@ if (function_exists('isLoggedIn') && isLoggedIn()) {
     redirectByRole($_SESSION['user_role']);
 }
 
-$error = '';
+$error = (string)($_SESSION['social_login_error'] ?? '');
+unset($_SESSION['social_login_error']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
@@ -188,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="social-login">
-                    <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn-social">
+                    <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php%3Fsource%3Dlogin" class="btn-social">
                         <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google Logo" class="social-icon">
                         Continue with Google
                     </a>
