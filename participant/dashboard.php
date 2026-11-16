@@ -645,10 +645,10 @@ $calendarJson = json_encode(
             <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar-event"></i></span>
             <div><strong><?= number_format($dashboardUpcomingCount) ?></strong><span>Upcoming events</span></div>
         </article>
-        <article class="participant-dashboard-stat">
+        <a href="attendance.php" class="participant-dashboard-stat participant-dashboard-stat-link" aria-label="View the events and daily attendance records included in your completed attendance time">
             <span class="participant-dashboard-stat-icon"><i class="bi bi-clock-history"></i></span>
-            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Completed attendance time</span></div>
-        </article>
+            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Completed attendance time</span><small class="participant-dashboard-stat-hint">View event breakdown <i class="bi bi-arrow-up-right"></i></small></div>
+        </a>
         <article class="participant-dashboard-stat">
             <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-range"></i></span>
             <div><strong><?= number_format($dashboardAttendanceSessionCount) ?></strong><span>Attendance days</span></div>
