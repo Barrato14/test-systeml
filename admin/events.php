@@ -627,17 +627,47 @@ $calendarJson = json_encode(
             padding: 10px 14px; box-shadow: none;
         }
         #searchEvents:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
-        .event-modal-content { border: 0; border-radius: 16px; overflow: hidden; }
+        /* Keep the event details dialog content-sized instead of stretching it to the viewport. */
+        #eventDetailsModal .modal-dialog-centered {
+            min-height: 0;
+        }
+        #eventDetailsModal .event-modal-content {
+            height: auto;
+            min-height: 0;
+            max-height: calc(100vh - 3rem);
+            border: 0;
+            border-radius: 16px;
+            overflow: hidden;
+        }
         .event-modal-header {
             background: linear-gradient(135deg, #4338ca, #6366f1);
-            border: 0; padding: 25px; color: white;
+            border: 0; padding: 20px 25px; color: white;
+            flex: 0 0 auto;
         }
         .event-modal-header .modal-title { color: white; font-weight: 700; }
-        .event-modal-body { padding: 25px; }
-        .event-description {
-            background: #f8fafc; border: 1px solid #edf0f5; border-radius: 10px;
-            padding: 16px; white-space: pre-wrap;
+        #eventDetailsModal .event-modal-body {
+            height: auto;
+            min-height: 0;
+            padding: 20px 25px;
+            overflow-y: auto;
+            flex: 0 1 auto;
         }
+        #eventDetailsModal .event-description {
+            height: auto;
+            min-height: 0;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            border: 1px solid #edf0f5;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        #eventDetailsModal .event-description p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        #eventDetailsModal .modal-footer { flex: 0 0 auto; }
         .event-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .event-info-item {
             padding: 14px; border: 1px solid #edf0f5; border-radius: 10px;
