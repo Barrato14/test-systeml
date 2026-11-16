@@ -205,7 +205,9 @@ if (venueMap) venueMap.remove();
                         L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
                     }
                     L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
-                    venueMap.fitBounds(L.geoJSON(allowedArea).getBounds(), { padding: [20, 20] });
+                    const mapBounds = L.latLngBounds([[lat, lng]]);
+                    mapBounds.extend(L.geoJSON(allowedArea).getBounds());
+                    venueMap.fitBounds(mapBounds, { padding: [20, 20] });
                 }
             }
    externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
