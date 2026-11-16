@@ -2,6 +2,7 @@
 session_start();
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/daily-attendance.php';
 
 // Ensure user is a Participant
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role']) !== 'participant') {
@@ -34,6 +35,16 @@ $attendanceByEvent = [];
 if (($attendanceResponse['code'] ?? 500) < 400 && is_array($attendanceResponse['data'] ?? null)) {
     foreach ($attendanceResponse['data'] as $attendanceRecord) {
         $attendanceByEvent[(string)($attendanceRecord['event_id'] ?? '')] = $attendanceRecord;
+    }
+}
+$dailyAttendanceResponse = supabaseRequest(
+    'daily_attendance?participant_id=eq.' . rawurlencode((string)$participantId) . '&select=event_id,attendance_date,check_in_time,time_out',
+    'GET'
+);
+$dailyAttendanceByEventDate = [];
+if (($dailyAttendanceResponse['code'] ?? 500) < 400 && is_array($dailyAttendanceResponse['data'] ?? null)) {
+    foreach ($dailyAttendanceResponse['data'] as $record) {
+        $dailyAttendanceByEventDate[(string)$record['event_id']][(string)$record['attendance_date']] = $record;
     }
 }
 
@@ -69,6 +80,7 @@ foreach ($registrations as $reg) {
         'longitude' => $eventData['longitude'] ?? null,
         'venue_boundary' => $eventData['venue_boundary'] ?? null,
         'registration_status' => $reg['status'] ?? 'Approved',
+        'is_multi_day' => isMultiDayAttendanceEvent($eventData),
         'registered_at' => $reg['registered_at'] ?? date('Y-m-d')
     ];
 }
@@ -122,7 +134,8 @@ usort($myEvents, function($a, $b) {
      <span class="my-event-status my-event-status-<?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
      <?php
       $eventKey = (string)$event['event_id'];
-      $attendanceRecord = $attendanceByEvent[$eventKey] ?? null;
+      $todayRecord = $dailyAttendanceByEventDate[$eventKey][$now->format('Y-m-d')] ?? null;
+      $attendanceRecord = !empty($event['is_multi_day']) ? $todayRecord : ($attendanceByEvent[$eventKey] ?? null);
       $hasCheckedIn = $attendanceRecord && !empty($attendanceRecord['check_in_time']);
       $hasCheckedOut = $hasCheckedIn && !empty($attendanceRecord['time_out']);
       $eventIsOngoing = false;
