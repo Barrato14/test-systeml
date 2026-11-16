@@ -120,10 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
 
         if ($action === 'save_equipment') {
-            if ($currentRole === 'staff') {
-                throw new Exception('Staff members cannot add or edit equipment.');
-            }
-
             $id = trim($_POST['equipment_id'] ?? '');
             $name = trim($_POST['name'] ?? '');
             $category = trim($_POST['category'] ?? '');
@@ -158,8 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $successMsg = 'Equipment added successfully.';
             }
         } elseif ($action === 'delete_equipment') {
-            if ($currentRole !== 'administrator') {
-                throw new Exception('Only administrators can delete equipment.');
+            if (!in_array($currentRole, ['administrator', 'staff'], true)) {
+                throw new Exception('Permission denied.');
             }
 
             $id = trim($_POST['equipment_id'] ?? '');
@@ -178,10 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             equipmentRequest('equipment_items?id=eq.' . rawurlencode($id), 'DELETE');
             $successMsg = 'Equipment deleted successfully.';
         } elseif ($action === 'update_condition') {
-            if ($currentRole === 'staff') {
-                throw new Exception('Staff members cannot change equipment condition.');
-            }
-
             $id = trim($_POST['equipment_id'] ?? '');
             $condition = $_POST['condition_status'] ?? '';
             if ($id === '' || !in_array($condition, ['Available', 'Maintenance', 'Unavailable'], true)) {
@@ -193,8 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             $successMsg = 'Equipment condition updated.';
         } elseif ($action === 'review_request') {
-            if (!in_array($currentRole, ['administrator', 'event organizer'], true)) {
-                throw new Exception('Only administrators and event organizers can review borrowing requests.');
+            if (!in_array($currentRole, ['administrator', 'staff', 'event organizer'], true)) {
+                throw new Exception('Permission denied.');
             }
 
             $requestId = trim($_POST['request_id'] ?? '');
@@ -493,13 +485,9 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                 <td><strong><?= $available ?></strong> <span class="text-muted">/ <?= $qty ?> available</span></td>
                                 <td><span class="badge bg-<?= $badgeClass ?>"><?= h($displayStatus) ?></span></td>
                                 <td class="text-end text-nowrap">
-                                    <?php if ($currentRole !== 'staff'): ?>
-                                        <button class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>"><i class="bi bi-pencil"></i></button>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Delete this equipment item?')"><input type="hidden" name="action" value="delete_equipment"><input type="hidden" name="equipment_id" value="<?= h($id) ?>"><button class="btn btn-sm btn-outline-danger" <?= $currentRole !== 'administrator' ? 'disabled title="Administrator only"' : '' ?>><i class="bi bi-trash"></i></button></form>
-                                    <?php endif; ?>
-                                    <?php if ($currentRole !== 'staff'): ?>
-                                        <button class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders"></i></button>
-                                    <?php endif; ?>
+                                    <button class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil"></i></button>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this equipment item?')"><input type="hidden" name="action" value="delete_equipment"><input type="hidden" name="equipment_id" value="<?= h($id) ?>"><button class="btn btn-sm btn-outline-danger" title="Delete equipment"><i class="bi bi-trash"></i></button></form>
+                                    <button class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders"></i></button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
