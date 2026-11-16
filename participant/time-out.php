@@ -99,7 +99,7 @@ if (empty($faceProfileCheck['data'])) {
 <div class="container">
     <div class="scanner-container">
         <h3 class="mb-3 text-center text-warning text-dark"><i class="bi bi-box-arrow-left me-2"></i>Face & GPS Time Out</h3>
-        <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera to log your departure.</p>
+        <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera to log your departure. You must be within 100 meters of the event location, with GPS accuracy of 50 meters or better.</p>
         <div id="statusAlert" class="alert alert-info text-center" role="alert">
             Initializing camera and requesting GPS coordinates...
         </div>
@@ -132,6 +132,7 @@ const lngDisplay = document.getElementById('lngDisplay');
 
 let currentLatitude = null;
 let currentLongitude = null;
+let currentAccuracy = null;
 let cameraStream = null;
 let cameraReady = false;
 let gpsReady = false;
@@ -167,6 +168,7 @@ if (navigator.geolocation) {
         position => {
             currentLatitude = position.coords.latitude;
             currentLongitude = position.coords.longitude;
+            currentAccuracy = position.coords.accuracy;
             latDisplay.textContent = currentLatitude;
             lngDisplay.textContent = currentLongitude;
             gpsReady = true;
@@ -176,7 +178,7 @@ if (navigator.geolocation) {
             statusAlert.className = 'alert alert-danger text-center';
             statusAlert.textContent = 'GPS Error: Please enable location services.';
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
 } else {
     statusAlert.className = 'alert alert-danger text-center';
@@ -204,6 +206,7 @@ captureBtn.addEventListener('click', async () => {
                 event_id: <?= json_encode((string)$eventId) ?>,
                 latitude: currentLatitude,
                 longitude: currentLongitude,
+                accuracy: currentAccuracy,
                 photo_data: photoDataUrl
             })
         });
