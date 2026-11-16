@@ -622,6 +622,17 @@ if (!$isEventOrganizer) {
         <?php endif; ?>
     </div>
 
+    <?php if (!$isEventOrganizer && !$isStaff): ?>
+    <section class="card shadow-sm mb-4" style="border-left:4px solid #9b6be8;">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-shield-exclamation me-2"></i>Audit &amp; Accountability</h5>
+                <p class="text-muted mb-0 small">Review sensitive actions performed by organizers and staff, including attendance changes and equipment transactions.</p>
+            </div>
+            <a href="audit-logs.php" class="btn btn-outline-primary"><i class="bi bi-journal-text me-2"></i>Open Audit Log</a>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- ====================================================
          RECENT ACTIVITY / VENUE OCCUPANCY AND QUICK ACTIONS
