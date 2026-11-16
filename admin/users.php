@@ -166,42 +166,110 @@ function usersWriteAudit($action, $details)
 }
 
 
-function usersAuthDelete($userId)
+function usersAuthDelete($userId, $email)
 {
     global $supabaseUrl, $serviceKey;
 
-    $url = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users/' . rawurlencode($userId);
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST => 'DELETE',
-        CURLOPT_HTTPHEADER => [
-            'apikey: ' . $serviceKey,
-            'Authorization: Bearer ' . $serviceKey,
-            'Content-Type: application/json'
-        ],
-        CURLOPT_TIMEOUT => 30
-    ]);
+    $deleteAuthUser = function ($authUserId) use ($supabaseUrl, $serviceKey) {
+        $url = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users/' . rawurlencode($authUserId);
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => 'DELETE',
+            CURLOPT_HTTPHEADER => [
+                'apikey: ' . $serviceKey,
+                'Authorization: Bearer ' . $serviceKey,
+                'Content-Type: application/json'
+            ],
+            CURLOPT_TIMEOUT => 30
+        ]);
 
-    $body = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
+        $body = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
 
-    if ($body === false) {
-        throw new Exception('Supabase Auth deletion request failed: ' . $curlError);
-    }
+        if ($body === false) {
+            throw new Exception('Supabase Auth deletion request failed: ' . $curlError);
+        }
 
-    // A missing Auth user is acceptable during a retry after a partial deletion.
-    if ($httpCode === 404) {
+        return ['code' => $httpCode, 'body' => $body];
+    };
+
+    // Google-created profiles normally share their ID with auth.users.
+    $directResult = $deleteAuthUser($userId);
+    if ($directResult['code'] >= 200 && $directResult['code'] < 300) {
         return;
     }
-
-    if ($httpCode < 200 || $httpCode >= 300) {
-        $decoded = json_decode($body, true);
+    if ($directResult['code'] !== 404) {
+        $decoded = json_decode($directResult['body'], true);
         $message = is_array($decoded)
             ? ($decoded['msg'] ?? $decoded['message'] ?? 'Supabase Auth rejected the deletion.')
             : 'Supabase Auth rejected the deletion.';
+        throw new Exception($message);
+    }
+
+    // Email/password profiles are stored directly in public.profiles and may not
+    // have an Auth user. Existing Google profiles can also have a different ID
+    // when they were originally registered with email/password, so locate an
+    // Auth identity by the verified profile email before treating 404 as success.
+    $email = strtolower(trim((string)$email));
+    if ($email === '') return;
+
+    $matchingAuthUsers = [];
+    for ($page = 1; $page <= 100; $page++) {
+        $listUrl = rtrim($supabaseUrl, '/') . '/auth/v1/admin/users?page=' . $page . '&per_page=1000';
+        $ch = curl_init($listUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_HTTPHEADER => [
+                'apikey: ' . $serviceKey,
+                'Authorization: Bearer ' . $serviceKey,
+                'Accept: application/json'
+            ],
+            CURLOPT_TIMEOUT => 30
+        ]);
+        $body = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($body === false || $httpCode < 200 || $httpCode >= 300) {
+            throw new Exception('Could not verify whether this profile has a linked Supabase Auth account: ' . ($curlError ?: 'HTTP ' . $httpCode));
+        }
+
+        $decoded = json_decode($body, true);
+        $pageUsers = is_array($decoded) ? ($decoded['users'] ?? []) : [];
+        foreach ($pageUsers as $authUser) {
+            if (strtolower(trim((string)($authUser['email'] ?? ''))) === $email) {
+                $matchingAuthUsers[] = $authUser;
+            }
+        }
+
+        if (count($pageUsers) < 1000) break;
+    }
+
+    if (count($matchingAuthUsers) > 1) {
+        throw new Exception('More than one Supabase Auth account matches this profile email. No Auth account was deleted.');
+    }
+
+    if (empty($matchingAuthUsers)) {
+        // This is a local email/password profile with no Supabase Auth identity.
+        return;
+    }
+
+    $linkedAuthId = (string)($matchingAuthUsers[0]['id'] ?? '');
+    if ($linkedAuthId === '') {
+        throw new Exception('The matching Supabase Auth account did not include an ID.');
+    }
+
+    $linkedResult = $deleteAuthUser($linkedAuthId);
+    if ($linkedResult['code'] < 200 || $linkedResult['code'] >= 300) {
+        $decoded = json_decode($linkedResult['body'], true);
+        $message = is_array($decoded)
+            ? ($decoded['msg'] ?? $decoded['message'] ?? 'Supabase Auth rejected the linked account deletion.')
+            : 'Supabase Auth rejected the linked account deletion.';
         throw new Exception($message);
     }
 }
@@ -329,7 +397,7 @@ function usersPermanentlyDeleteAccount($targetId, $targetUser)
 
     // Auth is deleted before the profile. If a later step fails, this action can be safely retried:
     // an already-missing Auth user is treated as success.
-    usersAuthDelete($targetId);
+    usersAuthDelete($targetId, $targetUser['email'] ?? '');
 
     // Existing FK rules handle the remaining records safely:
     // registrations and face profiles CASCADE; audit_logs and events.organizer_id SET NULL.
