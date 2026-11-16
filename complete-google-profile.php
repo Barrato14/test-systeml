@@ -97,7 +97,7 @@ $displayEmail = $profile['email'] ?? $email;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Student Profile - EMIS</title>
+    <title>Complete Student Profile - Zentrix</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0B1020">
@@ -106,7 +106,7 @@ $displayEmail = $profile['email'] ?? $email;
     <main class="auth-layout">
         <section class="auth-showcase">
             <div class="showcase-content">
-                <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+                <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
                 <div class="showcase-text">
                     <h1>One more step before you get started.</h1>
                     <p>Use your real student information so your event registrations and attendance records show the correct identity.</p>
@@ -114,7 +114,7 @@ $displayEmail = $profile['email'] ?? $email;
             </div>
         </section>
         <section class="auth-form-wrapper auth-register-wrapper">
-            <div class="mobile-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+            <div class="mobile-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
             <div class="auth-form-container auth-register-container">
                 <header class="form-header">
                     <h2>Complete your student profile</h2>
@@ -161,9 +161,9 @@ $displayEmail = $profile['email'] ?? $email;
                     </div>
                     <button type="submit" class="btn-primary auth-register-submit"><span class="btn-text">Save Student Details</span><i class="ph-bold ph-arrow-right"></i></button>
                 </form>
-                <p class="register-prompt">Your Google account is used for sign-in. Your student name above is the name EMIS will display.</p>
+                <p class="register-prompt">Your Google account is used for sign-in. Your student name above is the name Zentrix will display.</p>
             </div>
-            <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Eventora. All rights reserved.</p></footer>
+            <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p></footer>
         </section>
     </main>
 </body>
