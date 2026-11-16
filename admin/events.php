@@ -89,6 +89,27 @@ function toSupabaseDateTime($value) {
     return $date ? $date->format('Y-m-d\TH:i:sP') : null;
 }
 
+function getSupabaseEventError($response, $actionLabel) {
+    $data = $response['data'] ?? null;
+    $message = is_array($data) ? (string)($data['message'] ?? $data['details'] ?? '') : '';
+    $code = is_array($data) ? (string)($data['code'] ?? '') : '';
+
+    if (stripos($message, 'venue_boundary') !== false ||
+        stripos($message, 'schema cache') !== false ||
+        $code === 'PGRST204' ||
+        $code === '42703') {
+        return 'The venue boundary database update is missing or not active yet. Open Supabase SQL Editor, run database/venue-geofence.sql, wait a moment, then try again.';
+    }
+
+    if ($message !== '') {
+        error_log('Zentrix event ' . $actionLabel . ' failed (HTTP ' . ($response['code'] ?? 'unknown') . ', ' . $code . '): ' . $message);
+        return 'Failed to ' . $actionLabel . ' event: ' . $message;
+    }
+
+    error_log('Zentrix event ' . $actionLabel . ' failed with HTTP ' . ($response['code'] ?? 'unknown'));
+    return 'Failed to ' . $actionLabel . ' event (server response ' . ($response['code'] ?? 'unknown') . '). Check the server error log.';
+}
+
 function parseVenueBoundary($raw) {
     if (trim((string)$raw) === '') return null;
     $points = json_decode($raw, true);
@@ -329,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $response = supabaseRequest('events', 'POST', $payload);
 
             if (($response['code'] ?? 500) >= 400) {
-                throw new Exception('Failed to create event. Please check the information and try again.');
+                throw new Exception(getSupabaseEventError($response, 'create'));
             }
 
             $createdEvent = is_array($response['data'] ?? null) && isset($response['data'][0])
@@ -474,7 +495,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $response = supabaseRequest('events?id=eq.' . rawurlencode($updateId), 'PATCH', $payload);
 
             if (($response['code'] ?? 500) >= 400) {
-                throw new Exception('Failed to update event. Please check the information and try again.');
+                throw new Exception(getSupabaseEventError($response, 'update'));
             }
 
             $successMsg = 'Event updated successfully!';
