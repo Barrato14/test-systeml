@@ -3,6 +3,7 @@ session_start();
 date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/daily-attendance.php';
 
 // Administrators and Event Organizers may access Attendance Logs.
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
@@ -43,6 +44,7 @@ $attendanceActionMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_attendance_status') {
     $submittedToken = (string)($_POST['csrf_token'] ?? '');
     $attendanceId = trim((string)($_POST['attendance_id'] ?? ''));
+    $attendanceSource = ($_POST['attendance_source'] ?? '') === 'daily' ? 'daily_attendance' : 'attendance';
 
     if (!hash_equals($attendanceCsrf, $submittedToken)) {
         http_response_code(403);
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
     } else {
         // Confirm that the record belongs to an event this account is allowed to manage.
         $recordRes = supabaseRequest(
-            'attendance?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId),
+            $attendanceSource . '?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId),
             'GET'
         );
         $record = (($recordRes['code'] ?? 500) === 200 && is_array($recordRes['data'] ?? null))
@@ -68,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
             $newStatus = strcasecmp($currentStatus, 'Absent') === 0 ? 'Present' : 'Absent';
 
             $updateRes = supabaseRequest(
-                'attendance?id=eq.' . rawurlencode($attendanceId)
+                $attendanceSource . '?id=eq.' . rawurlencode($attendanceId)
                     . '&event_id=eq.' . rawurlencode((string)$record['event_id']),
                 'PATCH',
                 ['status' => $newStatus]
@@ -124,6 +126,32 @@ if ($currentRole === 'administrator') {
         ? $attendanceRes['data']
         : [];
 }
+
+// Fetch per-day attendance rows for multi-day events and merge into the same log.
+$dailyLogsQuery = 'daily_attendance?select=*&order=check_in_time.desc';
+if ($currentRole === 'event organizer') {
+    $dailyLogsQuery = !empty($visibleEventIds)
+        ? 'daily_attendance?select=*&event_id=in.(' . implode(',', array_map('rawurlencode', $visibleEventIds)) . ')&order=check_in_time.desc'
+        : null;
+}
+if ($dailyLogsQuery !== null) {
+    $dailyRes = supabaseRequest($dailyLogsQuery, 'GET');
+    if (($dailyRes['code'] ?? 500) < 400 && is_array($dailyRes['data'] ?? null)) {
+        $today = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
+        foreach ($dailyRes['data'] as $dailyRow) {
+            $dailyRow['_attendance_source'] = 'daily';
+            if (empty($dailyRow['time_out']) && !empty($dailyRow['attendance_date']) && $dailyRow['attendance_date'] < $today) {
+                $dailyRow['_display_status'] = 'Missing Time Out';
+            } else {
+                $dailyRow['_display_status'] = $dailyRow['status'] ?? 'Present';
+            }
+            $attendanceLogs[] = $dailyRow;
+        }
+    }
+}
+usort($attendanceLogs, function ($a, $b) {
+    return strtotime((string)($b['check_in_time'] ?? '')) <=> strtotime((string)($a['check_in_time'] ?? ''));
+});
 
 // Fetch profiles to map course/section info if available
 $profilesRes = supabaseRequest('profiles?select=*', 'GET');
@@ -338,11 +366,12 @@ function formatManilaTime($utcString) {
                                         </td>
 
                                         <td>
-                                            <?php $attendanceStatus = trim((string)($log['status'] ?? 'Present')) ?: 'Present'; ?>
+                                            <?php $attendanceStatus = trim((string)($log['_display_status'] ?? $log['status'] ?? 'Present')) ?: 'Present'; ?>
                                             <?php $isAbsent = strcasecmp($attendanceStatus, 'Absent') === 0; ?>
                                             <form method="POST" class="m-0 d-inline-block" onsubmit="return confirm('Change this participant\'s attendance status to <?= $isAbsent ? 'Present' : 'Absent' ?>?');">
                                                 <input type="hidden" name="action" value="toggle_attendance_status">
                                                 <input type="hidden" name="attendance_id" value="<?= htmlspecialchars((string)($log['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                                <input type="hidden" name="attendance_source" value="<?= htmlspecialchars((string)($log['_attendance_source'] ?? 'standard'), ENT_QUOTES, 'UTF-8') ?>">
                                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($attendanceCsrf, ENT_QUOTES, 'UTF-8') ?>">
                                                 <button type="submit" class="badge border-0 <?= $isAbsent ? 'bg-danger' : 'bg-success' ?>" style="cursor:pointer; font:inherit;"
                                                     title="Click to change status to <?= $isAbsent ? 'Present' : 'Absent' ?>"
