@@ -394,10 +394,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .page-card { background:#fff; border:1px solid #e8edf4; border-radius:15px; box-shadow:0 4px 20px rgba(30,50,80,.05); }
         .stat-card { border:0; border-left:5px solid #0d6efd; border-radius:12px; }
         .equipment-image { width:76px; height:66px; object-fit:cover; border-radius:10px; background:#eef2f7; }
-        .equipment-card-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; padding:8px 4px 10px; margin:0; }
-        .equipment-card-grid > .equipment-row { width:100%; max-width:none; padding:0; }
-        @media(max-width:767.98px) { .equipment-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-        @media(max-width:520px) { .equipment-card-grid { grid-template-columns:1fr; } }
+        .equipment-card-grid { row-gap:18px; padding:8px 4px 10px; margin-left:0; margin-right:0; }
         .equipment-item-card { display:flex; flex-direction:column; min-width:0; height:100%; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
         .equipment-item-card:hover { border-color:#8054c0; transform:translateY(-2px); }
         .equipment-card-image-wrap { position:relative; flex:0 0 230px; height:230px; min-height:210px; overflow:hidden; background:rgba(125,95,160,.10); }
@@ -552,7 +549,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <div class="col-md-8"><input type="search" id="equipmentSearch" class="form-control" placeholder="Search equipment by name, category, or description..."></div>
                     <div class="col-md-4"><select id="availabilityFilter" class="form-select"><option value="">All availability</option><option value="Available">Available</option><option value="Borrowed">Borrowed</option><option value="Maintenance">Under maintenance</option><option value="Unavailable">Unavailable</option></select></div>
                 </div>
-                <div class="row g-4 equipment-card-grid" id="equipmentTable">
+                <div class="row g-4" id="equipmentTable">
                     <?php if (!$equipment): ?>
                         <div class="col-12 equipment-empty-state">
                             <i class="bi bi-box-seam"></i>
@@ -570,7 +567,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                         $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
                         $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
                     ?>
-                        <div class="equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                        <div class="col-12 equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
                             <article class="equipment-item-card h-100">
                                 <div class="equipment-card-image-wrap">
                                     <?php if (!empty($item['image_url'])): ?>
