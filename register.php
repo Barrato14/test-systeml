@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 <div class="divider"><span>OR</span></div>
 <div class="social-login">
-<a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php" class="btn-social"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="" class="social-icon">Continue with Google</a>
+<a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php%3Fsource%3Dregister" class="btn-social"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="" class="social-icon">Continue with Google</a>
 </div>
 <p class="register-prompt">Already have an account? <a href="login.php">Sign in</a></p>
 </div>
