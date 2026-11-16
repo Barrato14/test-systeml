@@ -1,3 +1,4 @@
+// Zentrix PWA service worker.
 self.addEventListener("install", event => {
     self.skipWaiting();
 });
