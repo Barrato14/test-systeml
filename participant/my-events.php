@@ -151,7 +151,7 @@ usort($myEvents, function($a, $b) {
    <div class="participant-map-legend"><span><i class="legend-venue"></i> Marked venue</span><span><i class="legend-buffer"></i> Allowed area (50m outside)</span><span><i class="legend-pin"></i> Event pin</span></div>
    <div class="my-event-map-actions">
     <span id="myEventMapCoordinates"></span>
-    <a id="myEventGoogleMaps" href="#" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
+    <a id="myEventGoogleMaps" href="#"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
    </div>
   </div>
  </section>
@@ -210,7 +210,23 @@ if (venueMap) venueMap.remove();
                     venueMap.fitBounds(mapBounds, { padding: [20, 20] });
                 }
             }
-   externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
+   const googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(point);
+            externalLink.href = googleMapsUrl;
+            externalLink.onclick = function (event) {
+                event.preventDefault();
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isAndroid) {
+                    const intentUrl = 'intent://maps.google.com/maps?query=' + encodeURIComponent(point) +
+                        '#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=' +
+                        encodeURIComponent(googleMapsUrl) + ';end';
+                    window.location.href = intentUrl;
+                } else if (isIOS) {
+                    window.location.href = googleMapsUrl;
+                } else {
+                    window.open(googleMapsUrl, '_blank', 'noopener');
+                }
+            };
    requestAnimationFrame(function () {
     if (venueMap) venueMap.invalidateSize(true);
    });
