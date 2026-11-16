@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/face-service.php';
+require_once '../includes/attendance-geofence.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -26,6 +27,7 @@ $eventId = $input['event_id'] ?? '';
 $participantId = (string)$_SESSION['user_id'];
 $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
+$gpsAccuracy = $input['accuracy'] ?? null;
 $photoDataUrl = $input['photo_data'] ?? '';
 
 if ($eventId === '' || !is_string($photoDataUrl) || $photoDataUrl === '') {
@@ -34,7 +36,7 @@ if ($eventId === '' || !is_string($photoDataUrl) || $photoDataUrl === '') {
 
 // Fetch event and validate its end time on the server.
 $eventResponse = supabaseRequest(
-    'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime',
+    'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime,latitude,longitude',
     'GET'
 );
 
@@ -67,6 +69,12 @@ if ($now < $eventStart) {
 
 if ($now >= $eventEnd) {
     respond(false, 'Time-out is closed. This event ended on ' . $eventEnd->format('F j, Y, g:i A') . ' (PHT).');
+}
+
+// Enforce the same 100-meter event geofence before allowing time-out.
+$geofence = checkEventGeofence($event, $latitude, $longitude, $gpsAccuracy);
+if (!$geofence['allowed']) {
+    respond(false, $geofence['message']);
 }
 
 // Find the participant's active check-in record.
