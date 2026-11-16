@@ -25,7 +25,7 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Registration - EMIS</title>
+    <title>Face Registration - Zentrix</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../css/style.css">
@@ -59,11 +59,11 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
         <div class="form-check my-3">
             <input class="form-check-input" type="checkbox" id="faceConsent">
             <label class="form-check-label" for="faceConsent">
-                I consent to EMIS storing a biometric face template linked to my account and using it only to verify my identity for event check-in and time-out.
+                I consent to Zentrix storing a biometric face template linked to my account and using it only to verify my identity for event check-in and time-out.
             </label>
         </div>
 
-        <p class="face-privacy-note">EMIS stores a mathematical face template rather than using your registration photo as the matching record. You can request assistance from the administrator if you want your face registration removed. Face matching can make mistakes and does not by itself prove that a live person is present.</p>
+        <p class="face-privacy-note">Zentrix stores a mathematical face template rather than using your registration photo as the matching record. You can request assistance from the administrator if you want your face registration removed. Face matching can make mistakes and does not by itself prove that a live person is present.</p>
 
         <button type="button" id="saveFaceButton" class="btn btn-primary w-100" disabled>
             <i class="bi bi-shield-check me-2"></i><?= $hasRegisteredFace ? 'Update Registered Face' : 'Register My Face' ?>
