@@ -1262,6 +1262,13 @@ function initAdminEventsPage() {
     const eventModalElement = document.getElementById('eventDetailsModal');
     const detailsModal = bootstrap.Modal.getOrCreateInstance(eventModalElement);
 
+    // Native date picker allows a direct jump to a selected year, month, and day.
+    const calendarJumpPicker = document.createElement('input');
+    calendarJumpPicker.type = 'date';
+    calendarJumpPicker.setAttribute('aria-label', 'Jump to calendar date');
+    calendarJumpPicker.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+    document.body.appendChild(calendarJumpPicker);
+
     const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
         timeZone: 'Asia/Manila',
@@ -1269,10 +1276,23 @@ function initAdminEventsPage() {
         fixedWeekCount: false,
         dayMaxEvents: true,
         eventDisplay: 'block',
+        customButtons: {
+            jumpToDate: {
+                text: 'Jump to date',
+                click: function () {
+                    calendarJumpPicker.value = calendar.formatDate(calendar.getDate(), { formatStr: 'yyyy-MM-dd' });
+                    if (typeof calendarJumpPicker.showPicker === 'function') {
+                        calendarJumpPicker.showPicker();
+                    } else {
+                        calendarJumpPicker.click();
+                    }
+                }
+            }
+        },
         headerToolbar: {
             left: 'prev,next',
             center: 'title',
-            right: 'today'
+            right: 'jumpToDate today'
         },
         events: emisEvents,
         eventClick: function (info) {
@@ -1342,6 +1362,10 @@ function initAdminEventsPage() {
     });
 
     calendar.render();
+
+    calendarJumpPicker.addEventListener('change', function () {
+        if (this.value) calendar.gotoDate(this.value);
+    });
 
     // Search filters both the calendar events and the table rows.
     searchInput.addEventListener('input', function () {
