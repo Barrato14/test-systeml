@@ -184,6 +184,19 @@ foreach ($allEvents as $evt) {
     }
 }
 
+// Ignore stale registration rows whose event has been deleted.
+// Keep registrations for existing past events; they remain part of registration history.
+$registrations = array_values(array_filter($registrations, function ($registration) use ($eventsMap) {
+    $eventId = (string)($registration['event_id'] ?? '');
+    return $eventId !== '' && isset($eventsMap[$eventId]);
+}));
+
+// Attendance for deleted events must not affect dashboard statistics or recent activity.
+$participantAttendance = array_filter($participantAttendance, function ($attendance) use ($eventsMap) {
+    $eventId = (string)($attendance['event_id'] ?? '');
+    return $eventId !== '' && isset($eventsMap[$eventId]);
+});
+
 // Extract registered event IDs.
 $registeredEventIds = [];
 foreach ($registrations as $reg) {
