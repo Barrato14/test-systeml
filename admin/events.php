@@ -653,19 +653,32 @@ $calendarJson = json_encode(
             flex: 0 1 auto;
         }
         #eventDetailsModal .event-description {
-            height: auto;
-            min-height: 0;
-            padding: 16px;
-            margin-bottom: 16px;
+            display: block !important;
+            position: static !important;
+            box-sizing: border-box;
+            width: 100%;
+            height: auto !important;
+            min-height: 0 !important;
+            padding: 16px !important;
+            margin: 0 0 16px !important;
             background: #f8fafc;
             border: 1px solid #edf0f5;
             border-radius: 10px;
-            white-space: pre-wrap;
+            white-space: normal;
             overflow-wrap: anywhere;
         }
+        #eventDetailsModal .event-description h6 {
+            display: block;
+            margin: 0 0 12px !important;
+            padding: 0;
+            line-height: 1.3;
+        }
         #eventDetailsModal .event-description p {
-            margin: 0;
+            display: block;
+            margin: 0 !important;
+            padding: 0;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
         #eventDetailsModal .modal-footer { flex: 0 0 auto; }
         .event-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
