@@ -147,10 +147,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($id !== '') {
+                $beforeResponse = equipmentRequest('equipment_items?id=eq.' . rawurlencode($id) . '&select=*', 'GET');
+                $beforeItem = $beforeResponse['data'][0] ?? [];
                 equipmentRequest('equipment_items?id=eq.' . rawurlencode($id), 'PATCH', $payload);
+                logAudit($_SESSION['user_id'], 'equipment_updated', 'Equipment #' . $id . ' updated. Previous: ' . json_encode($beforeItem) . ' | New: ' . json_encode($payload));
                 $successMsg = 'Equipment updated successfully.';
             } else {
-                equipmentRequest('equipment_items', 'POST', $payload);
+                $createdResponse = equipmentRequest('equipment_items', 'POST', $payload);
+                $createdItem = $createdResponse['data'][0] ?? [];
+                logAudit($_SESSION['user_id'], 'equipment_added', 'New equipment added: ' . ($createdItem['name'] ?? $name) . ' | Record: ' . json_encode($createdItem ?: $payload));
                 $successMsg = 'Equipment added successfully.';
             }
         } elseif ($action === 'delete_equipment') {
@@ -171,7 +176,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('This equipment has an active approved borrowing. Mark it returned before deleting it.');
             }
 
+            $itemBeforeResponse = equipmentRequest('equipment_items?id=eq.' . rawurlencode($id) . '&select=*', 'GET');
+            $itemBefore = $itemBeforeResponse['data'][0] ?? [];
             equipmentRequest('equipment_items?id=eq.' . rawurlencode($id), 'DELETE');
+            logAudit($_SESSION['user_id'], 'equipment_deleted', 'Equipment deleted: ' . ($itemBefore['name'] ?? $id) . ' | Previous record: ' . json_encode($itemBefore));
             $successMsg = 'Equipment deleted successfully.';
         } elseif ($action === 'update_condition') {
             $id = trim($_POST['equipment_id'] ?? '');
@@ -180,9 +188,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Invalid equipment condition update.');
             }
 
+            $conditionBeforeResponse = equipmentRequest('equipment_items?id=eq.' . rawurlencode($id) . '&select=id,name,condition_status', 'GET');
+            $conditionBefore = $conditionBeforeResponse['data'][0] ?? [];
             equipmentRequest('equipment_items?id=eq.' . rawurlencode($id), 'PATCH', [
                 'condition_status' => $condition
             ]);
+            logAudit($_SESSION['user_id'], 'equipment_condition_changed', 'Equipment ' . ($conditionBefore['name'] ?? $id) . ' condition changed from ' . ($conditionBefore['condition_status'] ?? 'Unknown') . ' to ' . $condition . '.');
             $successMsg = 'Equipment condition updated.';
         } elseif ($action === 'review_request') {
             if (!in_array($currentRole, ['administrator', 'staff', 'event organizer'], true)) {
@@ -262,6 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             equipmentRequest('equipment_borrow_requests?id=eq.' . rawurlencode($requestId), 'PATCH', $reviewPayload);
+            logAudit($_SESSION['user_id'], 'borrowing_request_' . strtolower($decision), 'Borrowing request #' . $requestId . ' ' . strtolower($decision) . '. Participant: ' . ($borrowRequest['participant_id'] ?? 'Unknown') . '; equipment: ' . ($borrowRequest['equipment_id'] ?? 'Unknown') . '; quantity: ' . (int)($borrowRequest['quantity'] ?? 0) . '; previous status: Pending; new status: ' . $decision . '.');
 
             // Send a participant notification without undoing a successful approval if notification fails.
             try {
@@ -306,6 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'status' => 'Returned',
                 'returned_at' => date('c')
             ]);
+            logAudit($_SESSION['user_id'], 'borrowing_marked_returned', 'Borrowing request #' . $requestId . ' marked Returned. Participant: ' . ($check['data'][0]['participant_id'] ?? 'Unknown') . '; equipment: ' . ($check['data'][0]['equipment_id'] ?? 'Unknown') . '; previous status: Approved; new status: Returned.');
 
             // Notify the participant that staff has physically received the item.
             try {
