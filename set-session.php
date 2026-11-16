@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $accessToken = trim($_POST['access_token'] ?? '');
+$authSource = (($_POST['auth_source'] ?? 'login') === 'register') ? 'register' : 'login';
 if ($accessToken === '') {
     socialLoginFailure('The identity provider did not return an access token. Please try again.');
 }
@@ -109,9 +110,15 @@ if (!$profileExists) {
     }
 }
 
-if (!$profileExists) {
-    // Keep first-time Google identities pending until their Zentrix profile is
-    // completed. They must not receive an authenticated app session yet.
+if (!$profileExists && $authSource === 'login') {
+    // Google sign-in from Login must never silently register a new account.
+    $_SESSION['social_login_error'] = 'This Google account is not registered with Zentrix yet. Please create an account first.';
+    header('Location: login.php');
+    exit;
+}
+
+if (!$profileExists && $authSource === 'register') {
+    // First-time Google registration starts only from the Create Account page.
     session_regenerate_id(true);
     $_SESSION['pending_google_user_id'] = $authUserId;
     $_SESSION['pending_google_email'] = $email;
