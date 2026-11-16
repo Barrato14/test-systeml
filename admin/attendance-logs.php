@@ -16,7 +16,7 @@ if (
 }
 
 // Fetch events visible to the current role.
-$eventsQuery = 'events?select=id,title&order=start_datetime.desc';
+$eventsQuery = 'events?select=id,title,end_datetime&order=start_datetime.desc';
 if ($currentRole === 'event organizer') {
     $eventsQuery = 'events?select=id,title&organizer_id=eq.'
         . rawurlencode((string)$_SESSION['user_id'])
@@ -24,12 +24,14 @@ if ($currentRole === 'event organizer') {
 }
 $eventsRes = supabaseRequest($eventsQuery, 'GET');
 $eventsMap = [];
+$eventEndMap = [];
 $eventOptions = [];
 if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
     foreach ($eventsRes['data'] as $event) {
         $eventId = (string)($event['id'] ?? '');
         if ($eventId === '') continue;
         $eventsMap[$eventId] = (string)($event['title'] ?? 'Untitled Event');
+        $eventEndMap[$eventId] = $event['end_datetime'] ?? null;
         $eventOptions[$eventId] = (string)($event['title'] ?? 'Untitled Event');
     }
 }
@@ -138,7 +140,13 @@ if ($dailyLogsQuery !== null) {
         $today = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
         foreach ($dailyRes['data'] as $dailyRow) {
             $dailyRow['_attendance_source'] = 'daily';
-            if (empty($dailyRow['time_out']) && !empty($dailyRow['attendance_date']) && $dailyRow['attendance_date'] < $today) {
+            $eventEnded = false;
+            $eventEndValue = $eventEndMap[(string)($dailyRow['event_id'] ?? '')] ?? null;
+            if ($eventEndValue) {
+                try { $eventEnded = (new DateTimeImmutable($eventEndValue))->setTimezone(new DateTimeZone('Asia/Manila')) <= new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')); }
+                catch (Throwable $e) {}
+            }
+            if (empty($dailyRow['time_out']) && !empty($dailyRow['attendance_date']) && ($dailyRow['attendance_date'] < $today || ($dailyRow['attendance_date'] === $today && $eventEnded))) {
                 $dailyRow['_display_status'] = 'Missing Time Out';
             } else {
                 $dailyRow['_display_status'] = $dailyRow['status'] ?? 'Present';
