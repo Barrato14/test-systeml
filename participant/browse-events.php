@@ -310,20 +310,20 @@ if (venueMap) venueMap.remove();
             const googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(point);
             externalLink.href = googleMapsUrl;
             externalLink.onclick = function (event) {
-                event.preventDefault();
                 const isAndroid = /Android/i.test(navigator.userAgent);
-                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                 if (isAndroid) {
-                    const intentUrl = 'intent://maps.google.com/maps?query=' + encodeURIComponent(point) +
-                        '#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=' +
-                        encodeURIComponent(googleMapsUrl) + ';end';
-                    window.location.href = intentUrl;
-                } else if (isIOS) {
+                    // Let Android handle the geo: URI as an external app link.
+                    externalLink.href = 'geo:0,0?q=' + encodeURIComponent(point);
+                    return;
+                }
+                event.preventDefault();
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isIOS) {
                     window.location.href = googleMapsUrl;
                 } else {
                     window.open(googleMapsUrl, '_blank', 'noopener');
                 }
-            };
+            };;
             requestAnimationFrame(function () {
                 if (venueMap) venueMap.invalidateSize(true);
             });
