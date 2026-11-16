@@ -405,10 +405,10 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
             min-width:0;
             padding:0;
         }
-        @media(max-width:1100px) {
+        @media(max-width:800px) {
             .equipment-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         }
-        @media(max-width:600px) {
+        @media(max-width:520px) {
             .equipment-card-grid { grid-template-columns:minmax(0,1fr); }
         }
         .equipment-item-card { display:flex; flex-direction:column; min-width:0; height:100%; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
