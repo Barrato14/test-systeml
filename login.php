@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="email">Email Address</label>
                         <div class="input-wrapper">
                             <i class="ph ph-envelope-simple input-icon"></i>
-                            <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
+                            <input type="email" id="email" name="email" placeholder="Enter your email address" required autocomplete="email">
                         </div>
                         <span class="error-text" id="emailError">Please enter a valid email address.</span>
                     </div>
