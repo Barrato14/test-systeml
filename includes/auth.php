@@ -24,15 +24,27 @@ function requireRole($allowedRoles) {
 
 // Updated to use Supabase REST API instead of PDO
 function logAudit($profileId, $action, $details) {
-    // Make sure supabaseRequest is available
-    if (function_exists('supabaseRequest')) {
-        supabaseRequest('audit_logs', 'POST', [
-            'profile_id' => $profileId,
-            'action' => $action,
-            'details' => $details,
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
-        ]);
+    $payload = [
+        'profile_id' => $profileId,
+        'action' => $action,
+        'details' => $details,
+        'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+    ];
+
+    if (function_exists('supabaseServiceRequest')) {
+        $response = supabaseServiceRequest('audit_logs', 'POST', $payload);
+    } elseif (function_exists('supabaseRequest')) {
+        $response = supabaseRequest('audit_logs', 'POST', $payload);
+    } else {
+        error_log('Zentrix audit log could not be written: Supabase request helper unavailable.');
+        return false;
     }
+
+    if (!is_array($response) || ($response['code'] ?? 500) < 200 || ($response['code'] ?? 500) >= 300) {
+        error_log('Zentrix audit log write failed: ' . json_encode($response['data'] ?? []));
+        return false;
+    }
+    return true;
 }
 
 function redirectByRole($role) {
