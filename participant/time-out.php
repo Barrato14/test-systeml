@@ -88,6 +88,8 @@ if (empty($faceProfileCheck['data'])) {
         .scanner-container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
+        @media (max-width: 600px) { .scanner-container { margin: 18px auto; padding: 18px; } #videoElement { max-height: 58vh; object-fit: cover; } }
+        @media (max-width: 360px) { .scanner-container { margin: 12px auto; padding: 13px; } .scanner-container h3 { font-size: 1.15rem; } .scanner-container .alert { overflow-wrap: anywhere; } }
     </style>
 <link rel="stylesheet" href="../css/style.css">
 </head>
