@@ -449,7 +449,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <li class="nav-item"><a class="nav-link <?= $activeTab === 'requests' ? 'active' : '' ?>" href="equipment.php?tab=requests"><i class="bi bi-inbox me-1"></i> Requests <?php if ($pendingCount): ?><span class="badge bg-warning text-dark"><?= $pendingCount ?></span><?php endif; ?></a></li>
                     <li class="nav-item"><a class="nav-link <?= $activeTab === 'history' ? 'active' : '' ?>" href="equipment.php?tab=history"><i class="bi bi-clock-history me-1"></i> History</a></li>
                 </ul>
-                <?php if ($activeTab === 'inventory' && $currentRole !== 'staff'): ?>
+                <?php if ($activeTab === 'inventory'): ?>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#equipmentModal" onclick="prepareAddEquipment()"><i class="bi bi-plus-lg me-1"></i> Add Equipment</button>
                 <?php endif; ?>
             </div>
@@ -512,7 +512,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                 <td><?= h($request['purpose'] ?? '—') ?></td>
                                 <td><span class="badge bg-warning text-dark">Pending</span></td>
                                 <td class="text-nowrap">
-                                    <?php if (in_array($currentRole, ['administrator', 'event organizer'], true)): ?>
+                                    <?php if (in_array($currentRole, ['administrator', 'staff', 'event organizer'], true)): ?>
                                     <button type="button" class="btn btn-sm btn-success approve-request-button"
                                             data-request-id="<?= h($request['id'] ?? '') ?>"
                                             data-participant-id="<?= h($request['participant_id'] ?? '') ?>"
