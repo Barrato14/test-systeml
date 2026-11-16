@@ -98,6 +98,7 @@ foreach ($allEvents as $event) {
     <meta name="theme-color" content="#0d0916">
     <title>Browse Events - Zentrix</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="participant-page browse-events-page">
@@ -190,7 +191,8 @@ foreach ($allEvents as $event) {
                                     <button type="button" class="browse-event-map-button" data-browse-event-map
                                         data-map-lat="<?= htmlspecialchars((string)$eventLatitude, ENT_QUOTES, 'UTF-8') ?>"
                                         data-map-lng="<?= htmlspecialchars((string)$eventLongitude, ENT_QUOTES, 'UTF-8') ?>"
-                                        data-map-title="<?= htmlspecialchars($eventTitle, ENT_QUOTES, 'UTF-8') ?>">
+                                        data-map-title="<?= htmlspecialchars($eventTitle, ENT_QUOTES, 'UTF-8') ?>"
+                                        data-map-boundary="<?= htmlspecialchars(json_encode($event['venue_boundary'] ?? null), ENT_QUOTES, 'UTF-8') ?>">
                                         <i class="bi bi-map"></i> View map
                                     </button>
                                 <?php endif; ?>
@@ -219,7 +221,8 @@ foreach ($allEvents as $event) {
             <button type="button" class="browse-map-close" data-close-browse-map aria-label="Close map"><i class="bi bi-x-lg"></i></button>
         </header>
         <div class="browse-map-body">
-            <iframe id="browseEventMapFrame" title="Event location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div id="browseEventMapFrame" class="participant-venue-map" role="img" aria-label="Event venue boundary map"></div>
+            <div class="participant-map-legend"><span><i class="legend-venue"></i> Marked venue</span><span><i class="legend-buffer"></i> Allowed area (50m outside)</span><span><i class="legend-pin"></i> Event pin</span></div>
             <div class="browse-map-actions">
                 <span id="browseEventMapCoordinates"></span>
                 <a id="browseEventGoogleMaps" href="#" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
@@ -240,16 +243,23 @@ foreach ($allEvents as $event) {
 .browse-map-header h2 { margin:5px 0 0; color:#f7f0ff; font-size:19px; font-weight:750; }
 .browse-map-close { width:34px; height:34px; border:1px solid #59436d; border-radius:9px; background:#261b32; color:#e8d8f8; cursor:pointer; }
 .browse-map-body { padding:18px; }
-.browse-map-body iframe { display:block; width:100%; height:min(55vh,430px); min-height:260px; border:0; border-radius:11px; background:#eee; }
+.participant-venue-map { display:block; width:100%; height:min(55vh,430px); min-height:260px; border:0; border-radius:11px; background:#21172e; z-index:1; }
+.participant-map-legend { display:flex; flex-wrap:wrap; gap:14px; padding-top:12px; color:#cbbbdc; font-size:11px; }
+.participant-map-legend span { display:inline-flex; align-items:center; gap:6px; }
+.participant-map-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; }
+.legend-venue { background:#4ade80; } .legend-buffer { background:#a78bfa; } .legend-pin { background:#ef4444; }
 .browse-map-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:14px; color:#bbaecb; font-size:11px; }
 .browse-map-actions a { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid #76519a; border-radius:8px; color:#dfc5ff; text-decoration:none; font-weight:700; }
 .browse-map-actions a:hover { background:#30203f; color:#fff; }
-@media(max-width:600px) { .browse-map-overlay { padding:10px; } .browse-map-body { padding:12px; } .browse-map-body iframe { min-height:230px; } }
+@media(max-width:600px) { .browse-map-overlay { padding:10px; } .browse-map-body { padding:12px; } .participant-venue-map { min-height:230px; } }
 </style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script>
 (function () {
     const overlay = document.getElementById('browseEventMapOverlay');
-    const frame = document.getElementById('browseEventMapFrame');
+    const mapElement = document.getElementById('browseEventMapFrame');
+    let venueMap = null;
     const title = document.getElementById('browseEventMapTitle');
     const coordinates = document.getElementById('browseEventMapCoordinates');
     const externalLink = document.getElementById('browseEventGoogleMaps');
@@ -257,7 +267,8 @@ foreach ($allEvents as $event) {
     function closeMap() {
         overlay.classList.remove('is-open');
         overlay.setAttribute('aria-hidden', 'true');
-        frame.removeAttribute('src');
+        if (venueMap) { venueMap.remove(); venueMap = null; }
+        mapElement.innerHTML = '';
     }
 
     document.querySelectorAll('[data-browse-event-map]').forEach(function (button) {
@@ -268,7 +279,24 @@ foreach ($allEvents as $event) {
             const point = lat + ',' + lng;
             title.textContent = button.dataset.mapTitle || 'Event location';
             coordinates.textContent = 'Coordinates: ' + point;
-            frame.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(point) + '&z=16&output=embed';
+if (venueMap) venueMap.remove();
+            mapElement.innerHTML = '';
+            venueMap = L.map(mapElement).setView([lat, lng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' }).addTo(venueMap);
+            L.marker([lat, lng]).addTo(venueMap).bindPopup('Event location');
+            let boundary = null;
+            try { boundary = JSON.parse(button.dataset.mapBoundary || 'null'); } catch (error) {}
+            if (Array.isArray(boundary) && boundary.length >= 3) {
+                const ring = boundary.map(p => [Number(p[1]), Number(p[0])]);
+                if (ring.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
+                    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+                    const feature = turf.polygon([ring]);
+                    const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
+                    L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                    L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
+                    venueMap.fitBounds(L.geoJSON(allowedArea).getBounds(), { padding: [20, 20] });
+                }
+            }
             externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
             overlay.classList.add('is-open');
             overlay.setAttribute('aria-hidden', 'false');
