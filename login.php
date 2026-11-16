@@ -74,8 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/pwa-icons/zentrix-icon.svg">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0B1020">
+    <meta name="theme-color" content="#241438">
 </head>
 <body>
     <main class="auth-layout">
