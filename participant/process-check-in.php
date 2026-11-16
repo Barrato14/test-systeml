@@ -115,7 +115,7 @@ $payload = [
 ];
 
 if ($dailyMode) $payload['attendance_date'] = $attendanceDate;
-$response = supabaseRequest($dailyMode ? 'daily_attendance' : 'attendance', 'POST', $payload);
+$response = $dailyMode ? supabaseServiceRequest('daily_attendance', 'POST', $payload) : supabaseRequest('attendance', 'POST', $payload);
 
 if (($response['code'] ?? 500) >= 400) {
     respond(false, 'Failed to save check-in. Please try again.');
