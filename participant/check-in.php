@@ -92,7 +92,7 @@ $faceRegistrationRequired = empty($faceProfileCheck['data']);
     <?php else: ?>
         <div class="scanner-container">
         <h3 class="mb-3 text-center text-primary"><i class="bi bi-camera-fill me-2"></i>Face & GPS Check-In</h3>
-        <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera. You must be inside the marked venue or within 100 meters outside its boundary, with GPS accuracy of 50 meters or better.</p>
+        <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera. You must be inside the marked venue or within 50 meters outside its boundary, with GPS accuracy of 50 meters or better.</p>
 
         <!-- Status Alert Area -->
         <div id="statusAlert" class="alert alert-info text-center" role="alert">
