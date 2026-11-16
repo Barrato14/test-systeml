@@ -64,6 +64,8 @@ foreach ($registrations as $reg) {
         'title' => $eventData['title'] ?? 'Unknown Event',
         'start_datetime' => $eventData['start_datetime'] ?? '',
         'venue' => $eventData['venue'] ?? 'N/A',
+        'latitude' => $eventData['latitude'] ?? null,
+        'longitude' => $eventData['longitude'] ?? null,
         'registration_status' => $reg['status'] ?? 'Approved',
         'registered_at' => $reg['registered_at'] ?? date('Y-m-d')
     ];
@@ -101,7 +103,17 @@ usort($myEvents, function($a, $b) {
   ?>
    <article class="my-event-card">
     <div class="my-event-icon"><i class="bi bi-calendar-event"></i></div>
-    <div class="my-event-info"><h2><?= htmlspecialchars($event['title']) ?></h2><p><i class="bi bi-clock"></i><?= $event['start_datetime']?date('M d, Y · h:i A',strtotime($event['start_datetime'])):'Date unavailable' ?></p><p><i class="bi bi-geo-alt"></i><?= htmlspecialchars($event['venue']) ?></p><small>Registered <?= $event['registered_at']?date('M d, Y',strtotime($event['registered_at'])):'date unavailable' ?></small></div>
+    <div class="my-event-info"><h2><?= htmlspecialchars($event['title']) ?></h2><p><i class="bi bi-clock"></i><?= $event['start_datetime']?date('M d, Y · h:i A',strtotime($event['start_datetime'])):'Date unavailable' ?></p><p class="my-event-venue"><i class="bi bi-geo-alt"></i><?= htmlspecialchars($event['venue']) ?>
+     <?php if (is_numeric($event['latitude']) && is_numeric($event['longitude']) && (float)$event['latitude'] >= -90 && (float)$event['latitude'] <= 90 && (float)$event['longitude'] >= -180 && (float)$event['longitude'] <= 180): ?>
+      <button type="button" class="my-event-map-link" data-my-event-map
+       data-map-lat="<?= htmlspecialchars((string)$event['latitude'], ENT_QUOTES, 'UTF-8') ?>"
+       data-map-lng="<?= htmlspecialchars((string)$event['longitude'], ENT_QUOTES, 'UTF-8') ?>"
+       data-map-title="<?= htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8') ?>"
+       aria-label="View location for <?= htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8') ?>">
+       <i class="bi bi-map"></i> View map
+      </button>
+     <?php endif; ?>
+    </p><small>Registered <?= $event['registered_at']?date('M d, Y',strtotime($event['registered_at'])):'date unavailable' ?></small></div>
     <div class="my-event-actions">
      <span class="my-event-status my-event-status-<?= $statusClass ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
      <?php
@@ -125,5 +137,82 @@ usort($myEvents, function($a, $b) {
   </section>
  <?php endif; ?>
 </main>
+<div class="my-event-map-overlay" id="myEventMapOverlay" aria-hidden="true">
+ <section class="my-event-map-dialog" role="dialog" aria-modal="true" aria-labelledby="myEventMapTitle">
+  <header class="my-event-map-header">
+   <div><span>EVENT LOCATION</span><h2 id="myEventMapTitle">Event location</h2></div>
+   <button type="button" class="my-event-map-close" data-close-event-map aria-label="Close map"><i class="bi bi-x-lg"></i></button>
+  </header>
+  <div class="my-event-map-body">
+   <iframe id="myEventMapFrame" title="Event location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+   <div class="my-event-map-actions">
+    <span id="myEventMapCoordinates"></span>
+    <a id="myEventGoogleMaps" href="#" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
+   </div>
+  </div>
+ </section>
+</div>
+<script>
+(function () {
+ const overlay = document.getElementById('myEventMapOverlay');
+ const frame = document.getElementById('myEventMapFrame');
+ const title = document.getElementById('myEventMapTitle');
+ const coordinates = document.getElementById('myEventMapCoordinates');
+ const externalLink = document.getElementById('myEventGoogleMaps');
+
+ function closeMap() {
+  overlay.classList.remove('is-open');
+  overlay.setAttribute('aria-hidden', 'true');
+  frame.removeAttribute('src');
+ }
+
+ document.querySelectorAll('[data-my-event-map]').forEach(function (button) {
+  button.addEventListener('click', function () {
+   const lat = Number(button.dataset.mapLat);
+   const lng = Number(button.dataset.mapLng);
+   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+   const point = lat + ',' + lng;
+   title.textContent = button.dataset.mapTitle || 'Event location';
+   coordinates.textContent = 'Coordinates: ' + point;
+   frame.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(point) + '&z=16&output=embed';
+   externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
+   overlay.classList.add('is-open');
+   overlay.setAttribute('aria-hidden', 'false');
+  });
+ });
+
+ overlay.querySelectorAll('[data-close-event-map]').forEach(function (button) {
+  button.addEventListener('click', closeMap);
+ });
+ overlay.addEventListener('click', function (event) {
+  if (event.target === overlay) closeMap();
+ });
+ document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape' && overlay.classList.contains('is-open')) closeMap();
+ });
+})();
+</script>
+<style>
+.my-event-venue { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.my-event-map-link { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border:1px solid #72509a; border-radius:7px; background:#251a32; color:#d9b9ff; font-size:11px; font-weight:700; cursor:pointer; }
+.my-event-map-link:hover { background:#39244d; color:#fff; }
+.my-event-map-overlay { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(8,5,14,.78); backdrop-filter:blur(5px); }
+.my-event-map-overlay.is-open { display:flex; }
+.my-event-map-dialog { width:min(100%,760px); overflow:hidden; border:1px solid #49345f; border-radius:17px; background:#171222; box-shadow:0 24px 80px rgba(0,0,0,.45); }
+.my-event-map-header { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:18px 21px; border-bottom:1px solid #382846; }
+.my-event-map-header span { color:#c4a5fd; font-size:9px; font-weight:800; letter-spacing:.16em; }
+.my-event-map-header h2 { margin:5px 0 0; color:#f7f0ff; font-size:19px; font-weight:750; }
+.my-event-map-close { width:34px; height:34px; border:1px solid #59436d; border-radius:9px; background:#261b32; color:#e8d8f8; cursor:pointer; }
+.my-event-map-body { padding:18px; }
+.my-event-map-body iframe { display:block; width:100%; height:min(55vh,430px); min-height:260px; border:0; border-radius:11px; background:#eee; }
+.my-event-map-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding-top:14px; color:#bbaecb; font-size:11px; }
+.my-event-map-actions a { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid #76519a; border-radius:8px; color:#dfc5ff; text-decoration:none; font-weight:700; }
+.my-event-map-actions a:hover { background:#30203f; color:#fff; }
+@media(max-width:600px) { .my-event-map-overlay { padding:10px; } .my-event-map-body { padding:12px; } .my-event-map-body iframe { min-height:230px; } }
+body:not(.dark-mode) .my-event-map-dialog { border-color:#e5ddec; background:#fff; }
+body:not(.dark-mode) .my-event-map-header { border-color:#eee7f3; }
+body:not(.dark-mode) .my-event-map-header h2 { color:#30243b; }
+body:not(.dark-mode) .my-event-map-close { background:#f7f2fb; color:#49345f; }
+</style>
 </body>
 </html>
