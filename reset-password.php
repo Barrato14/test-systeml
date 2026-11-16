@@ -1,11 +1,14 @@
-<?php
+// This page validates the emailed reset token and lets the account owner set a new password.
+// It updates the stored password hash and clears the token so the link cannot be reused.
 require_once 'config/database.php';
 
+// Read the token from the email link (GET) or the submitted password form (POST).
 $token = trim($_GET['token'] ?? $_POST['token'] ?? '');
 $tokenHash = $token !== '' ? hash('sha256', $token) : '';
 $error = '';
 $success = false;
 
+// Find a matching token hash that has not expired. Invalid tokens return null.
 function findValidResetToken($tokenHash) {
     if ($tokenHash === '') {
         return null;
@@ -22,8 +25,10 @@ function findValidResetToken($tokenHash) {
     return (($result['code'] ?? 500) < 300 && is_array($rows) && !empty($rows[0])) ? $rows[0] : null;
 }
 
+// Check the token before displaying the new-password form.
 $profile = findValidResetToken($tokenHash);
 
+// Validate the new password only after the user submits the reset form.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -35,8 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirmPassword) {
         $error = 'The passwords do not match.';
     } else {
+        // Hash the new password securely; never store the plain-text password.
         $now = gmdate('Y-m-d\TH:i:s\Z');
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        // Update only the profile that still has this valid token, then clear token fields.
         $updated = supabaseServiceRequest(
             'profiles?password_reset_token_hash=eq.' . rawurlencode($tokenHash)
             . '&password_reset_expires_at=gt.' . rawurlencode($now),
@@ -60,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+<!-- The page displays either the reset form, an error, or a success message. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
