@@ -36,9 +36,7 @@ $faceProfileCheck = supabaseServiceRequest(
 if (($faceProfileCheck['code'] ?? 500) >= 400) {
     die("Face verification is temporarily unavailable. Please contact the administrator.");
 }
-if (empty($faceProfileCheck['data'])) {
-    die('Please <a href="face-registration.php">register your face</a> before checking in.');
-}
+$faceRegistrationRequired = empty($faceProfileCheck['data']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,6 +48,24 @@ if (empty($faceProfileCheck['data'])) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         body { background-color: #f8f9fa; }
+        .checkin-main { padding-top: 54px; padding-bottom: 70px; }
+        .checkin-prerequisite-card { width: min(100%, 620px); margin: 0 auto; padding: 38px; border: 1px solid #49345f; border-radius: 20px; background: #171222; box-shadow: 0 18px 50px rgba(0,0,0,.2); text-align: center; }
+        .checkin-prerequisite-icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto 20px; border: 1px solid #694b8b; border-radius: 20px; background: #2a1b3c; color: #d5b8fa; font-size: 30px; }
+        .checkin-eyebrow { display: block; margin-bottom: 10px; color: #c4a5fd; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+        .checkin-prerequisite-card h1 { margin: 0 0 12px; color: #f7f0ff; font-size: clamp(24px,4vw,30px); font-weight: 800; letter-spacing: -.035em; }
+        .checkin-prerequisite-message { max-width: 470px; margin: 0 auto 22px; color: #b9adc9; font-size: 13px; line-height: 1.8; }
+        .checkin-prerequisite-note { display: flex; align-items: flex-start; gap: 11px; margin: 0 0 22px; padding: 14px; border: 1px solid #3e304f; border-radius: 12px; background: #21182d; color: #c9bdd7; font-size: 11px; line-height: 1.65; text-align: left; }
+        .checkin-prerequisite-note i { flex: 0 0 auto; color: #c4a5fd; font-size: 17px; }
+        .checkin-register-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; padding: 12px 18px; border: 1px solid #8b5bc0; border-radius: 10px; background: #6d3c98; color: #fff!important; font-size: 13px; font-weight: 750; text-decoration: none; transition: background .18s ease,border-color .18s ease; }
+        .checkin-register-button:hover { border-color: #b58be0; background: #7b49a8; }
+        .checkin-back-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; color: #c8b3df!important; font-size: 11px; font-weight: 650; text-decoration: none; }
+        .checkin-back-link:hover { color: #fff!important; }
+        @media(max-width:600px) { .checkin-main { padding-top: 28px; padding-bottom: 45px; } .checkin-prerequisite-card { padding: 27px 20px; border-radius: 16px; } }
+        html[data-participant-theme="light"] .checkin-prerequisite-card { border-color: #e3d9ec; background: #fff; box-shadow: 0 12px 35px rgba(40,20,60,.07); }
+        html[data-participant-theme="light"] .checkin-prerequisite-card h1 { color: #30243b; }
+        html[data-participant-theme="light"] .checkin-prerequisite-message { color: #71677d; }
+        html[data-participant-theme="light"] .checkin-prerequisite-note { border-color: #e9e0ef; background: #faf7fd; color: #665a70; }
+        html[data-participant-theme="light"] .checkin-back-link { color: #704795!important; }
         .scanner-container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         #videoElement { width: 100%; border-radius: 8px; background: #000; }
         #canvas { display: none; }
@@ -62,8 +78,19 @@ if (empty($faceProfileCheck['data'])) {
 <?php include '../includes/participant-nav.php'; ?>
 
 
-<div class="container">
-    <div class="scanner-container">
+<main class="container checkin-main">
+    <?php if ($faceRegistrationRequired): ?>
+        <section class="checkin-prerequisite-card" role="status">
+            <div class="checkin-prerequisite-icon"><i class="bi bi-person-bounding-box"></i></div>
+            <span class="checkin-eyebrow">CHECK-IN REQUIREMENT</span>
+            <h1>Face registration required</h1>
+            <p class="checkin-prerequisite-message">Before you can check in to this event, you need to register your face. This allows Zentrix to verify your identity during attendance.</p>
+            <div class="checkin-prerequisite-note"><i class="bi bi-shield-check"></i><span>Your face registration is linked to your participant account and is used for attendance verification.</span></div>
+            <a class="checkin-register-button" href="face-registration.php"><i class="bi bi-camera-fill"></i> Register My Face <i class="bi bi-arrow-right"></i></a>
+            <a class="checkin-back-link" href="my-events.php"><i class="bi bi-arrow-left"></i> Back to My Events</a>
+        </section>
+    <?php else: ?>
+        <div class="scanner-container">
         <h3 class="mb-3 text-center text-primary"><i class="bi bi-camera-fill me-2"></i>Face & GPS Check-In</h3>
         <p class="text-muted text-center small mb-4">Position your face clearly in front of the camera. Make sure your location permission is allowed.</p>
 
@@ -93,9 +120,11 @@ if (empty($faceProfileCheck['data'])) {
         <div class="text-center mt-3">
             
         </div>
-    </div>
-</div>
+        </div>
+    <?php endif; ?>
+</main>
 
+<?php if (!$faceRegistrationRequired): ?>
 <script>
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
@@ -203,5 +232,6 @@ window.addEventListener('beforeunload', () => {
 
 startCamera();
 </script>
+<?php endif; ?>
 </body>
 </html>
