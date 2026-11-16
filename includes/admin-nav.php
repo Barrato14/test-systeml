@@ -23,7 +23,8 @@ if ($adminRole === 'event organizer') {
         ['events.php', 'Event Management', 'bi-calendar-event'],
         ['equipment.php', 'Equipment & Services', 'bi-tools'],
         ['users.php', 'User Management', 'bi-people'],
-        ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box']
+        ['attendance-logs.php', 'Attendance Logs', 'bi-person-bounding-box'],
+        ['audit-logs.php', 'Audit Log', 'bi-shield-exclamation']
     ];
     $adminHomePage = 'dashboard.php';
     $adminWorkspaceLabel = 'Admin Command Center';
