@@ -209,10 +209,6 @@ usort($myEvents, function($a, $b) {
 .my-event-map-actions a { display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid #76519a; border-radius:8px; color:#dfc5ff; text-decoration:none; font-weight:700; }
 .my-event-map-actions a:hover { background:#30203f; color:#fff; }
 @media(max-width:600px) { .my-event-map-overlay { padding:10px; } .my-event-map-body { padding:12px; } .my-event-map-body iframe { min-height:230px; } }
-body:not(.dark-mode) .my-event-map-dialog { border-color:#e5ddec; background:#fff; }
-body:not(.dark-mode) .my-event-map-header { border-color:#eee7f3; }
-body:not(.dark-mode) .my-event-map-header h2 { color:#30243b; }
-body:not(.dark-mode) .my-event-map-close { background:#f7f2fb; color:#49345f; }
 </style>
 </body>
 </html>
