@@ -277,7 +277,7 @@ function usersDeleteAttendancePhoto($photoUrl, $targetId)
     }
 }
 
-function usersPermanentlyDeleteAccount($targetId)
+function usersPermanentlyDeleteAccount($targetId, $targetUser)
 {
     // Collect photo URLs before deleting attendance rows.
     $attendanceRows = usersApiRequest(
@@ -296,12 +296,36 @@ function usersPermanentlyDeleteAccount($targetId)
     usersApiRequest('notifications?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
     usersApiRequest('event_reminder_logs?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
 
-    // Retain audit events, but remove identifying details from the deleted user's own history.
-    usersApiRequest(
-        'audit_logs?profile_id=eq.' . rawurlencode($targetId),
-        'PATCH',
-        ['details' => 'Account activity retained; the associated user identity has been anonymized.']
-    );
+    // Retain audit history while scrubbing the deleted user's name/email from details
+    // written by other administrators as well as records attributed to this user.
+    $auditRows = usersApiRequest('audit_logs?select=id,profile_id,details&limit=10000');
+    $identityTerms = array_values(array_filter([
+        trim(($targetUser['first_name'] ?? '') . ' ' . ($targetUser['last_name'] ?? '')),
+        trim((string)($targetUser['email'] ?? ''))
+    ], function ($value) {
+        return $value !== '';
+    }));
+
+    foreach ($auditRows as $auditRow) {
+        $details = (string)($auditRow['details'] ?? '');
+        $scrubbedDetails = $details;
+
+        foreach ($identityTerms as $identityTerm) {
+            $scrubbedDetails = str_ireplace($identityTerm, '[deleted user]', $scrubbedDetails);
+        }
+
+        if ((string)($auditRow['profile_id'] ?? '') === $targetId) {
+            $scrubbedDetails = 'Account activity retained; the associated user identity has been anonymized.';
+        }
+
+        if ($scrubbedDetails !== $details) {
+            usersApiRequest(
+                'audit_logs?id=eq.' . rawurlencode((string)$auditRow['id']),
+                'PATCH',
+                ['details' => $scrubbedDetails]
+            );
+        }
+    }
 
     // Auth is deleted before the profile. If a later step fails, this action can be safely retried:
     // an already-missing Auth user is treated as success.
@@ -413,11 +437,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('Permanent deletion was not confirmed.');
             }
 
-            usersPermanentlyDeleteAccount($targetId);
+            usersPermanentlyDeleteAccount($targetId, $targetUser);
 
             usersWriteAudit(
                 'User account permanently deleted',
-                'Permanently deleted a user account and removed its associated personal records. Shared events and equipment content were preserved.'
+                'Permanently deleted a ' . strtolower((string)$oldRole) . ' account and removed its personal records. Shared events and equipment content were preserved.'
             );
 
             $successMsg = 'User account permanently deleted. Personal records were removed; shared events and equipment content were preserved.';
