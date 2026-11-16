@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id']) || strtolower((string)($_SESSION['user_role'] ?
 }
 
 $participantId = (string)$_SESSION['user_id'];
+$selectedEventId = trim((string)($_GET['event_id'] ?? ''));
 $manila = new DateTimeZone('Asia/Manila');
 $now = new DateTimeImmutable('now', $manila);
 
@@ -34,6 +35,7 @@ $myAttendanceEvents = [];
 foreach ($registrations as $registration) {
     $eventId = (string)($registration['event_id'] ?? '');
     if ($eventId === '' || !isset($eventMap[$eventId])) continue;
+    if ($selectedEventId !== '' && $eventId !== $selectedEventId) continue;
     $event = $eventMap[$eventId];
     $multi = isMultiDayAttendanceEvent($event);
     $rows = $multi ? ($dailyByEvent[$eventId] ?? []) : (isset($standardByEvent[$eventId]) ? [$standardByEvent[$eventId]] : []);
@@ -81,7 +83,7 @@ foreach ($myAttendanceEvents as $item) $totalDays += count($item['rows']);
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
 <main class="attendance-page">
-<header class="attendance-heading"><div><span class="attendance-kicker">YOUR PERSONAL RECORD</span><h1>My Attendance</h1><p>See every event you attended and your daily check-in and check-out history.</p></div><div class="attendance-summary"><strong><?= number_format($totalDays) ?></strong><span>attendance records</span></div></header>
+<header class="attendance-heading"><div><span class="attendance-kicker">YOUR PERSONAL RECORD</span><h1>My Attendance</h1><p>See every event you attended and your daily check-in and check-out history.</p><?php if ($selectedEventId !== ''): ?><a href="attendance.php" style="display:inline-block;margin-top:9px;color:#d7baff;font-size:12px;text-decoration:none">&larr; View all event attendance</a><?php endif; ?></div><div class="attendance-summary"><strong><?= number_format($totalDays) ?></strong><span>attendance records</span></div></header>
 <section class="attendance-guide"><strong><i class="bi bi-info-circle me-1"></i> How daily attendance works</strong><p>Single-day events have one attendance record. Multi-day events have a separate record for each event date. Each day has its own time-in and time-out. If you forgot to time out, the record stays visible and is marked as missing after that day or event has ended. It will not stop you from checking in on the next day.</p></section>
 <?php if (!$myAttendanceEvents): ?>
 <div class="attendance-event"><div class="attendance-empty">Your registered events and attendance records will appear here.</div></div>
