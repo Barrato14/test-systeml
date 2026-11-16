@@ -36,7 +36,7 @@ if ($eventId === '' || !is_string($photoDataUrl) || $photoDataUrl === '') {
 
 // Fetch event and validate its schedule on the server.
 $eventResponse = supabaseRequest(
-    'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime,latitude,longitude',
+    'events?id=eq.' . rawurlencode($eventId) . '&select=id,title,start_datetime,end_datetime,latitude,longitude,venue_boundary',
     'GET'
 );
 
