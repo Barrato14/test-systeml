@@ -715,6 +715,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailsModalElement = document.getElementById('participantEventDetailsModal');
     const calendarModal = bootstrap.Modal.getOrCreateInstance(calendarModalElement);
     const detailsModal = bootstrap.Modal.getOrCreateInstance(detailsModalElement);
+    detailsModalElement.addEventListener('shown.bs.modal', function () {
+        if (window.participantVenueMap) window.participantVenueMap.invalidateSize();
+    });
 
     let calendar = null;
     let reopenCalendarAfterDetails = false;
