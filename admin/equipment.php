@@ -394,23 +394,24 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .page-card { background:#fff; border:1px solid #e8edf4; border-radius:15px; box-shadow:0 4px 20px rgba(30,50,80,.05); }
         .stat-card { border:0; border-left:5px solid #0d6efd; border-radius:12px; }
         .equipment-image { width:76px; height:66px; object-fit:cover; border-radius:10px; background:#eef2f7; }
-        .equipment-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,285px),1fr)); gap:18px; }
-        .equipment-item-card { min-width:0; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
-        .equipment-item-card:hover { border-color:#8054c0; transform:translateY(-2px); }
-        .equipment-card-image-wrap { position:relative; height:175px; overflow:hidden; background:rgba(125,95,160,.10); }
+        .equipment-card-grid { row-gap:24px; }
+        .equipment-item-card { height:100%; min-width:0; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:16px; background:var(--admin-surface,#1a1328); box-shadow:0 4px 18px rgba(0,0,0,.10); transition:transform .18s ease,box-shadow .18s ease; }
+        .equipment-item-card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,.18); }
+        .equipment-card-image-wrap { position:relative; height:210px; overflow:hidden; background:rgba(125,95,160,.10); }
         .equipment-card-image { display:block; width:100%; height:100%; object-fit:cover; }
-        .equipment-card-image-placeholder { display:flex; align-items:center; justify-content:center; color:var(--admin-muted,#aaa0ba); font-size:42px; }
-        .equipment-card-status { position:absolute; top:12px; right:12px; padding:7px 10px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.18); }
-        .equipment-card-content { display:flex; flex-direction:column; gap:12px; padding:16px; }
-        .equipment-card-category { margin-bottom:5px; color:var(--admin-muted,#aaa0ba); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+        .equipment-card-image-placeholder { display:flex; align-items:center; justify-content:center; color:var(--admin-muted,#aaa0ba); font-size:3rem; }
+        .equipment-card-status { padding:6px 10px; border-radius:20px; }
+        .equipment-card-content { display:flex; flex-direction:column; gap:12px; height:calc(100% - 210px); padding:24px; }
+        .equipment-card-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
         .equipment-card-name { margin:0; color:var(--admin-text,#f4efff); font-size:17px; font-weight:800; overflow-wrap:anywhere; }
-        .equipment-card-description { min-height:42px; margin:0; color:var(--admin-muted,#b8acc8); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
-        .equipment-card-quantity { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:11px 0; border-top:1px solid var(--admin-border,#49375e); border-bottom:1px solid var(--admin-border,#49375e); }
-        .equipment-card-quantity>div { display:flex; flex-direction:column; gap:3px; min-width:0; }
-        .equipment-card-metric-label { color:var(--admin-muted,#aaa0ba); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-        .equipment-card-quantity strong { color:var(--admin-text,#f4efff); font-size:20px; line-height:1.2; }
-        .equipment-card-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:auto; }
-        .equipment-card-actions form { display:inline-flex; }
+        .equipment-card-category { margin-bottom:8px; color:#9b7be0; font-size:12px; font-weight:700; }
+        .equipment-card-description { flex-grow:1; min-height:42px; margin:0; color:var(--admin-muted,#b8acc8); font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+        .equipment-card-quantity { display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top:14px; border-top:1px solid var(--admin-border,#49375e); }
+        .equipment-card-quantity-label { color:var(--admin-muted,#aaa0ba); font-size:12px; }
+        .equipment-card-quantity strong { color:var(--admin-text,#f4efff); font-size:15px; white-space:nowrap; }
+        .equipment-card-borrowed { color:var(--admin-muted,#aaa0ba); font-size:11px; }
+        .equipment-card-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+        .equipment-card-actions form { display:inline-flex; flex:1 1 auto; }
         .equipment-card-actions .btn { flex:1 1 auto; }
         .equipment-empty-state { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; color:var(--admin-muted,#aaa0ba); text-align:center; }
         .equipment-empty-state i { font-size:38px; }
@@ -541,7 +542,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <div class="col-md-8"><input type="search" id="equipmentSearch" class="form-control" placeholder="Search equipment by name, category, or description..."></div>
                     <div class="col-md-4"><select id="availabilityFilter" class="form-select"><option value="">All availability</option><option value="Available">Available</option><option value="Borrowed">Borrowed</option><option value="Maintenance">Under maintenance</option><option value="Unavailable">Unavailable</option></select></div>
                 </div>
-                <div class="equipment-card-grid" id="equipmentTable">
+                <div class="row g-4 equipment-card-grid" id="equipmentTable">
                     <?php if (!$equipment): ?>
                         <div class="equipment-empty-state">
                             <i class="bi bi-box-seam"></i>
@@ -559,7 +560,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                         $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
                         $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
                     ?>
-                        <article class="equipment-row equipment-item-card" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                        <div class="col-sm-6 col-lg-4 equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                            <article class="card equipment-item-card shadow-sm">
                             <div class="equipment-card-image-wrap">
                                 <?php if (!empty($item['image_url'])): ?>
                                     <img src="<?= h($item['image_url']) ?>" class="equipment-card-image" alt="<?= h($item['name']) ?>">
@@ -570,24 +572,16 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                             </div>
                             <div class="equipment-card-content">
                                 <div class="equipment-card-heading">
-                                    <div class="equipment-card-category"><?= h($item['category'] ?? 'Uncategorized') ?></div>
                                     <h5 class="equipment-card-name"><?= h($item['name'] ?? 'Unnamed equipment') ?></h5>
+                                    <span class="badge bg-<?= $badgeClass ?> equipment-card-status"><?= h($displayStatus) ?></span>
                                 </div>
-                                <p class="equipment-card-description"><?= h(($item['description'] ?? '') !== '' ? $item['description'] : 'No description provided.') ?></p>
+                                <div class="equipment-card-category"><?= h($item['category'] ?? 'General equipment') ?></div>
+                                <p class="equipment-card-description"><?= nl2br(h(($item['description'] ?? '') !== '' ? $item['description'] : 'No description provided.')) ?></p>
                                 <div class="equipment-card-quantity">
-                                    <div>
-                                        <span class="equipment-card-metric-label">Available</span>
-                                        <strong><?= $available ?></strong>
-                                    </div>
-                                    <div>
-                                        <span class="equipment-card-metric-label">Borrowed</span>
-                                        <strong><?= $borrowed ?></strong>
-                                    </div>
-                                    <div>
-                                        <span class="equipment-card-metric-label">Total units</span>
-                                        <strong><?= $qty ?></strong>
-                                    </div>
+                                    <span class="equipment-card-quantity-label">Available quantity</span>
+                                    <strong><?= $available ?> / <?= $qty ?></strong>
                                 </div>
+                                <div class="equipment-card-borrowed"><?= $borrowed ?> unit(s) currently borrowed</div>
                                 <div class="equipment-card-actions">
                                     <button type="button" class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil me-1"></i> Edit</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders me-1"></i> Condition</button>
@@ -598,7 +592,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                     </form>
                                 </div>
                             </div>
-                        </article>
+                            </article>
+                        </div>
                     <?php endforeach; ?>
                 </div>
 
