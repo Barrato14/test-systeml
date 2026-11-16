@@ -85,8 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <link rel="stylesheet" href="css/style.css">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0B1020">
+<link rel="icon" type="image/svg+xml" href="/pwa-icons/zentrix-icon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#241438">
 </head>
 <body class="auth-register-page">
 <main class="auth-layout">
