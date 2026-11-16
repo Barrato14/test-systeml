@@ -394,6 +394,28 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .page-card { background:#fff; border:1px solid #e8edf4; border-radius:15px; box-shadow:0 4px 20px rgba(30,50,80,.05); }
         .stat-card { border:0; border-left:5px solid #0d6efd; border-radius:12px; }
         .equipment-image { width:76px; height:66px; object-fit:cover; border-radius:10px; background:#eef2f7; }
+        .equipment-card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,285px),1fr)); gap:18px; }
+        .equipment-item-card { min-width:0; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
+        .equipment-item-card:hover { border-color:#8054c0; transform:translateY(-2px); }
+        .equipment-card-image-wrap { position:relative; height:175px; overflow:hidden; background:rgba(125,95,160,.10); }
+        .equipment-card-image { display:block; width:100%; height:100%; object-fit:cover; }
+        .equipment-card-image-placeholder { display:flex; align-items:center; justify-content:center; color:var(--admin-muted,#aaa0ba); font-size:42px; }
+        .equipment-card-status { position:absolute; top:12px; right:12px; padding:7px 10px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.18); }
+        .equipment-card-content { display:flex; flex-direction:column; gap:12px; padding:16px; }
+        .equipment-card-category { margin-bottom:5px; color:var(--admin-muted,#aaa0ba); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+        .equipment-card-name { margin:0; color:var(--admin-text,#f4efff); font-size:17px; font-weight:800; overflow-wrap:anywhere; }
+        .equipment-card-description { min-height:42px; margin:0; color:var(--admin-muted,#b8acc8); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+        .equipment-card-quantity { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:11px 0; border-top:1px solid var(--admin-border,#49375e); border-bottom:1px solid var(--admin-border,#49375e); }
+        .equipment-card-quantity>div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+        .equipment-card-metric-label { color:var(--admin-muted,#aaa0ba); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+        .equipment-card-quantity strong { color:var(--admin-text,#f4efff); font-size:20px; line-height:1.2; }
+        .equipment-card-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:auto; }
+        .equipment-card-actions form { display:inline-flex; }
+        .equipment-card-actions .btn { flex:1 1 auto; }
+        .equipment-empty-state { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; color:var(--admin-muted,#aaa0ba); text-align:center; }
+        .equipment-empty-state i { font-size:38px; }
+        .equipment-empty-state strong { color:var(--admin-text,#f4efff); font-size:16px; }
+        .equipment-row.is-filtered-out { display:none!important; }
         .nav-pills .nav-link { color:#64748b; font-weight:600; }
         .nav-pills .nav-link.active { background:#343a40; color:#fff; }
         .table thead th { color:#64748b; font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
@@ -459,40 +481,65 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                     <div class="col-md-8"><input type="search" id="equipmentSearch" class="form-control" placeholder="Search equipment by name, category, or description..."></div>
                     <div class="col-md-4"><select id="availabilityFilter" class="form-select"><option value="">All availability</option><option value="Available">Available</option><option value="Borrowed">Borrowed</option><option value="Maintenance">Under maintenance</option><option value="Unavailable">Unavailable</option></select></div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead><tr><th>Equipment</th><th>Category</th><th>Quantity</th><th>Availability</th><th class="text-end">Actions</th></tr></thead>
-                        <tbody id="equipmentTable">
-                        <?php if (!$equipment): ?><tr><td colspan="5" class="text-center text-muted py-5">No equipment added yet. Select “Add Equipment” to create your first item.</td></tr><?php endif; ?>
-                        <?php foreach ($equipment as $item):
-                            $id = (string)($item['id'] ?? '');
-                            $qty = (int)($item['quantity'] ?? 0);
-                            $borrowed = $borrowedByEquipment[$id] ?? 0;
-                            $available = max(0, $qty - $borrowed);
-                            $condition = $item['condition_status'] ?? 'Available';
-                            $displayStatus = $condition !== 'Available' ? $condition : ($available <= 0 ? 'Borrowed' : 'Available');
-                            $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
-                            $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
-                        ?>
-                            <tr class="equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <?php if (!empty($item['image_url'])): ?><img src="<?= h($item['image_url']) ?>" class="equipment-image" alt="<?= h($item['name']) ?>"><?php else: ?><div class="equipment-image d-flex align-items-center justify-content-center"><i class="bi bi-image text-secondary fs-3"></i></div><?php endif; ?>
-                                        <div><div class="fw-bold"><?= h($item['name'] ?? 'Unnamed equipment') ?></div><div class="small text-muted"><?= h($item['description'] ?? '') ?></div></div>
+                <div class="equipment-card-grid" id="equipmentTable">
+                    <?php if (!$equipment): ?>
+                        <div class="equipment-empty-state">
+                            <i class="bi bi-box-seam"></i>
+                            <strong>No equipment added yet</strong>
+                            <span>Select “Add Equipment” to create your first item.</span>
+                        </div>
+                    <?php endif; ?>
+                    <?php foreach ($equipment as $item):
+                        $id = (string)($item['id'] ?? '');
+                        $qty = (int)($item['quantity'] ?? 0);
+                        $borrowed = $borrowedByEquipment[$id] ?? 0;
+                        $available = max(0, $qty - $borrowed);
+                        $condition = $item['condition_status'] ?? 'Available';
+                        $displayStatus = $condition !== 'Available' ? $condition : ($available <= 0 ? 'Borrowed' : 'Available');
+                        $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
+                        $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
+                    ?>
+                        <article class="equipment-row equipment-item-card" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                            <div class="equipment-card-image-wrap">
+                                <?php if (!empty($item['image_url'])): ?>
+                                    <img src="<?= h($item['image_url']) ?>" class="equipment-card-image" alt="<?= h($item['name']) ?>">
+                                <?php else: ?>
+                                    <div class="equipment-card-image equipment-card-image-placeholder"><i class="bi bi-image"></i></div>
+                                <?php endif; ?>
+                                <span class="badge bg-<?= $badgeClass ?> equipment-card-status"><?= h($displayStatus) ?></span>
+                            </div>
+                            <div class="equipment-card-content">
+                                <div class="equipment-card-heading">
+                                    <div class="equipment-card-category"><?= h($item['category'] ?? 'Uncategorized') ?></div>
+                                    <h5 class="equipment-card-name"><?= h($item['name'] ?? 'Unnamed equipment') ?></h5>
+                                </div>
+                                <p class="equipment-card-description"><?= h(($item['description'] ?? '') !== '' ? $item['description'] : 'No description provided.') ?></p>
+                                <div class="equipment-card-quantity">
+                                    <div>
+                                        <span class="equipment-card-metric-label">Available</span>
+                                        <strong><?= $available ?></strong>
                                     </div>
-                                </td>
-                                <td><?= h($item['category'] ?? '—') ?></td>
-                                <td><strong><?= $available ?></strong> <span class="text-muted">/ <?= $qty ?> available</span></td>
-                                <td><span class="badge bg-<?= $badgeClass ?>"><?= h($displayStatus) ?></span></td>
-                                <td class="text-end text-nowrap">
-                                    <button class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil"></i></button>
-                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this equipment item?')"><input type="hidden" name="action" value="delete_equipment"><input type="hidden" name="equipment_id" value="<?= h($id) ?>"><button class="btn btn-sm btn-outline-danger" title="Delete equipment"><i class="bi bi-trash"></i></button></form>
-                                    <button class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders"></i></button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    <div>
+                                        <span class="equipment-card-metric-label">Borrowed</span>
+                                        <strong><?= $borrowed ?></strong>
+                                    </div>
+                                    <div>
+                                        <span class="equipment-card-metric-label">Total units</span>
+                                        <strong><?= $qty ?></strong>
+                                    </div>
+                                </div>
+                                <div class="equipment-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil me-1"></i> Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders me-1"></i> Condition</button>
+                                    <form method="POST" onsubmit="return confirm('Delete this equipment item?')">
+                                        <input type="hidden" name="action" value="delete_equipment">
+                                        <input type="hidden" name="equipment_id" value="<?= h($id) ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete equipment"><i class="bi bi-trash me-1"></i> Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
                 </div>
 
             <?php elseif ($activeTab === 'requests'): ?>
