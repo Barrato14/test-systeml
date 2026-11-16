@@ -340,6 +340,48 @@ $calendarJson = json_encode(
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
     <style>
+        /* Keep the participant event-details map popup consistent with Zentrix's dark admin theme. */
+        #participantEventDetailsModal .modal-content {
+            background: #171222;
+            color: #e9ddf5;
+            border: 1px solid #49345f !important;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        #participantEventDetailsModal .modal-header {
+            background: #21172e !important;
+            border-bottom: 1px solid #49345f;
+        }
+        #participantEventDetailsModal .modal-body,
+        #participantEventDetailsModal .modal-footer {
+            background: #171222;
+            color: #e9ddf5;
+            border-color: #382846;
+        }
+        #participantEventDetailsModal .modal-body p,
+        #participantEventDetailsModal .modal-body small {
+            color: #bbaecb !important;
+        }
+        #participantEventDetailsModal .modal-body .border {
+            border-color: #49345f !important;
+            background: #21172e;
+        }
+        #participantEventDetailsModal .modal-body strong {
+            color: #f7f0ff;
+        }
+        #participantEventMap {
+            background: #21172e;
+            border: 1px solid #49345f;
+        }
+        #participantEventMapLink {
+            color: #dfc5ff;
+            border-color: #76519a;
+        }
+        #participantEventMapLink:hover {
+            color: #fff;
+            background: #30203f;
+        }
+
         .event-card-img {
             height: 180px;
             object-fit: cover;
