@@ -51,7 +51,8 @@ if ($now >= $eventEnd) {
 }
 
 // Verify active check-in exists and has not timed out.
-$checkExisting = supabaseRequest(
+$dailyMode = isMultiDayAttendanceEvent($event);
+$checkExisting = $dailyMode ? supabaseServiceRequest(
     (isMultiDayAttendanceEvent($event)
         ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($now->format('Y-m-d')) . '&select=id,time_out'
         : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out'),
