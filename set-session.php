@@ -71,8 +71,9 @@ $lastName = $nameParts[1] ?? '';
 $profileResponse = supabaseRequest('profiles?email=eq.' . urlencode($email), 'GET');
 $profileRows = is_array($profileResponse) ? ($profileResponse['data'] ?? []) : [];
 $profile = (!empty($profileRows) && isset($profileRows[0]) && is_array($profileRows[0])) ? $profileRows[0] : null;
+$profileExists = $profile !== null;
 
-if (!$profile) {
+if (!$profileExists) {
     // A new Google account is already present in Supabase Auth.
     // Collect the real student details first, then create its linked profile
     // from complete-google-profile.php using the server-only service key.
@@ -108,7 +109,7 @@ if (!$profile) {
     }
 }
 
-if (!$profile) {
+if (!$profileExists) {
     // Keep first-time Google identities pending until their Zentrix profile is
     // completed. They must not receive an authenticated app session yet.
     session_regenerate_id(true);
