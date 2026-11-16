@@ -89,6 +89,23 @@ function toSupabaseDateTime($value) {
     return $date ? $date->format('Y-m-d\TH:i:sP') : null;
 }
 
+function parseVenueBoundary($raw) {
+    if (trim((string)$raw) === '') return null;
+    $points = json_decode($raw, true);
+    if (!is_array($points) || count($points) < 3 || count($points) > 200) {
+        throw new Exception('Please draw a valid venue boundary with at least 3 points.');
+    }
+    foreach ($points as $point) {
+        if (!is_array($point) || count($point) < 2 ||
+            !is_numeric($point[0]) || !is_numeric($point[1]) ||
+            (float)$point[0] < -90 || (float)$point[0] > 90 ||
+            (float)$point[1] < -180 || (float)$point[1] > 180) {
+            throw new Exception('The venue boundary contains invalid map coordinates.');
+        }
+    }
+    return array_values($points);
+}
+
 function buildEventPayload() {
     $start = toSupabaseDateTime($_POST['start_datetime'] ?? '');
     $end = toSupabaseDateTime($_POST['end_datetime'] ?? '');
@@ -114,7 +131,8 @@ function buildEventPayload() {
         'status' => $_POST['status'] ?? 'Upcoming',
         'image_url' => trim($_POST['image_url'] ?? ''),
         'latitude' => $latitude !== '' ? (float)$latitude : null,
-        'longitude' => $longitude !== '' ? (float)$longitude : null
+        'longitude' => $longitude !== '' ? (float)$longitude : null,
+        'venue_boundary' => parseVenueBoundary($_POST['venue_boundary'] ?? '')
     ];
 }
 
@@ -498,7 +516,8 @@ foreach ($events as $event) {
             'status' => $status,
             'image_url' => $event['image_url'] ?? '',
             'latitude' => $event['latitude'] ?? null,
-            'longitude' => $event['longitude'] ?? null
+            'longitude' => $event['longitude'] ?? null,
+            'venue_boundary' => $event['venue_boundary'] ?? null
         ]
     ];
 }
@@ -516,6 +535,7 @@ $calendarJson = json_encode(
     <title>Event Management - Zentrix</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 
     <style>
@@ -887,7 +907,7 @@ $calendarJson = json_encode(
                     </div>
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
-                        <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <p class="location-picker-help mb-2">Click to set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 100m outside.</p>
                         <div class="input-group mb-2">
                             <input type="search" id="create-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
                             <button type="button" id="create-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
@@ -895,7 +915,8 @@ $calendarJson = json_encode(
                         <div id="createLocationMap" class="event-location-map"></div>
                         <input type="hidden" name="latitude" id="create-lat">
                         <input type="hidden" name="longitude" id="create-lng">
-                        <small id="create-location-status" class="text-muted d-block mt-2">No location selected yet.</small>
+                        <input type="hidden" name="venue_boundary" id="create-boundary">
+                        <small id="create-location-status" class="text-muted d-block mt-2">Set a pin and draw the venue boundary.</small>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -969,7 +990,8 @@ $calendarJson = json_encode(
                         <div id="editLocationMap" class="event-location-map"></div>
                         <input type="hidden" name="latitude" id="edit-lat">
                         <input type="hidden" name="longitude" id="edit-lng">
-                        <small id="edit-location-status" class="text-muted d-block mt-2">No location selected yet.</small>
+                        <input type="hidden" name="venue_boundary" id="edit-boundary">
+                        <small id="edit-location-status" class="text-muted d-block mt-2">Set a pin and draw the venue boundary.</small>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -1001,6 +1023,7 @@ $calendarJson = json_encode(
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
 const emisEvents = <?= $calendarJson ?: '[]' ?>;
 
@@ -1011,118 +1034,111 @@ const editEventData = <?= json_encode(array_values($events), JSON_HEX_TAG | JSON
 // the existing Google Maps embeds and links elsewhere on this page remain unchanged.
 const eventLocationPickers = {};
 
-function createEventLocationPicker(mapId, latitudeId, longitudeId, statusId, searchInputId, searchButtonId) {
+function createEventLocationPicker(mapId, latitudeId, longitudeId, boundaryId, statusId, searchInputId, searchButtonId) {
     const mapElement = document.getElementById(mapId);
     const latitudeInput = document.getElementById(latitudeId);
     const longitudeInput = document.getElementById(longitudeId);
+    const boundaryInput = document.getElementById(boundaryId);
     const statusElement = document.getElementById(statusId);
     const searchInput = document.getElementById(searchInputId);
     const searchButton = document.getElementById(searchButtonId);
-
     const map = L.map(mapElement).setView([15.225, 120.57], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
     }).addTo(map);
 
+    const drawnItems = new L.FeatureGroup().addTo(map);
+    const drawControl = new L.Control.Draw({
+        draw: { polygon: { allowIntersection: false, showArea: true }, rectangle: true, polyline: false, circle: false, circlemarker: false, marker: false },
+        edit: { featureGroup: drawnItems, remove: true }
+    });
+    map.addControl(drawControl);
     let marker = null;
 
+    function saveBoundary() {
+        const layers = drawnItems.getLayers();
+        if (!layers.length) {
+            boundaryInput.value = '';
+            statusElement.textContent = 'No venue boundary drawn. Draw the actual venue area to enable attendance geofencing.';
+            return;
+        }
+        const layer = layers[0];
+        const latlngs = layer.getLatLngs();
+        const ring = Array.isArray(latlngs[0]) ? latlngs[0] : latlngs;
+        const points = ring.map(point => [Number(point.lat.toFixed(7)), Number(point.lng.toFixed(7))]);
+        boundaryInput.value = JSON.stringify(points);
+        statusElement.textContent = 'Venue boundary saved with ' + points.length + ' points. Attendance allowed inside and up to 100m outside.';
+    }
+
     function updateSelection(latitude, longitude, shouldPan = false) {
-        const lat = Number(latitude);
-        const lng = Number(longitude);
-
+        const lat = Number(latitude), lng = Number(longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
         latitudeInput.value = lat.toFixed(7);
         longitudeInput.value = lng.toFixed(7);
-
-        const selectedPosition = [lat, lng];
+        const pos = [lat, lng];
         if (!marker) {
-            marker = L.marker(selectedPosition, { draggable: true }).addTo(map);
+            marker = L.marker(pos, { draggable: true }).addTo(map);
             marker.on('dragend', function () {
-                const position = marker.getLatLng();
-                updateSelection(position.lat, position.lng);
+                const p = marker.getLatLng();
+                updateSelection(p.lat, p.lng);
             });
-        } else {
-            marker.setLatLng(selectedPosition);
-        }
-
-        if (shouldPan) {
-            map.setView(selectedPosition, Math.max(map.getZoom(), 16));
-        }
-
-        statusElement.textContent = 'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+        } else marker.setLatLng(pos);
+        if (shouldPan) map.setView(pos, Math.max(map.getZoom(), 16));
     }
+
+    map.on(L.Draw.Event.CREATED, function (event) {
+        drawnItems.clearLayers();
+        drawnItems.addLayer(event.layer);
+        saveBoundary();
+    });
+    map.on(L.Draw.Event.EDITED, saveBoundary);
+    map.on(L.Draw.Event.DELETED, saveBoundary);
+    map.on('click', function (event) { updateSelection(event.latlng.lat, event.latlng.lng); });
 
     async function searchLocation() {
         const query = searchInput.value.trim();
-        if (!query) {
-            statusElement.textContent = 'Enter a place or address to search.';
-            searchInput.focus();
-            return;
-        }
-
-        const originalButtonContent = searchButton.innerHTML;
+        if (!query) { statusElement.textContent = 'Enter a place or address to search.'; return; }
+        const original = searchButton.innerHTML;
         searchButton.disabled = true;
-        searchButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Searching...';
-        statusElement.textContent = 'Searching for "' + query + '"...';
-
+        searchButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Searching...';
         try {
-            const endpoint = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
-            const response = await fetch(endpoint, {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error('The location search service is unavailable right now.');
-            }
-
+            const response = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query), { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) throw new Error('The location search service is unavailable.');
             const results = await response.json();
-            if (!Array.isArray(results) || results.length === 0) {
-                statusElement.textContent = 'No matching place found. Try a more specific name or address.';
-                return;
-            }
-
-            const result = results[0];
-            updateSelection(Number(result.lat), Number(result.lon), true);
-            if (result.display_name) {
-                statusElement.textContent = 'Found: ' + result.display_name + ' — adjust the pin if needed.';
-            }
-        } catch (error) {
-            statusElement.textContent = error.message || 'Could not search for that location. Please try again.';
-        } finally {
-            searchButton.disabled = false;
-            searchButton.innerHTML = originalButtonContent;
-        }
+            if (!results.length) { statusElement.textContent = 'No matching place found.'; return; }
+            updateSelection(Number(results[0].lat), Number(results[0].lon), true);
+            statusElement.textContent = 'Found: ' + (results[0].display_name || query) + '. Draw the venue boundary.';
+        } catch (error) { statusElement.textContent = error.message || 'Location search failed.'; }
+        finally { searchButton.disabled = false; searchButton.innerHTML = original; }
     }
-
     searchButton.addEventListener('click', searchLocation);
-    searchInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            searchLocation();
-        }
-    });
-
-    map.on('click', function (event) {
-        updateSelection(event.latlng.lat, event.latlng.lng);
-    });
+    searchInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); searchLocation(); } });
 
     return {
         map,
         updateSelection,
-        clearSelection: function () {
-            if (marker) {
-                map.removeLayer(marker);
-                marker = null;
+        loadBoundary(points) {
+            drawnItems.clearLayers();
+            if (Array.isArray(points) && points.length >= 3) {
+                const polygon = L.polygon(points);
+                drawnItems.addLayer(polygon);
+                map.fitBounds(polygon.getBounds(), { padding: [20, 20] });
+                saveBoundary();
+            } else {
+                boundaryInput.value = '';
+                statusElement.textContent = 'No venue boundary saved. Draw one on the map.';
             }
+        },
+        clearSelection() {
+            if (marker) { map.removeLayer(marker); marker = null; }
             latitudeInput.value = '';
             longitudeInput.value = '';
-            statusElement.textContent = 'No location selected yet.';
+            drawnItems.clearLayers();
+            boundaryInput.value = '';
+            statusElement.textContent = 'Set a pin and draw the venue boundary.';
         },
-        refresh: function () {
-            map.invalidateSize();
-        }
+        refresh() { map.invalidateSize(); }
     };
 }
 
@@ -1138,7 +1154,7 @@ function initAdminEventsPage() {
     createModalElement.addEventListener('shown.bs.modal', function () {
         if (!eventLocationPickers.create) {
             eventLocationPickers.create = createEventLocationPicker(
-                'createLocationMap', 'create-lat', 'create-lng', 'create-location-status',
+                'createLocationMap', 'create-lat', 'create-lng', 'create-boundary', 'create-location-status',
                 'create-location-search', 'create-location-search-button'
             );
         }
@@ -1148,7 +1164,7 @@ function initAdminEventsPage() {
     editModalElement.addEventListener('shown.bs.modal', function () {
         if (!eventLocationPickers.edit) {
             eventLocationPickers.edit = createEventLocationPicker(
-                'editLocationMap', 'edit-lat', 'edit-lng', 'edit-location-status',
+                'editLocationMap', 'edit-lat', 'edit-lng', 'edit-boundary', 'edit-location-status',
                 'edit-location-search', 'edit-location-search-button'
             );
         }
@@ -1299,6 +1315,8 @@ function initAdminEventsPage() {
             document.getElementById('edit-image').value = event.image_url ?? '';
             document.getElementById('edit-lat').value = event.latitude ?? '';
             document.getElementById('edit-lng').value = event.longitude ?? '';
+            document.getElementById('edit-boundary').value = '';
+            eventLocationPickers.edit.loadBoundary(event.venue_boundary ?? null);
         });
     });
 
