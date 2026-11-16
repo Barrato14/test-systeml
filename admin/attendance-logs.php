@@ -135,7 +135,7 @@ if ($currentRole === 'event organizer') {
         : null;
 }
 if ($dailyLogsQuery !== null) {
-    $dailyRes = supabaseRequest($dailyLogsQuery, 'GET');
+    $dailyRes = supabaseServiceRequest($dailyLogsQuery, 'GET');
     if (($dailyRes['code'] ?? 500) < 400 && is_array($dailyRes['data'] ?? null)) {
         $today = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
         foreach ($dailyRes['data'] as $dailyRow) {
