@@ -149,6 +149,22 @@ function usersApiRequest($endpoint, $method = 'GET', $payload = null)
     return is_array($data) ? $data : [];
 }
 
+function usersWriteAudit($action, $details)
+{
+    $actorId = (string)($_SESSION['user_id'] ?? '');
+    if ($actorId === '') return;
+    try {
+        usersApiRequest('audit_logs', 'POST', [
+            'profile_id' => $actorId,
+            'action' => $action,
+            'details' => $details,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ]);
+    } catch (Exception $e) {
+        error_log('User management audit write failed: ' . $e->getMessage());
+    }
+}
+
 /* =========================================================
    5. ALLOWED ROLES
 ========================================================= */
@@ -206,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Retrieve the target account.
         $targetRows = usersApiRequest(
             'profiles?id=eq.' . rawurlencode($targetId)
-            . '&select=id,role,is_active,is_verified'
+            . '&select=id,role,is_active,is_verified,first_name,last_name,email'
         );
 
         if (empty($targetRows)) {
@@ -262,6 +278,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ['role' => $newRole]
             );
 
+            $targetName = trim(($targetUser['first_name'] ?? '') . ' ' . ($targetUser['last_name'] ?? ''));
+            usersWriteAudit(
+                'User role changed',
+                'Changed ' . ($targetName !== '' ? $targetName : 'a user account')
+                . ' from ' . $oldRole . ' to ' . $newRole . '.'
+            );
             $successMsg = 'User role updated successfully.';
         }
 
@@ -311,6 +333,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ['is_active' => $newActive]
             );
 
+            $targetName = trim(($targetUser['first_name'] ?? '') . ' ' . ($targetUser['last_name'] ?? ''));
+            usersWriteAudit(
+                $newActive ? 'Account activated' : 'Account deactivated',
+                ($newActive ? 'Activated ' : 'Deactivated ')
+                . ($targetName !== '' ? $targetName : 'a user account') . '.'
+            );
             $successMsg = $newActive
                 ? 'Account activated successfully.'
                 : 'Account deactivated successfully.';
@@ -345,7 +373,23 @@ try {
 }
 
 /* =========================================================
-   8. SEARCH AND FILTER
+   8. FETCH USER AUDIT HISTORY
+========================================================= */
+
+$userAuditLogs = [];
+$userAuditError = '';
+
+try {
+    $userAuditLogs = usersApiRequest(
+        'audit_logs?select=id,profile_id,action,details,ip_address,created_at'
+        . '&order=created_at.desc&limit=100'
+    );
+} catch (Exception $e) {
+    $userAuditError = $e->getMessage();
+}
+
+/* =========================================================
+   9. SEARCH AND FILTER
 ========================================================= */
 
 $search = trim($_GET['search'] ?? '');
@@ -773,6 +817,73 @@ $totalUsers = count($allUsers);
             text-align: center;
             color: var(--text-muted, #aa9dbd);
         }
+
+        /* User audit history */
+
+        .user-audit-panel {
+            margin-top: 22px;
+            padding: 22px;
+            border: 1px solid var(--border-color, #382b50);
+            border-radius: 15px;
+            background: var(--card-bg, #1a1328);
+        }
+
+        .user-audit-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .user-audit-header h3 {
+            margin: 0;
+            color: var(--text-color, #fff);
+            font-size: 18px;
+        }
+
+        .user-audit-header p {
+            margin: 5px 0 0;
+            color: var(--text-muted, #aa9dbd);
+            font-size: 12px;
+        }
+
+        .user-audit-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border-color, #382b50);
+            border-radius: 10px;
+        }
+
+        .user-audit-table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+        }
+
+        .user-audit-table th,
+        .user-audit-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color, #382b50);
+            text-align: left;
+            vertical-align: top;
+            font-size: 12px;
+        }
+
+        .user-audit-table th {
+            color: var(--text-muted, #cbb8f2);
+            background: var(--table-header-bg, #211832);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            font-size: 10px;
+        }
+
+        .user-audit-table td {
+            color: var(--text-color, #e9e1f4);
+        }
+
+        .audit-action { font-weight: 700; color: var(--text-color, #fff); }
+        .audit-muted { color: var(--text-muted, #aa9dbd); }
 
         /* Notes */
 
@@ -1435,6 +1546,64 @@ $totalUsers = count($allUsers);
             </table>
 
         </div>
+
+        <!-- USER AUDIT HISTORY -->
+
+        <section class="user-audit-panel" aria-labelledby="userAuditTitle">
+            <div class="user-audit-header">
+                <div>
+                    <h3 id="userAuditTitle"><i class="bi bi-clipboard2-data me-2"></i>User Audit</h3>
+                    <p>Recent account-management activity recorded by the system.</p>
+                </div>
+                <span class="status-badge status-active"><?= count($userAuditLogs) ?> recent records</span>
+            </div>
+
+            <?php if ($userAuditError !== ''): ?>
+                <div class="users-alert error">
+                    Unable to load audit history: <?= userH($userAuditError) ?>
+                </div>
+            <?php elseif (empty($userAuditLogs)): ?>
+                <div class="users-empty">No audit records are available yet.</div>
+            <?php else: ?>
+                <div class="user-audit-table-wrap">
+                    <table class="user-audit-table">
+                        <thead>
+                            <tr>
+                                <th>Date &amp; Time</th>
+                                <th>Administrator / Actor</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($userAuditLogs as $audit): ?>
+                                <?php
+                                    $actor = null;
+                                    foreach ($allUsers as $candidate) {
+                                        if ((string)($candidate['id'] ?? '') === (string)($audit['profile_id'] ?? '')) {
+                                            $actor = $candidate;
+                                            break;
+                                        }
+                                    }
+                                    $actorName = $actor
+                                        ? trim(($actor['first_name'] ?? '') . ' ' . ($actor['last_name'] ?? ''))
+                                        : 'Anonymized / unavailable';
+                                ?>
+                                <tr>
+                                    <td><?= userH(!empty($audit['created_at']) ? date('M d, Y h:i A', strtotime($audit['created_at'])) : 'Not available') ?></td>
+                                    <td><?= userH($actorName !== '' ? $actorName : 'Anonymized / unavailable') ?></td>
+                                    <td><span class="audit-action"><?= userH($audit['action'] ?? 'Activity') ?></span></td>
+                                    <td><?= userH($audit['details'] ?? '—') ?></td>
+                                    <td class="audit-muted"><?= userH($audit['ip_address'] ?? '—') ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="audit-muted mt-2 mb-0">Showing the latest <?= count($userAuditLogs) ?> records.</p>
+            <?php endif; ?>
+        </section>
 
         <!-- INFORMATION NOTE -->
 
