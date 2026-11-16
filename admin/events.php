@@ -628,13 +628,18 @@ $calendarJson = json_encode(
         }
         #searchEvents:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
         /* Keep the event details dialog content-sized instead of stretching it to the viewport. */
+        #eventDetailsModal {
+            overflow-y: auto;
+        }
         #eventDetailsModal .modal-dialog-centered {
             min-height: 0;
+            align-items: flex-start;
+            margin: 1.5rem auto;
         }
         #eventDetailsModal .event-modal-content {
-            height: auto;
-            min-height: 0;
-            max-height: calc(100vh - 3rem);
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
             border: 0;
             border-radius: 16px;
             overflow: hidden;
@@ -649,8 +654,8 @@ $calendarJson = json_encode(
             height: auto;
             min-height: 0;
             padding: 20px 25px;
-            overflow-y: auto;
-            flex: 0 1 auto;
+            overflow: visible !important;
+            flex: 0 0 auto;
         }
         #eventDetailsModal .event-description {
             display: block !important;
