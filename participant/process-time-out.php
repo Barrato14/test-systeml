@@ -115,11 +115,10 @@ $payload = [
     'timeout_longitude' => $longitude !== null ? (float)$longitude : null
 ];
 
-$response = supabaseRequest(
-    ($dailyMode ? 'daily_attendance?id=eq.' : 'attendance?id=eq.') . rawurlencode((string)$recordId),
-    'PATCH',
-    $payload
-);
+$updateEndpoint = ($dailyMode ? 'daily_attendance?id=eq.' : 'attendance?id=eq.') . rawurlencode((string)$recordId);
+$response = $dailyMode
+    ? supabaseServiceRequest($updateEndpoint, 'PATCH', $payload)
+    : supabaseRequest($updateEndpoint, 'PATCH', $payload);
 
 if (($response['code'] ?? 500) >= 400) {
     respond(false, 'Failed to record time-out in the database.');
