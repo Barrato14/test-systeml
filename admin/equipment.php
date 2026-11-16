@@ -395,18 +395,18 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .stat-card { border:0; border-left:5px solid #0d6efd; border-radius:12px; }
         .equipment-image { width:76px; height:66px; object-fit:cover; border-radius:10px; background:#eef2f7; }
         .equipment-card-grid { row-gap:18px; }
-        .equipment-item-card { min-width:0; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
+        .equipment-item-card { display:flex; flex-direction:column; min-width:0; height:100%; overflow:hidden; border:1px solid var(--admin-border,#49375e); border-radius:15px; background:var(--admin-surface,#1a1328); box-shadow:0 5px 18px rgba(0,0,0,.12); transition:border-color .18s ease,transform .18s ease; }
         .equipment-item-card:hover { border-color:#8054c0; transform:translateY(-2px); }
-        .equipment-card-image-wrap { position:relative; height:230px; min-height:300px; overflow:hidden; background:rgba(125,95,160,.10); }
+        .equipment-card-image-wrap { position:relative; flex:0 0 230px; height:230px; min-height:0; overflow:hidden; background:rgba(125,95,160,.10); }
         .equipment-card-image { display:block; width:100%; height:100%; object-fit:cover; }
         .equipment-card-image-placeholder { display:flex; align-items:center; justify-content:center; color:var(--admin-muted,#aaa0ba); font-size:42px; }
         @media(max-width:600px) {
             .equipment-card-image-wrap { height:210px; min-height:190px; }
         }
         .equipment-card-status { position:absolute; top:12px; right:12px; padding:7px 10px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.18); }
-        .equipment-card-content { display:flex; flex-direction:column; gap:14px; height:calc(100% - 230px); padding:16px; }
+        .equipment-card-content { display:flex; flex:1 1 auto; flex-direction:column; gap:14px; min-height:0; padding:16px; }
         @media(max-width:600px) {
-            .equipment-card-content { height:calc(100% - 210px); }
+            .equipment-card-image-wrap { flex-basis:210px; height:210px; }
         }
         .equipment-card-heading { display:flex; flex-direction:column; gap:7px; }
         .equipment-card-category { margin-bottom:0; color:var(--admin-muted,#aaa0ba); font-size:11px; font-weight:800; line-height:1.4; letter-spacing:.08em; text-transform:uppercase; }
