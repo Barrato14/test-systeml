@@ -1,8 +1,8 @@
 <?php
 /**
  * Zentrix venue geofence.
- * A participant is allowed inside the organizer-drawn polygon or within 100m
- * outside its boundary. Legacy events without a polygon retain the 100m pin rule.
+ * A participant is allowed inside the organizer-drawn polygon or within 50m
+ * outside its boundary. Legacy events without a polygon retain the 50m pin rule.
  */
 function checkEventGeofence($event, $latitude, $longitude, $accuracy) {
     if (!is_numeric($latitude) || !is_numeric($longitude)
@@ -67,10 +67,10 @@ function checkEventGeofence($event, $latitude, $longitude, $accuracy) {
             $minDistance = min($minDistance, $distance);
         }
 
-        if ($minDistance <= 100) {
-            return ['allowed' => true, 'distance' => (int)round($minDistance), 'message' => 'Location verified. You are within 100 meters of the marked venue boundary.'];
+        if ($minDistance <= 50) {
+            return ['allowed' => true, 'distance' => (int)round($minDistance), 'message' => 'Location verified. You are within 50 meters of the marked venue boundary.'];
         }
-        return ['allowed' => false, 'distance' => (int)round($minDistance), 'message' => 'You are approximately ' . (int)round($minDistance) . ' meters outside the event venue. Attendance is allowed inside the marked venue or within 100 meters outside it.'];
+        return ['allowed' => false, 'distance' => (int)round($minDistance), 'message' => 'You are approximately ' . (int)round($minDistance) . ' meters outside the event venue. Attendance is allowed inside the marked venue or within 50 meters outside it.'];
     }
 
     // Backward compatibility for events created before venue boundaries were introduced.
@@ -87,8 +87,8 @@ function checkEventGeofence($event, $latitude, $longitude, $accuracy) {
     $dLng = deg2rad($lng - (float)$eventLongitude);
     $a = sin($dLat / 2) ** 2 + cos($lat1) * cos($lat2) * sin($dLng / 2) ** 2;
     $distance = 6371000 * 2 * atan2(sqrt($a), sqrt(max(0, 1 - $a)));
-    if ($distance > 100) {
+    if ($distance > 50) {
         return ['allowed' => false, 'distance' => (int)round($distance), 'message' => 'You are approximately ' . (int)round($distance) . ' meters away from the event pin. Attendance is only allowed within 100 meters.'];
     }
-    return ['allowed' => true, 'distance' => (int)round($distance), 'message' => 'Location verified within the 100-meter event area.'];
+    return ['allowed' => true, 'distance' => (int)round($distance), 'message' => 'Location verified within the 50-meter event area.'];
 }
