@@ -1255,3 +1255,40 @@ body.auth-legal-open { overflow:hidden; }
 .auth-legal-link { appearance:none; border:0; padding:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
 .auth-legal-link:hover { color:#c4a5fd; text-decoration:underline; }
 @media(max-width:600px) { .auth-legal-dialog{padding:10px!important}.auth-legal-panel{max-height:92vh;border-radius:13px}.auth-legal-header{padding:19px 18px 15px}.auth-legal-content{padding:17px 18px 22px;font-size:.86rem}.auth-legal-footer{padding:11px 18px} }
+
+
+/* Narrow-screen safeguards for authentication and participant layouts. */
+@media(max-width:480px){
+    .auth-register-page .auth-register-wrapper{padding:1.25rem 1rem}
+    .auth-register-page .auth-register-container{width:100%;min-width:0}
+    .auth-register-page .auth-register-grid{grid-template-columns:minmax(0,1fr)}
+    .auth-register-page .auth-register-grid>*{min-width:0}
+    .auth-register-page .auth-register-full{grid-column:auto}
+    .auth-register-page .auth-footer{width:100%;gap:.65rem;flex-wrap:wrap}
+    .auth-register-page .footer-links{justify-content:center;flex-wrap:wrap;gap:.75rem}
+    .auth-register-page .mobile-logo{margin-bottom:1.75rem}
+}
+@media(max-width:360px){
+    .auth-form-wrapper{padding:1rem .85rem}
+    .auth-form-container,.auth-footer{min-width:0}
+    .form-options{gap:.65rem}
+    .auth-footer{gap:.65rem;flex-wrap:wrap}
+    .footer-links{justify-content:center;flex-wrap:wrap;gap:.75rem}
+    .auth-legal-header{gap:10px}
+    .auth-legal-header h2{font-size:1.2rem}
+    .auth-legal-footer{gap:10px;flex-wrap:wrap}
+}
+body.participant-page,body.admin-portal{overflow-x:hidden}
+.participant-page main,.participant-page .container,.admin-portal main,.admin-portal .content-area{min-width:0}
+.participant-page img,.participant-page video,.admin-portal img{max-width:100%}
+.participant-page .card,.participant-page .modal-content,.admin-portal .card,.admin-portal .modal-content{min-width:0}
+.participant-page .btn,.admin-portal .btn{max-width:100%;white-space:normal}
+.participant-page .form-control,.participant-page .form-select,.admin-portal .form-control,.admin-portal .form-select{min-width:0;max-width:100%}
+@media(max-width:360px){
+    .participant-topbar-inner{padding-inline:10px;gap:8px}
+    .participant-brand{gap:7px}
+    .participant-brand-mark{width:36px;height:36px}
+    .participant-topbar-actions{gap:6px}
+    .participant-page main.container{padding-left:10px!important;padding-right:10px!important}
+    .participant-page .card>.card-body{padding:13px}
+}
