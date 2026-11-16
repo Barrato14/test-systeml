@@ -1270,9 +1270,9 @@ function initAdminEventsPage() {
         dayMaxEvents: true,
         eventDisplay: 'block',
         headerToolbar: {
-            left: 'prev,next today',
+            left: 'prev,next',
             center: 'title',
-            right: ''
+            right: 'today'
         },
         events: emisEvents,
         eventClick: function (info) {
