@@ -88,7 +88,7 @@ function checkEventGeofence($event, $latitude, $longitude, $accuracy) {
     $a = sin($dLat / 2) ** 2 + cos($lat1) * cos($lat2) * sin($dLng / 2) ** 2;
     $distance = 6371000 * 2 * atan2(sqrt($a), sqrt(max(0, 1 - $a)));
     if ($distance > 50) {
-        return ['allowed' => false, 'distance' => (int)round($distance), 'message' => 'You are approximately ' . (int)round($distance) . ' meters away from the event pin. Attendance is only allowed within 100 meters.'];
+        return ['allowed' => false, 'distance' => (int)round($distance), 'message' => 'You are approximately ' . (int)round($distance) . ' meters away from the event pin. Attendance is only allowed within 50 meters.'];
     }
     return ['allowed' => true, 'distance' => (int)round($distance), 'message' => 'Location verified within the 50-meter event area.'];
 }
