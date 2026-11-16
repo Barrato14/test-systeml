@@ -2,14 +2,25 @@
 session_start();
 require_once 'config/database.php';
 
-if (empty($_SESSION['user_id']) || strtolower((string)($_SESSION['user_role'] ?? '')) !== 'participant') {
+$isPendingGoogleSignup = !empty($_SESSION['pending_google_user_id']);
+
+if ($isPendingGoogleSignup) {
+    if (empty($_SESSION['pending_google_email'])) {
+        header('Location: login.php');
+        exit;
+    }
+} elseif (empty($_SESSION['user_id']) || strtolower((string)($_SESSION['user_role'] ?? '')) !== 'participant') {
     header('Location: login.php');
     exit;
 }
 
 $error = '';
-$profileId = (string)$_SESSION['user_id'];
-$email = (string)($_SESSION['user_email'] ?? '');
+$profileId = $isPendingGoogleSignup
+    ? (string)$_SESSION['pending_google_user_id']
+    : (string)$_SESSION['user_id'];
+$email = $isPendingGoogleSignup
+    ? (string)$_SESSION['pending_google_email']
+    : (string)($_SESSION['user_email'] ?? '');
 $csrfToken = (string)($_SESSION['google_profile_csrf'] ?? '');
 
 if ($csrfToken === '') {
@@ -80,7 +91,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log('Google student profile save failed. HTTP ' . $diagnosticCode . ': ' . $diagnosticDetails);
             $error = 'We could not save your student details. Please try again or contact the administrator.';
         } else {
-            $_SESSION['user_name'] = $firstName . ' ' . $lastName;
+            if ($isPendingGoogleSignup) {
+                // Only create the authenticated Zentrix session after the
+                // first-time Google user has successfully saved their profile.
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $profileId;
+                $_SESSION['user_email'] = $email;
+                $_SESSION['user_role'] = 'Participant';
+                $_SESSION['user_name'] = $firstName . ' ' . $lastName;
+                unset(
+                    $_SESSION['pending_google_user_id'],
+                    $_SESSION['pending_google_email'],
+                    $_SESSION['pending_google_first_name'],
+                    $_SESSION['pending_google_last_name']
+                );
+            } else {
+                $_SESSION['user_name'] = $firstName . ' ' . $lastName;
+            }
             unset($_SESSION['google_profile_csrf']);
             header('Location: participant/dashboard.php');
             exit;
