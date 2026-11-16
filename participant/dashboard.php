@@ -245,28 +245,27 @@ foreach ($registrations as $registration) {
     }
 }
 
-foreach ($participantAttendance as $attendanceRecord) {
-    if (empty($attendanceRecord['check_in_time'])) {
-        continue;
-    }
-
-    $dashboardAttendedCount++;
-
+$attendedEventIds = [];
+foreach ($participantAttendance as $eventId => $attendanceRecord) {
+    if (empty($attendanceRecord['check_in_time'])) continue;
+    $attendedEventIds[(string)$eventId] = true;
     if (!empty($attendanceRecord['time_out'])) {
         try {
             $checkIn = new DateTimeImmutable($attendanceRecord['check_in_time']);
             $timeOut = new DateTimeImmutable($attendanceRecord['time_out']);
-            if ($timeOut > $checkIn) {
-                $dashboardAttendanceMinutes += (int)(($timeOut->getTimestamp() - $checkIn->getTimestamp()) / 60);
-            }
-        } catch (Exception $e) {
-        }
+            if ($timeOut > $checkIn) $dashboardAttendanceMinutes += (int)(($timeOut->getTimestamp() - $checkIn->getTimestamp()) / 60);
+        } catch (Exception $e) {}
     }
 }
 
+$dashboardDailyAttendanceCount = 0;
+$dashboardDailyEventIds = [];
 foreach ($participantDailyAttendance as $dailyRecord) {
-    if (empty($dailyRecord['check_in_time'])) continue;
-    $dashboardAttendedCount++;
+    $dailyEventId = (string)($dailyRecord['event_id'] ?? '');
+    if (empty($dailyRecord['check_in_time']) || !isset($eventsMap[$dailyEventId])) continue;
+    $dashboardDailyAttendanceCount++;
+    $attendedEventIds[$dailyEventId] = true;
+    $dashboardDailyEventIds[$dailyEventId] = true;
     if (!empty($dailyRecord['time_out'])) {
         try {
             $dailyIn = new DateTimeImmutable($dailyRecord['check_in_time']);
@@ -275,11 +274,12 @@ foreach ($participantDailyAttendance as $dailyRecord) {
         } catch (Exception $e) {}
     }
 }
-
+$dashboardAttendedCount = count($attendedEventIds);
 $dashboardRegistrationCount = count($registrations);
 $dashboardAttendanceRate = $dashboardRegistrationCount > 0
     ? min(100, (int)round(($dashboardAttendedCount / $dashboardRegistrationCount) * 100))
     : 0;
+$dashboardAttendanceSessionCount = $dashboardAttendedCount + $dashboardDailyAttendanceCount - count($dashboardDailyEventIds);
 $dashboardAttendanceHours = round($dashboardAttendanceMinutes / 60, 1);
 
 // Combine announcements and attendance records into a small recent-activity feed.
@@ -650,6 +650,10 @@ $calendarJson = json_encode(
             <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Recorded attendance</span></div>
         </article>
         <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-range"></i></span>
+            <div><strong><?= number_format($dashboardAttendanceSessionCount) ?></strong><span>Attendance days</span></div>
+        </article>
+        <article class="participant-dashboard-stat">
             <span class="participant-dashboard-stat-icon"><i class="bi bi-graph-up-arrow"></i></span>
             <div><strong><?= $dashboardAttendanceRate ?>%</strong><span>Attendance rate</span></div>
         </article>
@@ -692,7 +696,7 @@ $calendarJson = json_encode(
                 <span><?= number_format($dashboardAttendedCount) ?> attended</span>
                 <span><?= number_format($dashboardRegistrationCount) ?> registered</span>
             </div>
-            <a href="my-events.php" class="participant-dashboard-text-link">See attendance details <i class="bi bi-arrow-right"></i></a>
+            <a href="attendance.php" class="participant-dashboard-text-link">View my attendance records <i class="bi bi-arrow-right"></i></a>
         </article>
     </section>
 
