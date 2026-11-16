@@ -1,6 +1,6 @@
-# EMIS — Event Management and Information System
+# Zentrix — Event Management and Information System
 
-EMIS (presented in the interface as **Eventora**) is a web-based campus event management system. Its main purpose is to let authorized users manage campus events while participants discover events, register, and record their attendance.
+Zentrix (presented in the interface as **Zentrix**) is a web-based campus event management system. Its main purpose is to let authorized users manage campus events while participants discover events, register, and record their attendance.
 
 This README is a presentation-oriented guide to the main event and attendance features. It follows the current code in this repository and focuses on the files that implement those workflows.
 
@@ -294,7 +294,7 @@ The repository includes supporting features such as:
 
 ## 7. Short presentation explanation
 
-> EMIS is a campus Event Management and Information System designed to simplify how school events are organized and how participant attendance is recorded. Administrators and event organizers can create, update, and manage events, while participants can browse available events and register through their accounts. For attendance, participants register their face first, then use camera-based face verification and GPS coordinates to check in and time out. The system saves the attendance timestamps and supporting evidence in Supabase, where administrators and permitted staff can review attendance logs and filter records by event, course, or section. It also supports event announcements through in-app notifications and email.
+> Zentrix is a campus Event Management and Information System designed to simplify how school events are organized and how participant attendance is recorded. Administrators and event organizers can create, update, and manage events, while participants can browse available events and register through their accounts. For attendance, participants register their face first, then use camera-based face verification and GPS coordinates to check in and time out. The system saves the attendance timestamps and supporting evidence in Supabase, where administrators and permitted staff can review attendance logs and filter records by event, course, or section. It also supports event announcements through in-app notifications and email.
 
 ## 8. Suggested live demonstration order
 
