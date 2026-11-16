@@ -97,7 +97,7 @@ function equipmentStorageUpload($file) {
     curl_close($ch);
 
     if ($responseBody === false || $httpCode < 200 || $httpCode >= 300) {
-        error_log('EMIS equipment image upload failed: HTTP ' . $httpCode . ' ' . $curlError . ' ' . (string)$responseBody);
+        error_log('Zentrix equipment image upload failed: HTTP ' . $httpCode . ' ' . $curlError . ' ' . (string)$responseBody);
         throw new Exception('Image upload failed. Check the equipment-images bucket, its permissions, and your Storage key.');
     }
 
@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_read' => false
                 ]);
             } catch (Exception $notificationError) {
-                error_log('EMIS equipment review notification failed: ' . $notificationError->getMessage());
+                error_log('Zentrix equipment review notification failed: ' . $notificationError->getMessage());
             }
 
             $successMsg = 'Borrowing request ' . strtolower($decision) . '.';
@@ -331,7 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_read' => false
                 ]);
             } catch (Exception $notificationError) {
-                error_log('EMIS equipment return notification failed: ' . $notificationError->getMessage());
+                error_log('Zentrix equipment return notification failed: ' . $notificationError->getMessage());
             }
 
             $successMsg = 'Equipment return recorded and participant notified.';
@@ -391,7 +391,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipment &amp; Services - EMIS</title>
+    <title>Equipment &amp; Services - Zentrix</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         body { background:#f4f6fb; color:#273449; }
