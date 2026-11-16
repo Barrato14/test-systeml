@@ -146,7 +146,9 @@ if ($dailyLogsQuery !== null) {
                 try { $eventEnded = (new DateTimeImmutable($eventEndValue))->setTimezone(new DateTimeZone('Asia/Manila')) <= new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')); }
                 catch (Throwable $e) {}
             }
-            if (empty($dailyRow['time_out']) && !empty($dailyRow['attendance_date']) && ($dailyRow['attendance_date'] < $today || ($dailyRow['attendance_date'] === $today && $eventEnded))) {
+            if (strcasecmp((string)($dailyRow['status'] ?? ''), 'Absent') === 0) {
+                $dailyRow['_display_status'] = 'Absent';
+            } elseif (empty($dailyRow['time_out']) && !empty($dailyRow['attendance_date']) && ($dailyRow['attendance_date'] < $today || ($dailyRow['attendance_date'] === $today && $eventEnded))) {
                 $dailyRow['_display_status'] = 'Missing Time Out';
             } else {
                 $dailyRow['_display_status'] = $dailyRow['status'] ?? 'Present';
