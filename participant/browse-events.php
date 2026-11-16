@@ -225,7 +225,7 @@ foreach ($allEvents as $event) {
             <div class="participant-map-legend"><span><i class="legend-venue"></i> Marked venue</span><span><i class="legend-buffer"></i> Allowed area (50m outside)</span><span><i class="legend-pin"></i> Event pin</span></div>
             <div class="browse-map-actions">
                 <span id="browseEventMapCoordinates"></span>
-                <a id="browseEventGoogleMaps" href="#"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
+                <a id="browseEventGoogleMaps" href="#" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i> Open in Google Maps</a>
             </div>
         </div>
     </section>
@@ -296,14 +296,15 @@ if (venueMap) venueMap.remove();
                 const ring = boundary.map(p => [Number(p[1]), Number(p[0])]);
                 if (ring.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
                     if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+                    const venueLayer = L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
+                    const mapBounds = L.latLngBounds([[lat, lng]]);
+                    mapBounds.extend(venueLayer.getBounds());
                     if (typeof turf !== 'undefined') {
                         const feature = turf.polygon([ring]);
                         const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
-                        L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                        const allowedLayer = L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                        mapBounds.extend(allowedLayer.getBounds());
                     }
-                    L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
-                    const mapBounds = L.latLngBounds([[lat, lng]]);
-                    mapBounds.extend(L.geoJSON(allowedArea).getBounds());
                     venueMap.fitBounds(mapBounds, { padding: [20, 20] });
                 }
             }
