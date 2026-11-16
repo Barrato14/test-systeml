@@ -7,6 +7,7 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/face-service.php';
 require_once '../includes/attendance-geofence.php';
+require_once '../includes/daily-attendance.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -77,12 +78,13 @@ if (!$geofence['allowed']) {
     respond(false, $geofence['message']);
 }
 
-// Check for duplicate check-in before performing face verification.
-$existingCheckIn = supabaseRequest(
-    'attendance?event_id=eq.' . rawurlencode($eventId) .
-    '&participant_id=eq.' . rawurlencode($participantId) . '&select=id',
-    'GET'
-);
+// Multi-day events use one attendance row per participant per Manila calendar day.
+$dailyMode = isMultiDayAttendanceEvent($event);
+$attendanceDate = $now->format('Y-m-d');
+$duplicateQuery = $dailyMode
+    ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($attendanceDate) . '&select=id'
+    : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id';
+$existingCheckIn = supabaseRequest($duplicateQuery, 'GET');
 
 if (($existingCheckIn['code'] ?? 500) >= 400) {
     respond(false, 'Unable to verify your attendance record. Please try again.');
@@ -112,7 +114,8 @@ $payload = [
     'status' => 'Present'
 ];
 
-$response = supabaseRequest('attendance', 'POST', $payload);
+if ($dailyMode) $payload['attendance_date'] = $attendanceDate;
+$response = supabaseRequest($dailyMode ? 'daily_attendance' : 'attendance', 'POST', $payload);
 
 if (($response['code'] ?? 500) >= 400) {
     respond(false, 'Failed to save check-in. Please try again.');
