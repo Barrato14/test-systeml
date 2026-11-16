@@ -33,6 +33,75 @@ if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
     }
 }
 
+// Allow Administrators and Staff to manually mark an attendance record as Absent.
+if (empty($_SESSION['attendance_logs_csrf'])) {
+    $_SESSION['attendance_logs_csrf'] = bin2hex(random_bytes(32));
+}
+$attendanceCsrf = $_SESSION['attendance_logs_csrf'];
+$attendanceActionMessage = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'mark_absent') {
+    $submittedToken = (string)($_POST['csrf_token'] ?? '');
+    $attendanceId = trim((string)($_POST['attendance_id'] ?? ''));
+
+    if (!hash_equals($attendanceCsrf, $submittedToken)) {
+        http_response_code(403);
+        exit('Invalid security token. Please reload the page and try again.');
+    }
+
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $attendanceId)) {
+        $attendanceActionMessage = 'Invalid attendance record.';
+    } else {
+        // Confirm that the record belongs to an event this account is allowed to manage.
+        $recordRes = supabaseRequest(
+            'attendance?select=id,event_id,participant_id,status&id=eq.' . rawurlencode($attendanceId),
+            'GET'
+        );
+        $record = (($recordRes['code'] ?? 500) === 200 && is_array($recordRes['data'] ?? null))
+            ? ($recordRes['data'][0] ?? null)
+            : null;
+
+        if (!$record || !isset($eventsMap[(string)($record['event_id'] ?? '')])) {
+            $attendanceActionMessage = 'Attendance record not found or access denied.';
+        } elseif (strcasecmp((string)($record['status'] ?? ''), 'Absent') === 0) {
+            $attendanceActionMessage = 'This record is already marked Absent.';
+        } else {
+            $updateRes = supabaseRequest(
+                'attendance?id=eq.' . rawurlencode($attendanceId)
+                    . '&event_id=eq.' . rawurlencode((string)$record['event_id']),
+                'PATCH',
+                ['status' => 'Absent']
+            );
+
+            if (($updateRes['code'] ?? 500) >= 200 && ($updateRes['code'] ?? 500) < 300) {
+                $participantId = (string)($record['participant_id'] ?? '');
+                if (function_exists('logAudit')) {
+                    try {
+                        logAudit(
+                            $_SESSION['user_id'],
+                            'attendance_marked_absent',
+                            'Attendance record ' . $attendanceId . ' for participant ' . $participantId
+                                . ' was manually marked Absent.'
+                        );
+                    } catch (Throwable $e) {
+                        error_log('Attendance absence audit failed: ' . $e->getMessage());
+                    }
+                }
+                $redirectParams = $_GET;
+                $redirectParams['attendance_updated'] = 'absent';
+                header('Location: attendance-logs.php?' . http_build_query($redirectParams));
+                exit;
+            }
+
+            $attendanceActionMessage = 'Could not update the attendance status. Please try again.';
+        }
+    }
+}
+
+if (($_GET['attendance_updated'] ?? '') === 'absent') {
+    $attendanceActionMessage = 'Attendance status successfully changed to Absent.';
+}
+
 // Fetch only attendance records belonging to the visible events.
 $visibleEventIds = array_keys($eventsMap);
 $attendanceLogs = [];
@@ -123,6 +192,13 @@ function formatManilaTime($utcString) {
             <span class="badge bg-secondary fs-6">Showing: <?= count($attendanceLogs) ?> Records</span>
         </div>
 
+        <?php if ($attendanceActionMessage !== ''): ?>
+            <div class="alert <?= strpos($attendanceActionMessage, 'successfully') !== false ? 'alert-success' : 'alert-info' ?> alert-dismissible fade show" role="alert">
+                <?= htmlspecialchars($attendanceActionMessage, ENT_QUOTES, 'UTF-8') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Filter Card -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
@@ -182,12 +258,13 @@ function formatManilaTime($utcString) {
                                 <th>Time In (Face & GPS)</th>
                                 <th>Time Out (Face & GPS)</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($attendanceLogs)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">No attendance records found matching the filter criteria.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($attendanceLogs as $log): 
@@ -258,7 +335,22 @@ function formatManilaTime($utcString) {
                                         </td>
 
                                         <td>
-                                            <span class="badge bg-success"><?= htmlspecialchars($log['status'] ?? 'Present') ?></span>
+                                            <?php $attendanceStatus = trim((string)($log['status'] ?? 'Present')) ?: 'Present'; ?>
+                                            <span class="badge <?= strcasecmp($attendanceStatus, 'Absent') === 0 ? 'bg-danger' : 'bg-success' ?>"><?= htmlspecialchars($attendanceStatus) ?></span>
+                                        </td>
+                                        <td>
+                                            <?php if (strcasecmp($attendanceStatus, 'Absent') !== 0): ?>
+                                                <form method="POST" class="m-0" onsubmit="return confirm('Mark this participant as Absent? This will update the attendance record.');">
+                                                    <input type="hidden" name="action" value="mark_absent">
+                                                    <input type="hidden" name="attendance_id" value="<?= htmlspecialchars((string)($log['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($attendanceCsrf, ENT_QUOTES, 'UTF-8') ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-person-x me-1"></i> Mark Absent
+                                                    </button>
+                                                </form>
+                                            <?php else: ?>
+                                                <span class="text-muted small">No action</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
