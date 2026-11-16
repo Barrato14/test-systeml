@@ -81,7 +81,7 @@ foreach ($allEvents as $event) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d0916">
-    <title>Browse Events - EMIS</title>
+    <title>Browse Events - Zentrix</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
@@ -150,7 +150,7 @@ foreach ($allEvents as $event) {
                             <?php if ($eventImage !== ''): ?>
                                 <img src="<?= htmlspecialchars($eventImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($eventTitle, ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
                             <?php else: ?>
-                                <div class="browse-event-image-fallback"><i class="bi bi-calendar2-event"></i><span>EMIS CAMPUS EVENT</span></div>
+                                <div class="browse-event-image-fallback"><i class="bi bi-calendar2-event"></i><span>Zentrix CAMPUS EVENT</span></div>
                             <?php endif; ?>
                             <span class="browse-event-status"><span></span> Available</span>
                         </div>
