@@ -416,6 +416,66 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .equipment-empty-state i { font-size:38px; }
         .equipment-empty-state strong { color:var(--admin-text,#f4efff); font-size:16px; }
         .equipment-row.is-filtered-out { display:none!important; }
+        .delete-equipment-modal .modal-content {
+            overflow:hidden;
+            color:var(--admin-text,#f4efff);
+            background:var(--admin-surface,#1a1328);
+            border:1px solid var(--admin-border,#49375e);
+            border-radius:18px;
+            box-shadow:0 22px 65px rgba(0,0,0,.38);
+        }
+        .delete-equipment-modal .modal-header {
+            justify-content:center;
+            padding:26px 24px 10px;
+            border:0;
+        }
+        .delete-equipment-modal .delete-warning-icon {
+            display:grid;
+            width:58px;
+            height:58px;
+            margin:0 auto 14px;
+            place-items:center;
+            color:#ff6b75;
+            background:rgba(220,53,69,.13);
+            border:1px solid rgba(220,53,69,.25);
+            border-radius:18px;
+            font-size:25px;
+        }
+        .delete-equipment-modal .modal-title {
+            width:100%;
+            font-size:20px;
+            font-weight:800;
+            text-align:center;
+        }
+        .delete-equipment-modal .modal-body {
+            padding:8px 28px 24px;
+            color:var(--admin-muted,#b8acc8);
+            text-align:center;
+            line-height:1.65;
+        }
+        .delete-equipment-modal .delete-equipment-name {
+            display:block;
+            margin:12px 0;
+            padding:11px 14px;
+            color:var(--admin-text,#f4efff);
+            background:rgba(125,95,160,.12);
+            border:1px solid var(--admin-border,#49375e);
+            border-radius:10px;
+            font-weight:750;
+            overflow-wrap:anywhere;
+        }
+        .delete-equipment-modal .modal-footer {
+            justify-content:center;
+            gap:10px;
+            padding:0 24px 24px;
+            border:0;
+        }
+        .delete-equipment-modal .modal-footer .btn {
+            min-width:118px;
+            padding:9px 16px;
+            border-radius:10px;
+            font-weight:700;
+        }
         .nav-pills .nav-link { color:#64748b; font-weight:600; }
         .nav-pills .nav-link.active { background:#343a40; color:#fff; }
         .table thead th { color:#64748b; font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
@@ -531,10 +591,10 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                 <div class="equipment-card-actions">
                                     <button type="button" class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil me-1"></i> Edit</button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders me-1"></i> Condition</button>
-                                    <form method="POST" onsubmit="return confirm('Delete this equipment item?')">
+                                    <form method="POST" class="delete-equipment-form" data-equipment-name="<?= h($item['name'] ?? 'this equipment') ?>">
                                         <input type="hidden" name="action" value="delete_equipment">
                                         <input type="hidden" name="equipment_id" value="<?= h($id) ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete equipment"><i class="bi bi-trash me-1"></i> Delete</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-equipment-trigger" title="Delete equipment"><i class="bi bi-trash me-1"></i> Delete</button>
                                     </form>
                                 </div>
                             </div>
@@ -676,6 +736,29 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
     </div>
 </div>
 
+<!-- Confirm equipment deletion -->
+<div class="modal fade delete-equipment-modal" id="deleteEquipmentConfirmModal" tabindex="-1" aria-labelledby="deleteEquipmentConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="w-100">
+                    <div class="delete-warning-icon"><i class="bi bi-trash3"></i></div>
+                    <h5 class="modal-title" id="deleteEquipmentConfirmTitle">Delete equipment?</h5>
+                </div>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to permanently delete this item?
+                <span class="delete-equipment-name" id="deleteEquipmentConfirmName">Equipment item</span>
+                <small>This action cannot be undone. Active approved borrowings must be returned before deletion.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteEquipmentButton"><i class="bi bi-trash3 me-1"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Change condition -->
 <div class="modal fade" id="conditionModal" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content">
@@ -689,6 +772,32 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+let pendingEquipmentDeleteForm = null;
+const deleteEquipmentModalElement = document.getElementById('deleteEquipmentConfirmModal');
+const deleteEquipmentModal = bootstrap.Modal.getOrCreateInstance(deleteEquipmentModalElement);
+
+document.querySelectorAll('.delete-equipment-trigger').forEach(button => {
+    button.addEventListener('click', () => {
+        pendingEquipmentDeleteForm = button.closest('.delete-equipment-form');
+        if (!pendingEquipmentDeleteForm) return;
+        document.getElementById('deleteEquipmentConfirmName').textContent =
+            pendingEquipmentDeleteForm.dataset.equipmentName || 'Equipment item';
+        deleteEquipmentModal.show();
+    });
+});
+
+document.getElementById('confirmDeleteEquipmentButton').addEventListener('click', () => {
+    if (!pendingEquipmentDeleteForm) return;
+    const formToSubmit = pendingEquipmentDeleteForm;
+    pendingEquipmentDeleteForm = null;
+    deleteEquipmentModal.hide();
+    formToSubmit.requestSubmit();
+});
+
+deleteEquipmentModalElement.addEventListener('hidden.bs.modal', () => {
+    pendingEquipmentDeleteForm = null;
+});
+
 document.querySelectorAll('.approve-request-button').forEach(button => {
     button.addEventListener('click', () => {
         document.getElementById('approve_request_id').value = button.dataset.requestId || '';
