@@ -1,11 +1,15 @@
 <?php
+// This page lets a user request a password-reset link using their registered email.
+// It checks the account, creates a secure temporary token, saves its hash, and emails the link through Brevo.
 require_once 'config/database.php';
 require_once 'includes/mail.php';
 
+// These variables control the feedback shown after the form is submitted.
 $message = '';
 $error = '';
 $email = '';
 
+// Process the email form only when the user submits it.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
 
@@ -15,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Always show the same response so account existence is not disclosed.
         $message = 'If an account exists for that email, a password reset link will be sent shortly.';
 
+        // Look up the profile by email. The public response stays generic to protect account privacy.
         $lookup = supabaseServiceRequest(
             'profiles?select=id,email,first_name,last_name&email=eq.' . rawurlencode($email),
             'GET'
@@ -23,10 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (($lookup['code'] ?? 500) < 300 && is_array($rows) && !empty($rows[0])) {
             $profile = $rows[0];
+            // Generate a random one-time token. Only its SHA-256 hash is stored in the database.
             $token = bin2hex(random_bytes(32));
             $tokenHash = hash('sha256', $token);
             $expiresAt = gmdate('Y-m-d\TH:i:s\Z', time() + 1800);
 
+            // Save the token hash and its 30-minute expiration time to this user's profile.
             $saved = supabaseServiceRequest(
                 'profiles?id=eq.' . rawurlencode((string)$profile['id']),
                 'PATCH',
@@ -37,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             if (($saved['code'] ?? 500) >= 200 && ($saved['code'] ?? 500) < 300) {
+                // Build the link sent to the user's email. The raw token is included only in this link.
                 $resetLink = 'https://test-systeml.onrender.com/reset-password.php?token=' . urlencode($token);
                 $firstName = htmlspecialchars($profile['first_name'] ?? 'there', ENT_QUOTES, 'UTF-8');
                 $safeLink = htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8');
@@ -47,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . '<p>This link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.</p>'
                     . '<p>— Zentrix</p></div>';
 
+                // Send the reset instructions using the existing Brevo email helper.
                 $sent = sendSystemEmail($profile['email'], trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')), 'Reset Your Zentrix Password', $html);
                 if ($sent !== true) {
                     error_log('Zentrix password reset email failed: ' . $sent);
@@ -61,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+<!-- The form below collects the registered email and displays request feedback. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
