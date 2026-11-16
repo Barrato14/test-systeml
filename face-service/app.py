@@ -11,7 +11,7 @@ from fastapi import FastAPI, Header
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 
-app = FastAPI(title="EMIS Face Recognition", docs_url=None, redoc_url=None)
+app = FastAPI(title="Zentrix Face Recognition", docs_url=None, redoc_url=None)
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MATCH_THRESHOLD = 0.50
@@ -129,7 +129,7 @@ def get_profile(participant_id: str):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "emis-face-recognition"}
+    return {"status": "ok", "service": "zentrix-face-recognition"}
 
 
 @app.post("/register")
@@ -147,7 +147,7 @@ def register(payload: dict, x_face_service_token: str | None = Header(default=No
     try:
         descriptor = decode_face_image(payload.get("image_data", ""))
         save_profile(participant_id, descriptor)
-        return {"success": True, "message": "Your face has been registered to your EMIS account successfully."}
+        return {"success": True, "message": "Your face has been registered to your Zentrix account successfully."}
     except ValueError as error:
         return response_error(str(error))
     except RuntimeError as error:
