@@ -37,7 +37,7 @@ if (($attendanceResponse['code'] ?? 500) < 400 && is_array($attendanceResponse['
         $attendanceByEvent[(string)($attendanceRecord['event_id'] ?? '')] = $attendanceRecord;
     }
 }
-$dailyAttendanceResponse = supabaseRequest(
+$dailyAttendanceResponse = supabaseServiceRequest(
     'daily_attendance?participant_id=eq.' . rawurlencode((string)$participantId) . '&select=event_id,attendance_date,check_in_time,time_out',
     'GET'
 );
