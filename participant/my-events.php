@@ -184,7 +184,13 @@ usort($myEvents, function($a, $b) {
    coordinates.textContent = 'Coordinates: ' + point;
 if (venueMap) venueMap.remove();
             mapElement.innerHTML = '';
-            venueMap = L.map(mapElement).setView([lat, lng], 17);
+            overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    if (typeof L === 'undefined') {
+     mapElement.textContent = 'Map library could not load. Please check your internet connection and try again.';
+     return;
+    }
+    venueMap = L.map(mapElement).setView([lat, lng], 17);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' }).addTo(venueMap);
             L.marker([lat, lng]).addTo(venueMap).bindPopup('Event location');
             let boundary = null;
