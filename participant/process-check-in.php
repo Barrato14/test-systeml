@@ -84,7 +84,7 @@ $attendanceDate = $now->format('Y-m-d');
 $duplicateQuery = $dailyMode
     ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($attendanceDate) . '&select=id'
     : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id';
-$existingCheckIn = supabaseRequest($duplicateQuery, 'GET');
+$existingCheckIn = $dailyMode ? supabaseServiceRequest($duplicateQuery, 'GET') : supabaseRequest($duplicateQuery, 'GET');
 
 if (($existingCheckIn['code'] ?? 500) >= 400) {
     respond(false, 'Unable to verify your attendance record. Please try again.');
