@@ -308,22 +308,7 @@ if (venueMap) venueMap.remove();
                 }
             }
             const googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(point);
-            externalLink.href = googleMapsUrl;
-            externalLink.onclick = function (event) {
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                if (isAndroid) {
-                    // Let Android handle the geo: URI as an external app link.
-                    externalLink.href = 'geo:0,0?q=' + encodeURIComponent(point);
-                    return;
-                }
-                event.preventDefault();
-                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if (isIOS) {
-                    window.location.href = googleMapsUrl;
-                } else {
-                    window.open(googleMapsUrl, '_blank', 'noopener');
-                }
-            };;
+            externalLink.href = googleMapsUrl;;
             requestAnimationFrame(function () {
                 if (venueMap) venueMap.invalidateSize(true);
             });
