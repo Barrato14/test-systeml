@@ -987,7 +987,7 @@ $calendarJson = json_encode(
                     </div>
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i> Select Event Location (Optional)</label>
-                        <p class="location-picker-help mb-2">Click the map to drop a pin. You can drag the pin to adjust the exact spot. Coordinates are saved automatically.</p>
+                        <p class="location-picker-help mb-2">Set the event pin, then use the polygon drawing tool to mark the entire venue boundary. Participants can attend inside it or up to 100m outside.</p>
                         <div class="input-group mb-2">
                             <input type="search" id="edit-location-search" class="form-control" placeholder="Search a place, street, or landmark..." aria-label="Search event location">
                             <button type="button" id="edit-location-search-button" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Search</button>
