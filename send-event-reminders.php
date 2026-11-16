@@ -1,6 +1,6 @@
 <?php
 /**
- * EMIS automatic event reminders.
+ * Zentrix automatic event reminders.
  *
  * Run from a scheduled job every 15 minutes:
  *   php send-event-reminders.php
@@ -74,7 +74,7 @@ foreach ($events as $event) {
         continue;
     }
 
-    $eventTitle = (string)($event['title'] ?? 'EMIS Event');
+    $eventTitle = (string)($event['title'] ?? 'Zentrix Event');
     $eventVenue = (string)($event['venue'] ?? 'To be announced');
     $eventStart = reminderManilaTime($event['start_datetime'] ?? '');
     try {
@@ -159,7 +159,7 @@ foreach ($events as $event) {
                 'event_id' => $eventId,
                 'title' => (($reminderType === 'event_day') ? 'Event Today: ' : 'Event Reminder: ') . $eventTitle,
                 'message' => (($reminderType === 'event_day') ? 'Your event is happening today: "' : 'Reminder: "') . $eventTitle . '" is scheduled to start ' . $reminderLabel . ', on ' .
-                    $eventStart . '. Venue: ' . $eventVenue . '. Please check the event details in EMIS.',
+                    $eventStart . '. Venue: ' . $eventVenue . '. Please check the event details in Zentrix.',
                 'is_read' => false
             ]);
 
@@ -197,7 +197,7 @@ foreach ($events as $event) {
                 $emailHtml = '
                     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#273449;line-height:1.6;">
                         <div style="background:#343a40;color:#ffffff;padding:22px 26px;border-radius:10px 10px 0 0;">
-                            <h2 style="margin:0;color:#ffffff;">EMIS Event Reminder</h2>
+                            <h2 style="margin:0;color:#ffffff;">Zentrix Event Reminder</h2>
                         </div>
                         <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
                             <h3 style="color:#4f46e5;">Your event is coming up!</h3>
@@ -205,8 +205,8 @@ foreach ($events as $event) {
                             <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
                             <p><strong>Starts:</strong> ' . $safeEventStart . ' (Philippine Time)</p>
                             <p><strong>Venue:</strong> ' . $safeEventVenue . '</p>
-                            <p>Please open EMIS to review the event details and prepare for check-in.</p>
-                            <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the EMIS Event System. Please do not reply to this email.</p>
+                            <p>Please open Zentrix to review the event details and prepare for check-in.</p>
+                            <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the Zentrix. Please do not reply to this email.</p>
                         </div>
                     </div>';
 
