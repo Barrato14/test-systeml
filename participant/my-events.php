@@ -63,6 +63,7 @@ foreach ($registrations as $reg) {
         'event_id' => $eventId,
         'title' => $eventData['title'] ?? 'Unknown Event',
         'start_datetime' => $eventData['start_datetime'] ?? '',
+        'end_datetime' => $eventData['end_datetime'] ?? '',
         'venue' => $eventData['venue'] ?? 'N/A',
         'latitude' => $eventData['latitude'] ?? null,
         'longitude' => $eventData['longitude'] ?? null,
@@ -124,9 +125,23 @@ usort($myEvents, function($a, $b) {
       $attendanceRecord = $attendanceByEvent[$eventKey] ?? null;
       $hasCheckedIn = $attendanceRecord && !empty($attendanceRecord['check_in_time']);
       $hasCheckedOut = $hasCheckedIn && !empty($attendanceRecord['time_out']);
+      $eventIsOngoing = false;
+      try {
+          if (!empty($event['start_datetime']) && !empty($event['end_datetime'])) {
+              $eventStart = (new DateTimeImmutable($event['start_datetime']))->setTimezone($manilaTimezone);
+              $eventEnd = (new DateTimeImmutable($event['end_datetime']))->setTimezone($manilaTimezone);
+              $eventIsOngoing = $eventStart <= $now && $now < $eventEnd;
+          }
+      } catch (Exception $e) {
+          $eventIsOngoing = false;
+      }
      ?>
      <?php if ($hasCheckedOut): ?>
       <span class="my-event-unavailable"><i class="bi bi-check2-circle"></i> Checked out</span>
+     <?php elseif (!$eventIsOngoing): ?>
+      <span class="my-event-unavailable" aria-disabled="true" title="Attendance actions are available only while the event is ongoing.">
+       <i class="bi bi-lock"></i> <?= $hasCheckedIn ? 'Check out' : 'Check in' ?> unavailable
+      </span>
      <?php elseif ($hasCheckedIn): ?>
       <a href="time-out.php?event_id=<?= rawurlencode($eventKey) ?>" class="my-event-checkin"><i class="bi bi-box-arrow-right"></i> Check out</a>
      <?php elseif ($eventKey !== ''): ?>
