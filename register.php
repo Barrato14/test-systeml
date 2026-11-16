@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Send verification email via Brevo API
                 $verificationLink = "https://test-systeml.onrender.com/verify.php?token=" . $verificationToken;
-                $subject = "Verify Your Account - EMIS";
+                $subject = "Verify Your Account - Zentrix";
                 $htmlBody = "<p>Hi " . htmlspecialchars($firstName) . ",</p>"
                           . "<p>Thank you for registering. Please click the link below to verify your email address:</p>"
                           . "<p><a href='" . $verificationLink . "'>Verify My Account</a></p>"
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Create Account - Eventora</title>
+<title>Create Account - Zentrix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <main class="auth-layout">
 <section class="auth-showcase">
 <div class="showcase-content">
-<div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+<div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
 <div class="showcase-text"><h1>Be Part of Every Great Event.</h1><p>Create your account to discover campus activities, register for events, and keep everything in one place.</p></div>
 <div class="visual-decorations">
 <div class="floating-card card-1"><div class="card-header"><i class="ph-fill ph-calendar-check text-violet"></i><span>Campus Events</span></div><div class="card-stats"><div class="stat-bar w-75"></div><div class="stat-bar w-50"></div></div></div>
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 </section>
 <section class="auth-form-wrapper auth-register-wrapper">
-<div class="mobile-logo"><i class="ph-fill ph-ticket"></i><span>Eventora</span></div>
+<div class="mobile-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
 <div class="auth-form-container auth-register-container">
 <header class="form-header"><h2>Create your account</h2><p>Enter your details to join the campus community.</p></header>
 <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 <p class="register-prompt">Already have an account? <a href="login.php">Sign in</a></p>
 </div>
-<footer class="auth-footer"><p>&copy; <?= date('Y') ?> Eventora. All rights reserved.</p><div class="footer-links"><a href="privacy.php">Privacy Policy</a><a href="terms.php">Terms of Service</a></div></footer>
+<footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p><div class="footer-links"><a href="privacy.php">Privacy Policy</a><a href="terms.php">Terms of Service</a></div></footer>
 </section>
 </main>
 <script src="/js/pwa.js"></script>
