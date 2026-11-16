@@ -316,6 +316,7 @@ foreach ($allEvents as $evt) {
                 'image_url' => $evt['image_url'] ?? '',
                 'latitude' => $evt['latitude'] ?? null,
                 'longitude' => $evt['longitude'] ?? null,
+                'venue_boundary' => $evt['venue_boundary'] ?? null,
                 'status' => $eventStatus
             ]
         ];
@@ -338,7 +339,10 @@ $calendarJson = json_encode(
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         /* Keep the participant event-details map popup consistent with Zentrix's dark admin theme. */
         #participantEventDetailsModal .modal-content {
@@ -373,6 +377,10 @@ $calendarJson = json_encode(
             background: #21172e;
             border: 1px solid #49345f;
         }
+        .participant-map-legend { display:flex; flex-wrap:wrap; gap:12px; padding-top:10px; color:#cbbbdc; font-size:11px; }
+        .participant-map-legend span { display:inline-flex; align-items:center; gap:6px; }
+        .participant-map-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; }
+        .legend-venue { background:#4ade80; } .legend-buffer { background:#a78bfa; } .legend-pin { background:#ef4444; }
         #participantEventMapLink {
             color: #dfc5ff;
             border-color: #76519a;
@@ -569,9 +577,8 @@ $calendarJson = json_encode(
                             </div>
                         </div>
                     </div>
-                    <iframe id="participantEventMap" title="Event location map"
-                            class="w-100 rounded" style="height:220px;border:0;display:none;"
-                            loading="lazy"></iframe>
+                    <div id="participantEventMap" class="w-100 rounded participant-venue-map" role="img" aria-label="Event venue boundary map" style="height:220px;display:none;"></div>
+                    <div id="participantMapLegend" class="participant-map-legend" style="display:none;"><span><i class="legend-venue"></i> Marked venue</span><span><i class="legend-buffer"></i> Allowed area (50m outside)</span><span><i class="legend-pin"></i> Event pin</span></div>
                     <a id="participantEventMapLink" href="#" target="_blank" rel="noopener"
                        class="btn btn-outline-primary btn-sm mt-2" style="display:none;">
                         <i class="bi bi-geo-alt me-1"></i>Open in Google Maps
@@ -749,21 +756,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const map = document.getElementById('participantEventMap');
         const mapLink = document.getElementById('participantEventMapLink');
+        const mapLegend = document.getElementById('participantMapLegend');
+        if (window.participantVenueMap) { window.participantVenueMap.remove(); window.participantVenueMap = null; }
+        map.innerHTML = '';
 
         if (props.latitude !== null && props.latitude !== '' &&
             props.longitude !== null && props.longitude !== '') {
             const coordinates = props.latitude + ',' + props.longitude;
 
-            map.src = 'https://maps.google.com/maps?q=' +
-                encodeURIComponent(coordinates) + '&z=15&output=embed';
             map.style.display = 'block';
+            window.participantVenueMap = L.map(map).setView([Number(props.latitude), Number(props.longitude)], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' }).addTo(window.participantVenueMap);
+            L.marker([Number(props.latitude), Number(props.longitude)]).addTo(window.participantVenueMap).bindPopup('Event location');
+            let boundary = props.venue_boundary;
+            if (typeof boundary === 'string') { try { boundary = JSON.parse(boundary); } catch (error) { boundary = null; } }
+            if (Array.isArray(boundary) && boundary.length >= 3) {
+                const ring = boundary.map(p => [Number(p[1]), Number(p[0])]);
+                if (ring.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
+                    if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+                    const feature = turf.polygon([ring]);
+                    const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
+                    L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(window.participantVenueMap);
+                    L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(window.participantVenueMap).bindPopup('Organizer-marked venue');
+                    window.participantVenueMap.fitBounds(L.geoJSON(allowedArea).getBounds(), { padding: [20, 20] });
+                }
+            }
+            mapLegend.style.display = 'flex';
 
             mapLink.href = 'https://www.google.com/maps?q=' +
                 encodeURIComponent(coordinates);
             mapLink.style.display = 'inline-block';
         } else {
-            map.removeAttribute('src');
+            map.innerHTML = '';
             map.style.display = 'none';
+            mapLegend.style.display = 'none';
             mapLink.style.display = 'none';
         }
 
