@@ -647,7 +647,7 @@ $calendarJson = json_encode(
         </article>
         <article class="participant-dashboard-stat">
             <span class="participant-dashboard-stat-icon"><i class="bi bi-clock-history"></i></span>
-            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Recorded attendance</span></div>
+            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Completed attendance time</span></div>
         </article>
         <article class="participant-dashboard-stat">
             <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-range"></i></span>
