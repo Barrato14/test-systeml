@@ -118,6 +118,11 @@ function buildEventPayload() {
         throw new Exception('The event end date and time must be after its start date and time.');
     }
 
+    $venueBoundary = parseVenueBoundary($_POST['venue_boundary'] ?? '');
+    if (!$venueBoundary) {
+        throw new Exception('Please draw and save the venue boundary on the map before saving this event.');
+    }
+
     $latitude = trim($_POST['latitude'] ?? '');
     $longitude = trim($_POST['longitude'] ?? '');
 
@@ -132,7 +137,7 @@ function buildEventPayload() {
         'image_url' => trim($_POST['image_url'] ?? ''),
         'latitude' => $latitude !== '' ? (float)$latitude : null,
         'longitude' => $longitude !== '' ? (float)$longitude : null,
-        'venue_boundary' => parseVenueBoundary($_POST['venue_boundary'] ?? '')
+        'venue_boundary' => $venueBoundary
     ];
 }
 
@@ -1174,7 +1179,12 @@ function initAdminEventsPage() {
         const longitude = document.getElementById('edit-lng').value;
         if (latitude !== '' && longitude !== '') {
             eventLocationPickers.edit.updateSelection(latitude, longitude, true);
-        } else {
+        }
+        const savedBoundary = document.getElementById('edit-boundary').value;
+        if (savedBoundary) {
+            try { eventLocationPickers.edit.loadBoundary(JSON.parse(savedBoundary)); }
+            catch (error) { eventLocationPickers.edit.loadBoundary(null); }
+        } else if (latitude === '' || longitude === '') {
             eventLocationPickers.edit.clearSelection();
         }
     });
@@ -1315,8 +1325,9 @@ function initAdminEventsPage() {
             document.getElementById('edit-image').value = event.image_url ?? '';
             document.getElementById('edit-lat').value = event.latitude ?? '';
             document.getElementById('edit-lng').value = event.longitude ?? '';
-            document.getElementById('edit-boundary').value = '';
-            eventLocationPickers.edit.loadBoundary(event.venue_boundary ?? null);
+            document.getElementById('edit-boundary').value = event.venue_boundary
+                ? (typeof event.venue_boundary === 'string' ? event.venue_boundary : JSON.stringify(event.venue_boundary))
+                : '';
         });
     });
 
