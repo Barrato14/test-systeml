@@ -2028,8 +2028,10 @@ function showUserDetails(user) {
         ['Email Address', user.email],
         ['User ID', user.id],
         ['Role', user.role],
-        ['Course', user.course || 'Not specified'],
-        ['Section', user.section || 'Not specified'],
+        ...(String(user.role || '').toLowerCase() === 'participant' ? [
+            ['Course', user.course || 'Not specified'],
+            ['Section', user.section || 'Not specified']
+        ] : []),
         [
             'Email Verification',
             user.verified ? 'Verified' : 'Unverified'
