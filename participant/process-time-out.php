@@ -84,7 +84,7 @@ $attendanceDate = $now->format('Y-m-d');
 $lookup = $dailyMode
     ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($attendanceDate) . '&select=id,time_out'
     : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out';
-$checkExisting = supabaseRequest($lookup, 'GET');
+$checkExisting = $dailyMode ? supabaseServiceRequest($lookup, 'GET') : supabaseRequest($lookup, 'GET');
 
 if (($checkExisting['code'] ?? 500) >= 400 || empty($checkExisting['data'])) {
     respond(false, 'No check-in record was found. You must check in first.');
