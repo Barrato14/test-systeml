@@ -281,6 +281,12 @@ foreach ($allEvents as $event) {
             coordinates.textContent = 'Coordinates: ' + point;
 if (venueMap) venueMap.remove();
             mapElement.innerHTML = '';
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            if (typeof L === 'undefined') {
+                mapElement.textContent = 'Map library could not load. Please check your internet connection and try again.';
+                return;
+            }
             venueMap = L.map(mapElement).setView([lat, lng], 17);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' }).addTo(venueMap);
             L.marker([lat, lng]).addTo(venueMap).bindPopup('Event location');
@@ -290,16 +296,19 @@ if (venueMap) venueMap.remove();
                 const ring = boundary.map(p => [Number(p[1]), Number(p[0])]);
                 if (ring.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1]))) {
                     if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
-                    const feature = turf.polygon([ring]);
-                    const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
-                    L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                    if (typeof turf !== 'undefined') {
+                        const feature = turf.polygon([ring]);
+                        const allowedArea = turf.buffer(feature, 0.05, { units: 'kilometers' });
+                        L.geoJSON(allowedArea, { style: { color: '#a78bfa', weight: 2, dashArray: '7 5', fillColor: '#8b5cf6', fillOpacity: .13 } }).addTo(venueMap);
+                    }
                     L.polygon(boundary, { color: '#4ade80', weight: 3, fillColor: '#22c55e', fillOpacity: .22 }).addTo(venueMap).bindPopup('Organizer-marked venue');
                     venueMap.fitBounds(L.geoJSON(allowedArea).getBounds(), { padding: [20, 20] });
                 }
             }
             externalLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(point);
-            overlay.classList.add('is-open');
-            overlay.setAttribute('aria-hidden', 'false');
+            requestAnimationFrame(function () {
+                if (venueMap) venueMap.invalidateSize(true);
+            });
         });
     });
 
