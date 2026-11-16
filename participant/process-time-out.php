@@ -7,6 +7,7 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/face-service.php';
 require_once '../includes/attendance-geofence.php';
+require_once '../includes/daily-attendance.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -77,12 +78,13 @@ if (!$geofence['allowed']) {
     respond(false, $geofence['message']);
 }
 
-// Find the participant's active check-in record.
-$checkExisting = supabaseRequest(
-    'attendance?event_id=eq.' . rawurlencode($eventId) .
-    '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out',
-    'GET'
-);
+// For multi-day events, time out only the current day's check-in.
+$dailyMode = isMultiDayAttendanceEvent($event);
+$attendanceDate = $now->format('Y-m-d');
+$lookup = $dailyMode
+    ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($attendanceDate) . '&select=id,time_out'
+    : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out';
+$checkExisting = supabaseRequest($lookup, 'GET');
 
 if (($checkExisting['code'] ?? 500) >= 400 || empty($checkExisting['data'])) {
     respond(false, 'No check-in record was found. You must check in first.');
@@ -114,7 +116,7 @@ $payload = [
 ];
 
 $response = supabaseRequest(
-    'attendance?id=eq.' . rawurlencode((string)$recordId),
+    ($dailyMode ? 'daily_attendance?id=eq.' : 'attendance?id=eq.') . rawurlencode((string)$recordId),
     'PATCH',
     $payload
 );
