@@ -6,7 +6,7 @@ require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/mail.php';
 
-// Keep the same EMIS roles and permissions.
+// Keep the same Zentrix roles and permissions.
 $allowedRoles = ['administrator', 'event organizer'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
@@ -118,7 +118,7 @@ function buildEventPayload() {
     ];
 }
 
-// CREATE / EDIT / DELETE: same events table and fields as the original EMIS page.
+// CREATE / EDIT / DELETE: same events table and fields as the original Zentrix page.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $emailSkippedCount = 0;
 
             $selectedEvent = $eventCheck['data'][0];
-            $eventTitleForEmail = (string)($selectedEvent['title'] ?? 'EMIS Event');
+            $eventTitleForEmail = (string)($selectedEvent['title'] ?? 'Zentrix Event');
             $eventVenueForEmail = (string)($selectedEvent['venue'] ?? '');
             $eventStartForEmail = formatManilaTime($selectedEvent['start_datetime'] ?? '');
 
@@ -257,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emailHtml = '
                     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#273449;line-height:1.6;">
                         <div style="background:#343a40;color:#ffffff;padding:22px 26px;border-radius:10px 10px 0 0;">
-                            <h2 style="margin:0;color:#ffffff;">EMIS Event Notification</h2>
+                            <h2 style="margin:0;color:#ffffff;">Zentrix Event Notification</h2>
                         </div>
                         <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
                             <h3 style="color:#198754;">' . $safeTitle . '</h3>
@@ -266,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
                             ' . ($safeVenue !== '' ? '<p><strong>Venue:</strong> ' . $safeVenue . '</p>' : '') . '
                             ' . ($safeStart !== 'N/A' ? '<p><strong>Starts:</strong> ' . $safeStart . '</p>' : '') . '
-                            <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the EMIS Event System. Please do not reply to this email.</p>
+                            <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the Zentrix. Please do not reply to this email.</p>
                         </div>
                     </div>';
 
@@ -274,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emailResult = sendSystemEmail(
                     $recipientEmail,
                     'Participant',
-                    $notificationTitle . ' - EMIS Event Notification',
+                    $notificationTitle . ' - Zentrix Event Notification',
                     $emailHtml
                 );
 
@@ -282,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $emailSentCount++;
                 } else {
                     $emailFailedCount++;
-                    error_log('EMIS Brevo notification failed for participant ' . $recipientId . ': ' . (string)$emailResult);
+                    error_log('Zentrix Brevo notification failed for participant ' . $recipientId . ': ' . (string)$emailResult);
                 }
             }
 
@@ -325,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (($participantsResponse['code'] ?? 500) < 400 && is_array($participantsResponse['data'] ?? null)) {
                 $automaticAnnouncementTitle = 'New Event Added: ' . $payload['title'];
-                $automaticAnnouncementMessage = 'A new event has been added to EMIS. '
+                $automaticAnnouncementMessage = 'A new event has been added to Zentrix. '
                     . 'Date: ' . formatManilaTime($payload['start_datetime']) . '. '
                     . 'Venue: ' . ($payload['venue'] ?: 'To be announced') . '. '
                     . 'Open Browse Events to view the full details and register.';
@@ -387,7 +387,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $emailHtml = '
                         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#273449;line-height:1.6;">
                             <div style="background:#343a40;color:#ffffff;padding:22px 26px;border-radius:10px 10px 0 0;">
-                                <h2 style="margin:0;color:#ffffff;">EMIS - New Event Announcement</h2>
+                                <h2 style="margin:0;color:#ffffff;">Zentrix - New Event Announcement</h2>
                             </div>
                             <div style="padding:24px;border:1px solid #e8edf4;border-top:0;border-radius:0 0 10px 10px;">
                                 <h3 style="color:#198754;">' . $safeAnnouncementTitle . '</h3>
@@ -396,15 +396,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <p><strong>Event:</strong> ' . $safeEventTitle . '</p>
                                 <p><strong>Date &amp; time:</strong> ' . $safeEventDate . '</p>
                                 <p><strong>Venue:</strong> ' . $safeEventVenue . '</p>
-                                <p>Log in to EMIS and open Browse Events to view the details and register.</p>
-                                <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the EMIS Event System. Please do not reply to this email.</p>
+                                <p>Log in to Zentrix and open Browse Events to view the details and register.</p>
+                                <p style="color:#64748b;font-size:13px;margin-top:24px;">This is an automated message from the Zentrix. Please do not reply to this email.</p>
                             </div>
                         </div>';
 
                     $emailResult = sendSystemEmail(
                         $recipientEmail,
                         $recipientName !== '' ? $recipientName : 'Participant',
-                        $automaticAnnouncementTitle . ' - EMIS',
+                        $automaticAnnouncementTitle . ' - Zentrix',
                         $emailHtml
                     );
 
@@ -413,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $announcementEmailFailed++;
                         error_log(
-                            'EMIS new-event email failed for participant ' . $participantId . ': ' .
+                            'Zentrix new-event email failed for participant ' . $participantId . ': ' .
                             (string)$emailResult
                         );
                     }
@@ -461,7 +461,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch the original EMIS events. No category table or category_id is required.
+// Fetch the original Zentrix events. No category table or category_id is required.
 $eventQuery = 'events?select=*&order=start_datetime.asc';
 
 $getResponse = supabaseRequest($eventQuery, 'GET');
@@ -513,7 +513,7 @@ $calendarJson = json_encode(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Management - EMIS</title>
+    <title>Event Management - Zentrix</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
@@ -634,7 +634,7 @@ $calendarJson = json_encode(
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
                 <h2 class="mb-1">Event Management</h2>
-                <p class="text-muted mb-0">View your schedule and manage EMIS events.</p>
+                <p class="text-muted mb-0">View your schedule and manage Zentrix events.</p>
             </div>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createEventModal">
                 <i class="bi bi-plus-circle me-2"></i> Create Event
@@ -678,7 +678,7 @@ $calendarJson = json_encode(
             <div id="calendar"></div>
         </section>
 
-        <!-- Existing EMIS event table -->
+        <!-- Existing Zentrix event table -->
         <section class="page-card">
             <div class="p-3 p-md-4 border-bottom">
                 <h4 class="section-heading mb-1">All Events</h4>
@@ -852,7 +852,7 @@ $calendarJson = json_encode(
     </div>
 </div>
 
-<!-- Create Event Modal: original EMIS fields retained -->
+<!-- Create Event Modal: original Zentrix fields retained -->
 <div class="modal fade" id="createEventModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -1269,7 +1269,7 @@ function initAdminEventsPage() {
         });
     });
 
-    // Populate the existing EMIS edit form from the same events data.
+    // Populate the existing Zentrix edit form from the same events data.
     document.querySelectorAll('.edit-event-button').forEach(function (button) {
         button.addEventListener('click', function () {
             const id = this.dataset.id;
