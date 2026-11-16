@@ -20,3 +20,5 @@ CREATE TABLE IF NOT EXISTS public.daily_attendance (
 CREATE INDEX IF NOT EXISTS daily_attendance_event_date_idx ON public.daily_attendance (event_id, attendance_date);
 CREATE INDEX IF NOT EXISTS daily_attendance_participant_idx ON public.daily_attendance (participant_id, attendance_date DESC);
 COMMENT ON TABLE public.daily_attendance IS 'One attendance row per participant per calendar day for multi-day Zentrix events. Single-day events continue using public.attendance.';
+
+ALTER TABLE public.daily_attendance ENABLE ROW LEVEL SECURITY;
