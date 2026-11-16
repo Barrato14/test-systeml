@@ -21,6 +21,7 @@ require_once 'config/database.php';
                 <div id="authError" class="alert-error" role="alert" hidden></div>
                 <form id="sessionForm" method="POST" action="set-session.php">
                     <input type="hidden" name="access_token" id="accessToken">
+                    <input type="hidden" name="auth_source" id="authSource">
                 </form>
             </div>
         </section>
@@ -29,6 +30,7 @@ require_once 'config/database.php';
         (() => {
             const params = new URLSearchParams(window.location.hash.substring(1));
             const token = params.get('access_token');
+            document.getElementById('authSource').value = new URLSearchParams(window.location.search).get('source') === 'register' ? 'register' : 'login';
             const error = params.get('error_description') || params.get('error');
 
             const showError = (message) => {
