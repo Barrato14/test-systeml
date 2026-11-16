@@ -413,9 +413,9 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
         .equipment-card-name { margin:0; color:var(--admin-text,#f4efff); font-size:17px; font-weight:800; overflow-wrap:anywhere; }
         .equipment-card-description { min-height:42px; margin:0; color:var(--admin-muted,#b8acc8); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
         .equipment-card-quantity { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:11px 0; border-top:1px solid var(--admin-border,#49375e); border-bottom:1px solid var(--admin-border,#49375e); }
-        .equipment-card-quantity>div { display:flex; flex-direction:column; gap:3px; min-width:0; }
-        .equipment-card-metric-label { color:var(--admin-muted,#aaa0ba); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-        .equipment-card-quantity strong { color:var(--admin-text,#f4efff); font-size:20px; line-height:1.2; }
+        .equipment-card-quantity>div { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; text-align:center; }
+        .equipment-card-metric-label { color:var(--admin-muted,#aaa0ba); font-size:10px; font-weight:700; text-align:center; text-transform:uppercase; letter-spacing:.04em; }
+        .equipment-card-quantity strong { color:var(--admin-text,#f4efff); font-size:20px; line-height:1.2; text-align:center; }
         .equipment-card-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:auto; }
         .equipment-card-actions form { display:inline-flex; }
         .equipment-card-actions .btn { flex:1 1 auto; }
