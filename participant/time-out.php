@@ -3,6 +3,7 @@ session_start();
 date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/daily-attendance.php';
 
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['user_role'] ?? '') !== 'participant') {
     header("Location: ../login.php");
@@ -51,8 +52,9 @@ if ($now >= $eventEnd) {
 
 // Verify active check-in exists and has not timed out.
 $checkExisting = supabaseRequest(
-    'attendance?event_id=eq.' . rawurlencode($eventId) .
-    '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out',
+    (isMultiDayAttendanceEvent($event)
+        ? 'daily_attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&attendance_date=eq.' . rawurlencode($now->format('Y-m-d')) . '&select=id,time_out'
+        : 'attendance?event_id=eq.' . rawurlencode($eventId) . '&participant_id=eq.' . rawurlencode($participantId) . '&select=id,time_out'),
     'GET'
 );
 
