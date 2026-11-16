@@ -566,7 +566,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                         $badgeClass = $displayStatus === 'Available' ? 'success' : ($displayStatus === 'Borrowed' ? 'warning text-dark' : ($displayStatus === 'Maintenance' ? 'danger' : 'secondary'));
                         $searchText = strtolower(($item['name'] ?? '') . ' ' . ($item['category'] ?? '') . ' ' . ($item['description'] ?? ''));
                     ?>
-                        <div class="col-sm-6 col-lg-4 equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
+                        <div class="col-sm-6 col-lg-3 equipment-row" data-search="<?= h($searchText) ?>" data-status="<?= h($displayStatus) ?>">
                             <article class="equipment-item-card h-100">
                                 <div class="equipment-card-image-wrap">
                                     <?php if (!empty($item['image_url'])): ?>
