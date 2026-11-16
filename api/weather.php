@@ -32,7 +32,7 @@ if ($latitude === false || $latitude === null ||
 $latitude = round($latitude, 4);
 $longitude = round($longitude, 4);
 $cacheKey = hash('sha256', $latitude . ':' . $longitude);
-$cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'emis-weather-' . $cacheKey . '.json';
+$cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'zentrix-weather-' . $cacheKey . '.json';
 $failureFile = $cacheFile . '.retry';
 
 $cachedPayload = null;
@@ -46,7 +46,7 @@ if (is_file($cacheFile)) {
         $cachedPayload = $cacheRecord['data'];
         $cachedAt = (int) $cacheRecord['saved_at'];
         if (time() - $cachedAt < 600) {
-            header('X-EMIS-Weather-Cache: HIT');
+            header('X-Zentrix-Weather-Cache: HIT');
             header('Cache-Control: public, max-age=300');
             echo json_encode($cachedPayload);
             exit;
@@ -58,7 +58,7 @@ if (is_file($failureFile)) {
     $retryAfter = (int) @file_get_contents($failureFile);
     if ($retryAfter > time()) {
         if ($cachedPayload !== null && time() - $cachedAt < 86400) {
-            header('X-EMIS-Weather-Cache: STALE');
+            header('X-Zentrix-Weather-Cache: STALE');
             header('Cache-Control: public, max-age=120');
             echo json_encode($cachedPayload);
             exit;
@@ -85,7 +85,7 @@ curl_setopt_array($ch, [
     CURLOPT_FOLLOWLOCATION => true,
     CURLOPT_HTTPHEADER => [
         'Accept: application/json',
-        'User-Agent: EMIS-Weather/1.0 (https://test-systeml.onrender.com)'
+        'User-Agent: Zentrix-Weather/1.0 (https://test-systeml.onrender.com)'
     ]
 ]);
 
@@ -96,14 +96,14 @@ $curlErrno = curl_errno($ch);
 curl_close($ch);
 
 if ($response === false || $status < 200 || $status >= 300) {
-    error_log('EMIS MET Norway weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
+    error_log('Zentrix MET Norway weather proxy failed. cURL ' . $curlErrno . '; HTTP ' . $status . '; ' . ($error ?: 'No cURL error'));
 
     if ($status === 429) {
         @file_put_contents($failureFile, (string) (time() + 600), LOCK_EX);
     }
 
     if ($cachedPayload !== null && time() - $cachedAt < 86400) {
-        header('X-EMIS-Weather-Cache: STALE');
+        header('X-Zentrix-Weather-Cache: STALE');
         header('Cache-Control: public, max-age=120');
         echo json_encode($cachedPayload);
         exit;
@@ -265,7 +265,7 @@ try {
         'hourly' => $hourly
     ];
 } catch (Throwable $exception) {
-    error_log('EMIS MET Norway response conversion failed: ' . $exception->getMessage());
+    error_log('Zentrix MET Norway response conversion failed: ' . $exception->getMessage());
     http_response_code(502);
     echo json_encode(['error' => 'MET Norway returned forecast data that could not be processed.']);
     exit;
@@ -275,6 +275,6 @@ try {
     'saved_at' => time(),
     'data' => $forecast
 ]), LOCK_EX);
-header('X-EMIS-Weather-Cache: MISS');
+header('X-Zentrix-Weather-Cache: MISS');
 header('Cache-Control: public, max-age=300');
 echo json_encode($forecast);
