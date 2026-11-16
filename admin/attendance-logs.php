@@ -68,12 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
             $currentStatus = trim((string)($record['status'] ?? 'Present')) ?: 'Present';
             $newStatus = strcasecmp($currentStatus, 'Absent') === 0 ? 'Present' : 'Absent';
 
-            $updateRes = supabaseRequest(
-                $attendanceSource . '?id=eq.' . rawurlencode($attendanceId)
-                    . '&event_id=eq.' . rawurlencode((string)$record['event_id']),
-                'PATCH',
-                ['status' => $newStatus]
-            );
+            $updateEndpoint = $attendanceSource . '?id=eq.' . rawurlencode($attendanceId)
+                . '&event_id=eq.' . rawurlencode((string)$record['event_id']);
+            $updateRes = $attendanceSource === 'daily_attendance'
+                ? supabaseServiceRequest($updateEndpoint, 'PATCH', ['status' => $newStatus])
+                : supabaseRequest($updateEndpoint, 'PATCH', ['status' => $newStatus]);
 
             if (($updateRes['code'] ?? 500) >= 200 && ($updateRes['code'] ?? 500) < 300) {
                 $participantId = (string)($record['participant_id'] ?? '');
@@ -315,6 +314,9 @@ function formatManilaTime($utcString) {
                                         </td>
                                         <td>
                                             <strong><?= htmlspecialchars($eventsMap[(string)($log['event_id'] ?? '')] ?? 'Unknown Event') ?></strong>
+                                            <?php if (!empty($log['attendance_date'])): ?>
+                                                <div class="small text-muted"><?= htmlspecialchars(date('M j, Y', strtotime($log['attendance_date']))) ?> · Daily attendance</div>
+                                            <?php endif; ?>
                                             <div><code class="small text-muted"><?= htmlspecialchars($log['event_id'] ?? 'N/A') ?></code></div>
                                         </td>
                                         
