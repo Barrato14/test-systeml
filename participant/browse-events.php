@@ -308,7 +308,7 @@ if (venueMap) venueMap.remove();
                 }
             }
             const googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(point);
-            externalLink.href = googleMapsUrl;;
+            externalLink.href = googleMapsUrl;
             requestAnimationFrame(function () {
                 if (venueMap) venueMap.invalidateSize(true);
             });
