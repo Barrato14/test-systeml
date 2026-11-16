@@ -232,6 +232,25 @@ function formatManilaTime($utcString) {
             <span class="badge bg-secondary fs-6">Showing: <?= count($attendanceLogs) ?> Records</span>
         </div>
 
+        <section class="card shadow-sm border-0 mb-4" style="background:#21172f;color:#e9ddf7;border:1px solid #49335f!important">
+            <div class="card-body p-3 p-md-4">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-info-circle-fill" style="color:#c5a0ff;font-size:1.35rem"></i>
+                    <div>
+                        <h5 class="mb-2" style="color:#fff">How attendance records work</h5>
+                        <p class="mb-2 small" style="color:#d0c0e1">This page lists actual participant check-ins. Event registrations alone do not create an attendance record. A record appears after a participant successfully checks in.</p>
+                        <div class="small" style="color:#e4d6f2"><strong>Single-day event:</strong> one row per participant with time-in and time-out. <strong>Multi-day event:</strong> a separate row for each participant and event date. The event column shows the date for daily records.</div>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <span class="badge rounded-pill" style="background:#244b36;color:#a8f0bd">Present</span>
+                            <span class="badge rounded-pill" style="background:#5a4020;color:#ffdb9b">Missing Time Out</span>
+                            <span class="badge rounded-pill" style="background:#542b32;color:#ffb7c0">Absent</span>
+                        </div>
+                        <p class="small mb-0 mt-2" style="color:#bcaaca">Missing Time Out means the participant checked in but did not time out before that attendance day or the event ended. It does not automatically create a time-out time.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <?php if ($attendanceActionMessage !== ''): ?>
             <div class="alert <?= strpos($attendanceActionMessage, 'successfully') !== false ? 'alert-success' : 'alert-info' ?> alert-dismissible fade show" role="alert">
                 <?= htmlspecialchars($attendanceActionMessage, ENT_QUOTES, 'UTF-8') ?>
