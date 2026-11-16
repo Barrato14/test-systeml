@@ -1262,12 +1262,69 @@ function initAdminEventsPage() {
     const eventModalElement = document.getElementById('eventDetailsModal');
     const detailsModal = bootstrap.Modal.getOrCreateInstance(eventModalElement);
 
-    // Native date picker allows a direct jump to a selected year, month, and day.
-    const calendarJumpPicker = document.createElement('input');
-    calendarJumpPicker.type = 'date';
-    calendarJumpPicker.setAttribute('aria-label', 'Jump to calendar date');
-    calendarJumpPicker.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
-    document.body.appendChild(calendarJumpPicker);
+    // Centered, theme-matched date jump dialog.
+    const jumpDialogStyle = document.createElement('style');
+    jumpDialogStyle.textContent = `
+        .calendar-jump-backdrop{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,3,10,.72);backdrop-filter:blur(4px)}
+        .calendar-jump-backdrop.is-open{display:flex}
+        .calendar-jump-dialog{width:min(100%,390px);padding:24px;border:1px solid var(--admin-border,#49375e);border-radius:18px;background:var(--admin-surface,#1a1328);color:var(--admin-text,#f4efff);box-shadow:0 24px 70px rgba(0,0,0,.5)}
+        .calendar-jump-heading{margin:0 0 6px;font-size:18px;font-weight:800;color:var(--admin-text,#fff)}
+        .calendar-jump-help{margin:0 0 18px;color:var(--admin-muted,#aaa0ba);font-size:13px}
+        .calendar-jump-date{display:block;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--admin-border,#49375e);border-radius:10px;background:#120d1d;color:var(--admin-text,#fff);color-scheme:dark;font:inherit;font-size:15px}
+        .calendar-jump-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+        .calendar-jump-actions button{min-height:40px;padding:9px 16px;border-radius:9px;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+        .calendar-jump-cancel{border:1px solid var(--admin-border,#49375e);background:transparent;color:var(--admin-text,#f4efff)}
+        .calendar-jump-go{border:1px solid #8054c0;background:#7140b5;color:#fff}
+        .calendar-jump-actions button:hover{filter:brightness(1.12)}
+        @media(max-width:480px){.calendar-jump-dialog{padding:20px}}
+    `;
+    document.head.appendChild(jumpDialogStyle);
+
+    const jumpBackdrop = document.createElement('div');
+    jumpBackdrop.className = 'calendar-jump-backdrop';
+    jumpBackdrop.innerHTML = `
+        <section class="calendar-jump-dialog" role="dialog" aria-modal="true" aria-labelledby="calendarJumpTitle">
+            <h3 class="calendar-jump-heading" id="calendarJumpTitle">Jump to a date</h3>
+            <p class="calendar-jump-help">Choose a year, month, and day to go directly to that part of the calendar.</p>
+            <input class="calendar-jump-date" type="date" id="calendarJumpDate" aria-label="Choose calendar date">
+            <div class="calendar-jump-actions">
+                <button type="button" class="calendar-jump-cancel" id="calendarJumpCancel">Cancel</button>
+                <button type="button" class="calendar-jump-go" id="calendarJumpGo">Go to date</button>
+            </div>
+        </section>
+    `;
+    document.body.appendChild(jumpBackdrop);
+
+    const calendarJumpPicker = jumpBackdrop.querySelector('#calendarJumpDate');
+    const closeCalendarJump = () => {
+        jumpBackdrop.classList.remove('is-open');
+    };
+    const openCalendarJump = () => {
+        calendarJumpPicker.value = calendar.formatDate(calendar.getDate(), { formatStr: 'yyyy-MM-dd' });
+        jumpBackdrop.classList.add('is-open');
+        requestAnimationFrame(() => calendarJumpPicker.focus());
+    };
+    const applyCalendarJump = () => {
+        if (!calendarJumpPicker.value) {
+            calendarJumpPicker.focus();
+            return;
+        }
+        calendar.gotoDate(calendarJumpPicker.value);
+        closeCalendarJump();
+    };
+
+    jumpBackdrop.addEventListener('click', event => {
+        if (event.target === jumpBackdrop) closeCalendarJump();
+    });
+    jumpBackdrop.querySelector('#calendarJumpCancel').addEventListener('click', closeCalendarJump);
+    jumpBackdrop.querySelector('#calendarJumpGo').addEventListener('click', applyCalendarJump);
+    calendarJumpPicker.addEventListener('keydown', event => {
+        if (event.key === 'Enter') applyCalendarJump();
+        if (event.key === 'Escape') closeCalendarJump();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && jumpBackdrop.classList.contains('is-open')) closeCalendarJump();
+    });
 
     const calendar = new FullCalendar.Calendar(calendarElement, {
         initialView: 'dayGridMonth',
@@ -1280,12 +1337,7 @@ function initAdminEventsPage() {
             jumpToDate: {
                 text: 'Jump to date',
                 click: function () {
-                    calendarJumpPicker.value = calendar.formatDate(calendar.getDate(), { formatStr: 'yyyy-MM-dd' });
-                    if (typeof calendarJumpPicker.showPicker === 'function') {
-                        calendarJumpPicker.showPicker();
-                    } else {
-                        calendarJumpPicker.click();
-                    }
+                    openCalendarJump();
                 }
             }
         },
@@ -1362,10 +1414,6 @@ function initAdminEventsPage() {
     });
 
     calendar.render();
-
-    calendarJumpPicker.addEventListener('change', function () {
-        if (this.value) calendar.gotoDate(this.value);
-    });
 
     // Search filters both the calendar events and the table rows.
     searchInput.addEventListener('input', function () {
