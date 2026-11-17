@@ -34,7 +34,7 @@ $lastUpdated = $hasRegisteredFace ? ($existingProfile['updated_at'] ?? '') : '';
     <title>Face Registration - Zentrix</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../css/style.css?v=20261117-1">
+    <link rel="stylesheet" href="../css/style.css?v=20261117-5">
     <style>
         .face-registration-card { max-width: 720px; margin: 35px auto; padding: 28px; background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(15,23,42,.07); }
         #faceRegistrationVideo { width: 100%; max-height: 420px; background: #111827; border-radius: 12px; object-fit: cover; transform: scaleX(-1); }
@@ -128,6 +128,6 @@ finally{scanBusy=false;}
 window.addEventListener('beforeunload',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});updateReady();startCamera();
 }
 </script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
 </body>
 </html>
