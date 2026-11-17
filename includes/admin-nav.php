@@ -133,17 +133,17 @@ if ($adminRole === 'event organizer') {
         });
     });
 
-    document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (settings) {
+    document.querySelectorAll('.admin-settings, .admin-mobile-settings, .admin-mobile-menu').forEach(function (settings) {
         settings.addEventListener('toggle', function () {
             if (settings.open) {
-                document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (other) {
+                document.querySelectorAll('.admin-settings, .admin-mobile-settings, .admin-mobile-menu').forEach(function (other) {
                     if (other !== settings) other.open = false;
                 });
             }
         });
     });
     document.addEventListener('pointerdown', function (event) {
-        document.querySelectorAll('.admin-settings, .admin-mobile-settings').forEach(function (settings) {
+        document.querySelectorAll('.admin-settings, .admin-mobile-settings, .admin-mobile-menu').forEach(function (settings) {
             if (settings.open && !settings.contains(event.target)) settings.open = false;
         });
     });
