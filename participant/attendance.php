@@ -68,7 +68,7 @@ $totalRecordedRemainder = $totalRecordedMinutes % 60;
 <title>My Attendance - Zentrix</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<link rel="stylesheet" href="../css/style.css?v=20261117-1">
+<link rel="stylesheet" href="../css/style.css?v=20261117-5">
 <style>
 .attendance-page{max-width:1120px;margin:38px auto;padding:0 22px;color:#f4edff}
 .attendance-heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:24px}
@@ -138,5 +138,5 @@ if (!empty($row['check_in_time']) && !empty($row['time_out'])) {
 </section>
 <?php endforeach; endif; ?>
 </main>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
 </body></html>
