@@ -79,17 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Forgot Password - Zentrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="css/style.css">
-    <meta name="theme-color" content="#0B1020">
+    <meta name="theme-color" content="#F8F6FB">
 </head>
 <body>
 <main class="auth-layout">
     <section class="auth-showcase">
         <div class="showcase-content">
             <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
-            <div class="showcase-text"><h1>Get Back to Your Events.</h1><p>Reset your password securely and get back to managing your campus events.</p></div>
+            <div class="showcase-text"><h1>A secure way back in.</h1><p>Reset your password and return to the campus moments that matter.</p></div>
         </div>
     </section>
     <section class="auth-form-wrapper">
@@ -110,5 +110,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p></footer>
     </section>
 </main>
+<script src="js/auth-enhancements.js"></script>
 </body>
 </html>
