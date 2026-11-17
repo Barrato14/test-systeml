@@ -281,6 +281,6 @@ if (venueMap) venueMap.remove();
 .my-event-map-actions a:hover { background:#30203f; color:#fff; }
 @media(max-width:600px) { .my-event-map-overlay { padding:10px; } .my-event-map-body { padding:12px; } .participant-venue-map { min-height:230px; } }
 </style>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-1">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-2">
 </body>
 </html>
