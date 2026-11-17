@@ -31,6 +31,17 @@ if (($input['consent_given'] ?? false) !== true) {
     faceRegistrationRespond(false, 'Please provide consent before registering your face.');
 }
 
+$existingFaceResponse = supabaseServiceRequest(
+    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=participant_id',
+    'GET'
+);
+if (($existingFaceResponse['code'] ?? 500) >= 400) {
+    faceRegistrationRespond(false, 'Unable to verify your existing face registration. Please try again.', 503);
+}
+if (!empty($existingFaceResponse['data'])) {
+    faceRegistrationRespond(false, 'A face is already registered to your account. Contact an administrator if it needs to be reset.', 409);
+}
+
 $imageData = $input['image_data'] ?? '';
 if (!is_string($imageData) || $imageData === '') {
     faceRegistrationRespond(false, 'A camera image is required. Please try again.');
