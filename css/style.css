@@ -1646,3 +1646,14 @@ body:has(.auth-layout) {
 @media (prefers-reduced-motion: reduce) {
     .auth-layout *, .auth-layout *::before, .auth-layout *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+.auth-field-hint { display:block; margin:.45rem 0 0; color:#898194; font-size:.75rem; line-height:1.5; }
+.btn-primary.is-loading { opacity:.72; cursor:wait; transform:none; }
+.auth-legal-content { line-height:1.8; }
+.auth-legal-content h3 { margin:1.45rem 0 .55rem; font:750 1rem 'Manrope',sans-serif; }
+.auth-legal-content p, .auth-legal-content li { font-size:.9rem; line-height:1.8; }
+.auth-legal-content ul { padding-left:1.35rem; }
+@media (max-width: 680px) {
+    .auth-register-grid { display:grid; grid-template-columns:1fr; }
+    .auth-register-full { grid-column:1; }
+}
