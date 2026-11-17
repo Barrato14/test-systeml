@@ -8,12 +8,14 @@ require_once 'config/database.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signing in - Zentrix</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css"><meta name="theme-color" content="#F8F6FB">
 </head>
 <body>
     <main class="auth-layout">
         <section class="auth-form-wrapper">
             <div class="auth-form-container">
+                <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
                 <header class="form-header">
                     <h2>Completing sign in</h2>
                     <p id="authStatus">Verifying your Google account...</p>
