@@ -102,4 +102,5 @@ function statusClass($status) {
   <?php endforeach; ?>
   </section>
  <?php endif; ?>
-</main></body></html>
+</main><link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-1">
+</body></html>
