@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Phosphor Icons (Modern SaaS Icons) -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/svg+xml" href="/pwa-icons/zentrix-icon.svg">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#241438">
+    <meta name="theme-color" content="#F8F6FB">
 </head>
 <body>
     <main class="auth-layout">
