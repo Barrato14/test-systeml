@@ -52,35 +52,23 @@ if ($token === '') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Verification - Zentrix</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Verification - Zentrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css"><meta name="theme-color" content="#F8F6FB">
 </head>
-<body class="bg-light">
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-            <div class="card shadow-sm p-4">
-                <?php if ($isSuccess): ?>
-                    <h3 class="text-success mb-3">Verification Successful!</h3>
-                    <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
-                    <a href="login.php" class="btn btn-primary mt-3">Proceed to Login</a>
-                <?php elseif ($showConfirmation): ?>
-                    <h3 class="mb-3">Verify Your Email</h3>
-                    <div class="alert alert-info"><?= htmlspecialchars($message) ?></div>
-                    <form method="POST" action="verify.php">
-                        <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
-                        <button type="submit" class="btn btn-primary mt-2">Verify My Email</button>
-                    </form>
-                <?php else: ?>
-                    <h3 class="text-danger mb-3">Verification Failed</h3>
-                    <div class="alert alert-danger"><?= htmlspecialchars($message) ?></div>
-                    <a href="login.php" class="btn btn-outline-secondary mt-3">Return to Login</a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-</body>
-</html>
+<body class="auth-page">
+<main class="auth-standalone"><section class="auth-standalone-card">
+<div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
+<div class="auth-standalone-icon"><i class="ph-fill <?= $isSuccess ? 'ph-check-circle' : ($showConfirmation ? 'ph-envelope-simple' : 'ph-warning-circle') ?>"></i></div>
+<h1><?= $isSuccess ? 'Email verified.' : ($showConfirmation ? 'Verify your email.' : 'Verification unavailable.') ?></h1>
+<p><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></p>
+<?php if ($showConfirmation): ?>
+<form method="POST" action="verify.php"><input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>"><button type="submit" class="btn-primary">Verify my email</button></form>
+<?php else: ?>
+<a class="btn-primary" href="login.php"><?= $isSuccess ? 'Continue to sign in' : 'Return to sign in' ?></a>
+<?php endif; ?>
+<p class="auth-standalone-footer">Zentrix · Your campus, connected.</p>
+</section></main>
+</body></html>
