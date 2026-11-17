@@ -727,13 +727,13 @@ $calendarJson = json_encode(
             .event-info-grid { grid-template-columns: 1fr; }
         }
     </style>
-    <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
+    <link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
 </head>
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div class="admin-page-heading admin-section-heading d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
                 <h2 class="mb-1">Event Management</h2>
                 <p class="text-muted mb-0">View your schedule and manage Zentrix events.</p>

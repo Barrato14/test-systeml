@@ -1437,3 +1437,111 @@ body.admin-portal .admin-activity-footer a { color:var(--admin-accent) !importan
     body.admin-portal .stat-card .card-body { padding:18px !important; }
     body.admin-portal .table > :not(caption) > * > * { padding:12px 13px !important; }
 }
+
+/* ==========================================================================
+   ZENTRIX ADMIN — DEEP LAYOUT REDESIGN
+   Presentation-only overrides. Existing navigation and application behavior remain intact.
+   ========================================================================== */
+body.admin-portal {
+    --admin-bg:#302740;
+    --admin-surface:#3d334e;
+    --admin-surface-raised:#473b59;
+    --admin-border:rgba(224,211,245,.12);
+    --admin-text:#f7f3fc;
+    --admin-muted:#c1b6d0;
+    --admin-accent:#c9c7ea;
+    --admin-accent-strong:#a995d1;
+}
+html[data-admin-theme="light"] body.admin-portal {
+    --admin-bg:#f5f2f9;--admin-surface:#fff;--admin-surface-raised:#f8f5fb;
+    --admin-border:#e8e1f0;--admin-text:#292238;--admin-muted:#777184;
+    --admin-accent:#8067b2;--admin-accent-strong:#8067b2;
+}
+body.admin-portal .admin-main-content {padding-top:34px!important}
+body.admin-portal .admin-page-heading {display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin:0 0 30px}
+body.admin-portal .admin-heading-copy {min-width:0}
+body.admin-portal .admin-eyebrow {display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--admin-accent)!important;font-size:10px;font-weight:800;letter-spacing:.15em}
+body.admin-portal .admin-page-heading h1 {margin:0 0 8px;color:var(--admin-text)!important;font-size:clamp(26px,3vw,36px);font-weight:760;letter-spacing:-.055em;line-height:1.12}
+body.admin-portal .admin-page-heading p {margin:0;color:var(--admin-muted)!important;font-size:13px}
+body.admin-portal .admin-welcome-chip {display:flex;align-items:center;gap:11px;flex:0 0 auto;padding:10px 15px 10px 10px;border:1px solid var(--admin-border);border-radius:14px;background:var(--admin-surface)}
+body.admin-portal .admin-welcome-avatar {display:grid;width:38px;height:38px;place-items:center;border-radius:11px;background:var(--admin-accent-soft);color:var(--admin-accent);font-size:17px}
+body.admin-portal .admin-welcome-chip span:last-child {display:grid;gap:2px}
+body.admin-portal .admin-welcome-chip small {color:var(--admin-muted)!important;font-size:10px}
+body.admin-portal .admin-welcome-chip strong {color:var(--admin-text);font-size:12px}
+body.admin-portal .admin-metrics-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin:0 0 26px}
+body.admin-portal .admin-metric-card {min-width:0;min-height:158px;margin:0!important;border:1px solid var(--admin-border)!important;border-radius:17px!important;background:var(--admin-surface)!important}
+body.admin-portal .admin-metric-card .card-body {display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-rows:auto auto auto;align-content:center;align-items:center;column-gap:12px;padding:21px!important}
+body.admin-portal .admin-metric-icon {grid-column:1;grid-row:1/4;display:grid;width:42px;height:42px;place-items:center;border-radius:13px;background:var(--admin-accent-soft);font-size:17px}
+body.admin-portal .admin-metric-icon.violet {background:rgba(169,149,209,.16);color:#c7b5eb}
+body.admin-portal .admin-metric-icon.green {background:rgba(74,177,132,.15);color:#76d4a6}
+body.admin-portal .admin-metric-icon.amber {background:rgba(226,174,87,.15);color:#f0c77e}
+body.admin-portal .admin-metric-icon.blue {background:rgba(91,163,218,.15);color:#8bc4ed}
+body.admin-portal .admin-metric-label {min-width:0;color:var(--admin-muted);font-size:11px;font-weight:650;line-height:1.35}
+body.admin-portal .admin-metric-value {margin-top:4px;color:var(--admin-text);font-size:29px;font-weight:760;letter-spacing:-.06em;line-height:1.1}
+body.admin-portal .admin-metric-foot {margin-top:5px;color:var(--admin-muted);font-size:10px}
+body.admin-portal .admin-activity-card,body.admin-portal .admin-main-content>.card,body.admin-portal .admin-main-content>section.card {border-radius:18px!important}
+body.admin-portal .admin-main-content .card-header {padding:20px 22px!important}
+body.admin-portal .admin-main-content .card-body {padding:21px 22px}
+body.admin-portal .admin-activity-item {padding:15px 14px;border:1px solid transparent;border-bottom-color:var(--admin-border);border-radius:12px;transition:background .16s ease,border-color .16s ease}
+body.admin-portal .admin-activity-item:hover {background:var(--admin-accent-soft);border-color:var(--admin-border)}
+body.admin-portal .admin-activity-icon {display:grid;width:39px;height:39px;flex:0 0 39px;place-items:center;border-radius:12px;background:var(--admin-accent-soft)}
+body.admin-portal .admin-activity-copy strong {font-size:13px}
+body.admin-portal .admin-activity-copy span {font-size:11px}
+body.admin-portal .admin-activity-tabs {gap:6px;flex-wrap:wrap}
+body.admin-portal .admin-activity-tab {min-height:36px;padding:8px 11px;border-radius:9px;font-size:11px}
+body.admin-portal .admin-main-content .d-grid.gap-3 {gap:10px!important}
+body.admin-portal .admin-main-content .d-grid.gap-3>.btn {display:flex;align-items:center;min-height:48px;padding:12px 15px;border:1px solid var(--admin-border);border-radius:11px!important;background:var(--admin-surface-raised);color:var(--admin-text)!important}
+body.admin-portal .admin-main-content .d-grid.gap-3>.btn:hover {border-color:var(--admin-accent-strong);background:var(--admin-accent-soft)}
+body.admin-portal .admin-main-content .page-card,body.admin-portal .admin-main-content .audit-intro,body.admin-portal .admin-main-content .audit-panel {border:1px solid var(--admin-border)!important;border-radius:17px!important;background:var(--admin-surface)!important;color:var(--admin-text)!important}
+body.admin-portal .admin-main-content .nav-pills {gap:6px!important;padding:5px;border:1px solid var(--admin-border);border-radius:12px;background:var(--admin-surface-raised)}
+body.admin-portal .admin-main-content .nav-pills .nav-link {padding:9px 13px;border-radius:9px;color:var(--admin-muted)!important;font-size:12px}
+body.admin-portal .admin-main-content .nav-pills .nav-link.active {background:var(--admin-accent-soft)!important;color:var(--admin-text)!important}
+body.admin-portal .admin-main-content .alert {border:1px solid var(--admin-border);border-radius:12px}
+body.admin-portal .admin-main-content .table-responsive,body.admin-portal .admin-main-content .audit-table-wrap {border:1px solid var(--admin-border);border-radius:13px}
+body.admin-portal .admin-main-content .table tbody tr:hover,body.admin-portal .admin-main-content .audit-table tbody tr:hover {background:var(--admin-accent-soft)}
+@media(max-width:1100px){body.admin-portal .admin-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){body.admin-portal .admin-page-heading{align-items:flex-start;flex-direction:column;margin-bottom:22px}body.admin-portal .admin-welcome-chip{width:100%}body.admin-portal .admin-metrics-grid{gap:10px}body.admin-portal .admin-metric-card{min-height:138px}body.admin-portal .admin-metric-card .card-body{padding:15px!important;grid-template-columns:34px minmax(0,1fr);column-gap:9px}body.admin-portal .admin-metric-icon{width:34px;height:34px}body.admin-portal .admin-metric-value{font-size:25px}}
+@media(max-width:420px){body.admin-portal .admin-metrics-grid{grid-template-columns:1fr}body.admin-portal .admin-metric-card{min-height:112px}body.admin-portal .admin-metric-card .card-body{grid-template-columns:40px minmax(0,1fr)}body.admin-portal .admin-metric-icon{width:40px;height:40px}}
+
+/* Shared page-heading and users workspace refinements */
+body.admin-portal .admin-section-heading {min-height:74px;align-items:center!important;margin-bottom:26px!important}
+body.admin-portal .admin-section-heading h2 {margin:0;color:var(--admin-text)!important;font-size:clamp(23px,2.4vw,30px)!important;font-weight:750!important;letter-spacing:-.045em}
+body.admin-portal .admin-section-heading p,
+body.admin-portal .admin-section-heading .text-muted {margin:7px 0 0;color:var(--admin-muted)!important;font-size:12px}
+body.admin-portal .admin-section-heading>.btn {min-height:43px;padding-inline:17px}
+body.admin-portal .users-page {max-width:1540px!important}
+body.admin-portal .users-header {padding:0 0 22px!important;margin-bottom:25px!important;border-bottom:1px solid var(--admin-border)}
+body.admin-portal .users-header h2 {color:var(--admin-text)!important;font-size:clamp(24px,2.5vw,31px)!important;font-weight:760!important;letter-spacing:-.045em}
+body.admin-portal .users-header p {color:var(--admin-muted)!important;font-size:12px}
+body.admin-portal .users-stats {grid-template-columns:repeat(auto-fit,minmax(155px,1fr))!important;gap:12px!important}
+body.admin-portal .users-stat {padding:18px 19px!important;border:1px solid var(--admin-border)!important;border-radius:15px!important;background:var(--admin-surface)!important;box-shadow:0 6px 18px rgba(12,7,20,.08)}
+body.admin-portal .users-stat span {color:var(--admin-muted)!important;font-size:10px!important;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
+body.admin-portal .users-stat strong {color:var(--admin-text)!important;font-size:27px!important;font-weight:760;letter-spacing:-.05em}
+body.admin-portal .users-panel,body.admin-portal .user-audit-panel {padding:22px!important;border:1px solid var(--admin-border)!important;border-radius:17px!important;background:var(--admin-surface)!important}
+body.admin-portal .users-field label {color:var(--admin-muted)!important}
+body.admin-portal .users-field input,body.admin-portal .users-field select,body.admin-portal .role-select {background:var(--admin-bg)!important;color:var(--admin-text)!important;border:1px solid var(--admin-border)!important;border-radius:10px!important}
+body.admin-portal .users-table-wrap,body.admin-portal .user-audit-table-wrap {border-color:var(--admin-border)!important;border-radius:12px!important}
+body.admin-portal .users-table th,body.admin-portal .user-audit-table th {background:var(--admin-surface-raised)!important;color:var(--admin-muted)!important;font-size:10px!important;letter-spacing:.08em}
+body.admin-portal .users-table td,body.admin-portal .user-audit-table td {background:transparent!important;color:var(--admin-text)!important;border-color:var(--admin-border)!important}
+body.admin-portal .users-table tbody tr:hover td,body.admin-portal .user-audit-table tbody tr:hover td {background:var(--admin-accent-soft)!important}
+body.admin-portal .users-btn {border-radius:9px!important}
+body.admin-portal .audit-intro {padding:22px!important;margin-bottom:18px!important}
+body.admin-portal .audit-toolbar {padding:17px 19px!important;background:var(--admin-surface-raised)}
+body.admin-portal .audit-toolbar input,body.admin-portal .audit-toolbar select {background:var(--admin-bg)!important;color:var(--admin-text)!important;border-color:var(--admin-border)!important}
+body.admin-portal .audit-table th {background:var(--admin-surface-raised)}
+body.admin-portal .audit-table td {border-color:var(--admin-border)}
+body.admin-portal .equipment-item-card {border-color:var(--admin-border)!important;border-radius:16px!important;background:var(--admin-surface)!important}
+body.admin-portal .equipment-card-content {padding:18px}
+body.admin-portal .equipment-card-actions .btn {min-height:36px}
+body.admin-portal .attendance-map-trigger {color:var(--admin-accent)!important}
+body.admin-portal #attendanceInfoCard {background:var(--admin-surface)!important;color:var(--admin-text)!important;border:1px solid var(--admin-border)!important;border-radius:16px!important}
+body.admin-portal #attendanceInfoCard h5 {color:var(--admin-text)!important}
+body.admin-portal #attendanceInfoCard p,body.admin-portal #attendanceInfoCard .small {color:var(--admin-muted)!important}
+@media(max-width:700px) {
+ body.admin-portal .admin-section-heading {align-items:flex-start!important;flex-direction:column}
+ body.admin-portal .users-panel,body.admin-portal .user-audit-panel {padding:14px!important}
+ body.admin-portal .users-stats {grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:420px) {
+ body.admin-portal .users-stats {grid-template-columns:1fr!important}
+}

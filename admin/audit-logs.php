@@ -74,7 +74,7 @@ $filteredCount = count($filteredLogs);
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Log - Zentrix</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
+<link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
 <style>
 .audit-page{padding:30px;min-height:100vh;background:var(--admin-bg,#100b18);color:var(--admin-text,#f4efff)}
 .audit-intro,.audit-panel{background:var(--admin-surface,#1a1328);border:1px solid var(--admin-border,#49375e);border-radius:16px}
@@ -96,7 +96,7 @@ $filteredCount = count($filteredLogs);
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content audit-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="admin-page-heading admin-section-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div><h2 class="mb-1"><i class="bi bi-shield-exclamation me-2"></i>Audit Log</h2><p class="text-muted mb-0">Administrative accountability and sensitive activity history</p></div>
         <span class="badge bg-secondary fs-6"><?= $filteredCount ?> / <?= $totalLogs ?> records</span>
     </div>
