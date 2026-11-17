@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../includes/session.php';
 date_default_timezone_set('Asia/Manila');
 
 require_once '../config/database.php';
