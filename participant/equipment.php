@@ -165,7 +165,7 @@ try {
         .equipment-photo { height:210px; width:100%; object-fit:cover; background:#e9edf3; }
         .equipment-placeholder { height:210px; display:flex; align-items:center; justify-content:center; background:#edf1f6; color:#94a3b8; font-size:3rem; }
     </style>
-<link rel="stylesheet" href="../css/style.css?v=20261117-1">
+<link rel="stylesheet" href="../css/style.css?v=20261117-5">
 </head>
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
@@ -279,6 +279,6 @@ borrowModal.addEventListener('show.bs.modal', function (event) {
     document.getElementById('availableQuantityHelp').textContent = available + ' unit(s) currently available.';
 });
 </script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
 </body>
 </html>
