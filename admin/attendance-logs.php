@@ -220,6 +220,23 @@ function formatManilaTime($utcString) {
         .attendance-map-trigger:hover { color:#084298; text-decoration:underline; }
         .attendance-location-map { display:block; width:100%; height:min(58vh,460px); min-height:280px; border:0; border-radius:12px; background:#f1edf5; }
         .attendance-map-coordinate { color:#a99bbd; font-size:.78rem; }
+        @media print {
+            @page { size: landscape; margin: 12mm; }
+            body, .content-area { background:#fff!important; color:#111!important; min-height:0!important; padding:0!important; }
+            .admin-sidebar, .sidebar, nav, .filter-card, #attendanceLocationModal, #printAttendanceLogs, .alert, #attendanceInfoCard, .attendance-map-trigger, .snapshot-thumb { display:none!important; }
+            .admin-main-content { margin:0!important; padding:0!important; width:100%!important; }
+            #attendanceLogsCard { border:0!important; box-shadow:none!important; }
+            #attendanceLogsCard .card-body { padding:0!important; }
+            #attendancePrintHeading { display:block!important; color:#111!important; }
+            #attendancePrintHeading h2 { color:#111!important; }
+            table { width:100%!important; border-collapse:collapse!important; font-size:10pt!important; }
+            thead { display:table-header-group; }
+            tr { break-inside:avoid; }
+            th, td { color:#111!important; background:#fff!important; border:1px solid #999!important; padding:6px!important; }
+            .badge { color:#111!important; background:#eee!important; border:1px solid #999!important; }
+            form[onsubmit] button { color:#111!important; background:#fff!important; border:0!important; padding:0!important; }
+            code { color:#111!important; }
+        }
     </style>
     <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
 </head>
@@ -229,10 +246,10 @@ function formatManilaTime($utcString) {
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> Course Attendance Logs</h2>
-            <span class="badge bg-secondary fs-6">Showing: <?= count($attendanceLogs) ?> Records</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-secondary fs-6" id="attendanceRecordCount">Showing: <?= count($attendanceLogs) ?> Records</span><button type="button" class="btn btn-outline-primary" id="printAttendanceLogs"><i class="bi bi-printer me-1"></i> Print Logs</button></div>
         </div>
 
-        <section class="card shadow-sm border-0 mb-4" style="background:#21172f;color:#e9ddf7;border:1px solid #49335f!important">
+        <section id="attendanceInfoCard" class="card shadow-sm border-0 mb-4" style="background:#21172f;color:#e9ddf7;border:1px solid #49335f!important">
             <div class="card-body p-3 p-md-4">
                 <div class="d-flex align-items-start gap-3">
                     <i class="bi bi-info-circle-fill" style="color:#c5a0ff;font-size:1.35rem"></i>
@@ -261,7 +278,7 @@ function formatManilaTime($utcString) {
         <!-- Filter Card -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
-                <form method="GET" action="attendance-logs.php" class="row g-3 align-items-end">
+                <form method="GET" action="attendance-logs.php" class="row g-3 align-items-end filter-card">
                     <div class="col-md-4">
                         <label for="course" class="form-label fw-bold small">Filter by Course</label>
                         <select name="course" id="course" class="form-select">
@@ -305,8 +322,9 @@ function formatManilaTime($utcString) {
         </div>
 
         <!-- Logs Table -->
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0" id="attendanceLogsCard">
             <div class="card-body p-4">
+                <div id="attendancePrintHeading" class="d-none d-print-block mb-3"><h2>Zentrix — Attendance Logs</h2><p>Printed: <?= htmlspecialchars((new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('M j, Y g:i A')) ?> (PHT)</p><p>Filters: Course <?= $filterCourse !== '' ? htmlspecialchars($filterCourse) : 'All' ?> · Event <?= $filterEvent !== '' ? htmlspecialchars($eventsMap[$filterEvent] ?? 'Selected event') : 'All' ?> · Section <?= $filterSection !== '' ? htmlspecialchars($filterSection) : 'All' ?> · <?= count($attendanceLogs) ?> records</p></div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
@@ -461,8 +479,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const mapFrame = document.getElementById('attendanceLocationFrame');
     const googleMapsLink = document.getElementById('attendanceGoogleMapsLink');
 
-    document.querySelectorAll('[data-attendance-map]').forEach(function (button) {
-        button.addEventListener('click', function () {
+    document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-attendance-map]');
+        if (!button) return;
             const latitude = Number(button.dataset.mapLat);
             const longitude = Number(button.dataset.mapLng);
 
@@ -483,12 +502,40 @@ document.addEventListener('DOMContentLoaded', function () {
             googleMapsLink.href = 'https://www.google.com/maps?q=' +
                 encodeURIComponent(coordinates);
             mapModal.show();
-        });
     });
 
     modalElement.addEventListener('hidden.bs.modal', function () {
         mapFrame.removeAttribute('src');
     });
+
+    document.getElementById('printAttendanceLogs')?.addEventListener('click', function () {
+        window.print();
+    });
+
+    const tableBody = document.querySelector('#attendanceLogsCard tbody');
+    const recordCount = document.getElementById('attendanceRecordCount');
+    let liveRequestRunning = false;
+    async function refreshAttendanceLogs() {
+        if (liveRequestRunning || document.hidden || !tableBody) return;
+        liveRequestRunning = true;
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('_live', String(Date.now()));
+            const response = await fetch(url.toString(), { cache: 'no-store' });
+            if (!response.ok) return;
+            const html = await response.text();
+            const parsed = new DOMParser().parseFromString(html, 'text/html');
+            const freshBody = parsed.querySelector('#attendanceLogsCard tbody');
+            if (freshBody && tableBody.innerHTML !== freshBody.innerHTML) tableBody.innerHTML = freshBody.innerHTML;
+            const freshCount = parsed.getElementById('attendanceRecordCount');
+            if (freshCount && recordCount) recordCount.textContent = freshCount.textContent;
+        } catch (error) {
+            console.warn('Could not refresh live attendance logs:', error);
+        } finally {
+            liveRequestRunning = false;
+        }
+    }
+    window.setInterval(refreshAttendanceLogs, 8000);
 });
 </script>
 </body>
