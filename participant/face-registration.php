@@ -56,8 +56,14 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
         <?php endif; ?>
 
         <?php if (!$hasRegisteredFace): ?>
-        <div id="faceRegistrationStatus" class="alert alert-info text-center">Preparing face recognition...</div>
+        <div id="faceRegistrationStatus" class="alert alert-info text-center">Preparing camera...</div>
+        <div class="mb-2 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold" id="faceRegistrationStep">Step 1 of 3 · Front</span>
+            <span class="small text-muted" id="faceRegistrationProgress">0 / 3 captured</span>
+        </div>
+        <div class="progress mb-3" style="height:8px"><div id="faceRegistrationProgressBar" class="progress-bar" style="width:0%"></div></div>
         <video id="faceRegistrationVideo" autoplay muted playsinline></video>
+        <p class="small text-muted mt-2 mb-3" id="faceRegistrationInstruction">Look directly at the camera and keep your face centered.</p>
 
         <div class="form-check my-3">
             <input class="form-check-input" type="checkbox" id="faceConsent">
@@ -68,9 +74,7 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
 
         <p class="face-privacy-note">Zentrix stores a mathematical face template rather than using your registration photo as the matching record. You can request assistance from the administrator if you want your face registration removed. Face matching can make mistakes and does not by itself prove that a live person is present.</p>
 
-        <button type="button" id="saveFaceButton" class="btn btn-primary w-100" disabled>
-            <i class="bi bi-shield-check me-2"></i><?= $hasRegisteredFace ? 'Face Already Registered' : 'Register My Face' ?>
-        </button>
+        <button type="button" id="saveFaceButton" class="btn btn-primary w-100" disabled><i class="bi bi-camera-fill me-2"></i> Capture Front Angle</button>
         <?php else: ?>
         <div class="alert alert-secondary mb-0">Your registered face cannot be replaced from this page.</div>
         <?php endif; ?>
@@ -78,91 +82,28 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
 </main>
 
 <script>
-const faceVideo = document.getElementById('faceRegistrationVideo');
-if (!faceVideo) { /* Existing registration: camera capture is intentionally unavailable. */ } else {
-const faceStatus = document.getElementById('faceRegistrationStatus');
-const consentCheckbox = document.getElementById('faceConsent');
-const saveFaceButton = document.getElementById('saveFaceButton');
-const csrfToken = <?= json_encode($_SESSION['face_registration_csrf']) ?>;
-let cameraStream = null;
-let cameraReady = false;
-let registrationSaved = false;
-
-function updateSaveButton() {
-    saveFaceButton.disabled = registrationSaved || !(cameraReady && consentCheckbox.checked);
+const faceVideo=document.getElementById('faceRegistrationVideo');
+if(faceVideo){
+const faceStatus=document.getElementById('faceRegistrationStatus'),consentCheckbox=document.getElementById('faceConsent'),saveFaceButton=document.getElementById('saveFaceButton');
+const stepLabel=document.getElementById('faceRegistrationStep'),progressLabel=document.getElementById('faceRegistrationProgress'),progressBar=document.getElementById('faceRegistrationProgressBar'),instruction=document.getElementById('faceRegistrationInstruction');
+const csrfToken=<?= json_encode($_SESSION['face_registration_csrf']) ?>;
+const angles=[{key:'front',label:'Front',prompt:'Look directly at the camera and keep your face centered.'},{key:'left',label:'Left',prompt:'Slowly turn your head to your left. Keep your face visible.'},{key:'right',label:'Right',prompt:'Slowly turn your head to your right. Keep your face visible.'}];
+let cameraStream=null,cameraReady=false,registrationSaved=false,currentStep=0;const angleImages={};
+function status(message,type='info'){faceStatus.textContent=message;faceStatus.className='alert alert-'+type+' text-center';}
+function updateStep(){
+if(currentStep>=3){stepLabel.textContent='All three angles captured';progressLabel.textContent='3 / 3 captured';progressBar.style.width='100%';instruction.textContent='All angles captured. Save your registration.';saveFaceButton.innerHTML='<i class="bi bi-shield-check me-2"></i> Save Three-Angle Registration';saveFaceButton.disabled=!cameraReady||!consentCheckbox.checked||registrationSaved;return;}
+const angle=angles[currentStep];stepLabel.textContent='Step '+(currentStep+1)+' of 3 · '+angle.label;progressLabel.textContent=currentStep+' / 3 captured';progressBar.style.width=(currentStep/3*100)+'%';instruction.textContent=angle.prompt;saveFaceButton.innerHTML='<i class="bi bi-camera-fill me-2"></i> Capture '+angle.label+' Angle';saveFaceButton.disabled=!cameraReady||!consentCheckbox.checked||registrationSaved;
 }
-
-async function startRegistrationCamera() {
-    try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('Camera access is not supported by this browser.');
-        }
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
-            audio: false
-        });
-        faceVideo.srcObject = cameraStream;
-        await faceVideo.play();
-        cameraReady = true;
-        faceStatus.textContent = 'Camera ready. Center your face, make sure only you are visible, then register.';
-        faceStatus.className = 'alert alert-success text-center';
-        updateSaveButton();
-    } catch (error) {
-        faceStatus.textContent = error.message || 'Unable to access the camera. Please allow camera permission.';
-        faceStatus.className = 'alert alert-danger text-center';
-    }
-}
-
-consentCheckbox.addEventListener('change', updateSaveButton);
-
-saveFaceButton.addEventListener('click', async function () {
-    if (!cameraReady || !consentCheckbox.checked || !faceVideo.videoWidth) {
-        faceStatus.textContent = 'Camera readiness and your consent are required.';
-        faceStatus.className = 'alert alert-warning text-center';
-        return;
-    }
-
-    const captureCanvas = document.createElement('canvas');
-    captureCanvas.width = faceVideo.videoWidth;
-    captureCanvas.height = faceVideo.videoHeight;
-    captureCanvas.getContext('2d').drawImage(faceVideo, 0, 0, captureCanvas.width, captureCanvas.height);
-    const imageData = captureCanvas.toDataURL('image/jpeg', 0.9);
-
-    saveFaceButton.disabled = true;
-    saveFaceButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Detecting and registering face...';
-    faceStatus.textContent = 'Python is checking your image and preparing your face template...';
-    faceStatus.className = 'alert alert-info text-center';
-
-    try {
-        const response = await fetch('save-face-registration.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                image_data: imageData,
-                consent_given: true,
-                csrf_token: csrfToken
-            })
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message || 'Face registration failed.');
-
-        faceStatus.textContent = result.message;
-        faceStatus.className = 'alert alert-success text-center';
-        registrationSaved = true;
-        saveFaceButton.innerHTML = '<i class="bi bi-check-circle me-2"></i>Face Registered';
-    } catch (error) {
-        faceStatus.textContent = error.message;
-        faceStatus.className = 'alert alert-danger text-center';
-        saveFaceButton.innerHTML = '<i class="bi bi-shield-check me-2"></i>Try Again';
-        updateSaveButton();
-    }
+async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera access is not supported by this browser.');cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false});faceVideo.srcObject=cameraStream;await faceVideo.play();cameraReady=true;status('Camera ready. Follow each head-position instruction.','success');updateStep();}catch(e){status(e.message||'Unable to access camera permission.','danger');}}
+consentCheckbox.addEventListener('change',updateStep);
+saveFaceButton.addEventListener('click',async()=>{
+if(!cameraReady||!consentCheckbox.checked||!faceVideo.videoWidth||registrationSaved)return;
+if(currentStep<3){const angle=angles[currentStep],c=document.createElement('canvas');c.width=faceVideo.videoWidth;c.height=faceVideo.videoHeight;c.getContext('2d').drawImage(faceVideo,0,0,c.width,c.height);angleImages[angle.key]=c.toDataURL('image/jpeg',0.9);currentStep++;updateStep();status(angle.label+' angle captured. '+(currentStep<3?'Continue with the next position.':'All angles captured. Save your registration.'),'success');return;}
+saveFaceButton.disabled=true;saveFaceButton.innerHTML='<span class="spinner-border spinner-border-sm me-2"></span>Registering three angles...';status('Python is processing all three face angles. Please wait.','info');
+try{const r=await fetch('save-face-registration.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({angle_images:angleImages,consent_given:true,csrf_token:csrfToken})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||'Face registration failed.');registrationSaved=true;status(result.message||'Three-angle registration complete.','success');saveFaceButton.innerHTML='<i class="bi bi-check-circle me-2"></i> Face Registered';}
+catch(e){status(e.message,'danger');saveFaceButton.innerHTML='<i class="bi bi-arrow-repeat me-2"></i> Retry Registration';saveFaceButton.disabled=false;}
 });
-
-window.addEventListener('beforeunload', function () {
-    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-});
-
-startRegistrationCamera();
+window.addEventListener('beforeunload',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});updateStep();startCamera();
 }
 </script>
 </body>
