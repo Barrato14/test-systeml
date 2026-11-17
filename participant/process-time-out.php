@@ -96,15 +96,22 @@ if (!empty($attendance['time_out'])) {
     respond(false, 'You have already timed out for this event.');
 }
 
-$faceResponse = callEmisFaceService('verify', [
-    'participant_id' => $participantId,
-    'image_data' => $photoDataUrl
-]);
-$faceResult = $faceResponse['data'] ?? [];
-
-if (($faceResponse['code'] ?? 500) >= 300 || empty($faceResult['success'])) {
-    respond(false, $faceResult['message'] ?? 'Face verification failed. Please try again.');
+$verificationKey = hash('sha256', $participantId . '|' . $eventId . '|time-out');
+$angleVerification = $_SESSION['face_angle_verifications'][$verificationKey] ?? null;
+$requiredAngles = ['front', 'left', 'right'];
+$verifiedAngles = is_array($angleVerification['verified'] ?? null) ? $angleVerification['verified'] : [];
+if (
+    !is_array($angleVerification)
+    || ($angleVerification['participant_id'] ?? '') !== $participantId
+    || ($angleVerification['event_id'] ?? '') !== $eventId
+    || ($angleVerification['action'] ?? '') !== 'time-out'
+    || (int)($angleVerification['expires_at'] ?? 0) < time()
+    || array_diff($requiredAngles, array_keys($verifiedAngles))
+) {
+    respond(false, 'Please complete front, left, and right face verification before submitting attendance.');
 }
+
+unset($_SESSION['face_angle_verifications'][$verificationKey]);
 
 $recordId = $attendance['id'];
 
