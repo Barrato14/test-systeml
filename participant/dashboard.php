@@ -514,7 +514,7 @@ $calendarJson = json_encode(
             #participantCalendar .fc-toolbar-title { font-size: 1.05rem; }
         }
     </style>
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/style.css?v=20261117-1">
 <link rel="stylesheet" href="../css/weather-widget.css?v=20261113-2">
 <link rel="stylesheet" href="../css/participant-dashboard.css?v=20261113-1">
 </head>
