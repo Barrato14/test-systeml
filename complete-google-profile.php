@@ -131,9 +131,9 @@ $displayEmail = $profile['email'] ?? $email;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Student Profile - Zentrix</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/style.css"><meta name="theme-color" content="#F8F6FB">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0B1020">
+    <meta name="theme-color" content="#F8F6FB">
 </head>
 <body class="auth-register-page">
     <main class="auth-layout">
@@ -156,7 +156,7 @@ $displayEmail = $profile['email'] ?? $email;
                 <?php if ($error): ?>
                     <div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div>
                 <?php endif; ?>
-                <form method="POST" action="complete-google-profile.php">
+                <form method="POST" action="complete-google-profile.php" data-confirm-password="password" data-confirm-field="confirm_password">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                     <div class="input-group">
                         <label for="first_name">Real First Name</label>
@@ -194,11 +194,11 @@ $displayEmail = $profile['email'] ?? $email;
                     </div>
                     <div class="input-group">
                         <label for="password">Create Zentrix Password</label>
-                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required></div>
+                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required><button type="button" class="password-toggle" data-password-toggle="password" aria-label="Show password"><i class="ph ph-eye"></i></button></div>
                     </div>
                     <div class="input-group">
                         <label for="confirm_password">Confirm Zentrix Password</label>
-                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" minlength="8" autocomplete="new-password" required></div>
+                        <div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" minlength="8" autocomplete="new-password" required><button type="button" class="password-toggle" data-password-toggle="confirm_password" aria-label="Show password"><i class="ph ph-eye"></i></button></div>
                     </div>
                     <button type="submit" class="btn-primary auth-register-submit"><span class="btn-text">Save Student Details</span><i class="ph-bold ph-arrow-right"></i></button>
                 </form>
@@ -207,5 +207,6 @@ $displayEmail = $profile['email'] ?? $email;
             <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p></footer>
         </section>
     </main>
+<script src="js/auth-enhancements.js"></script>
 </body>
 </html>

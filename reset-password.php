@@ -76,17 +76,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Reset Password - Zentrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="css/style.css">
-    <meta name="theme-color" content="#0B1020">
+    <meta name="theme-color" content="#F8F6FB">
 </head>
 <body>
 <main class="auth-layout">
     <section class="auth-showcase">
         <div class="showcase-content">
             <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
-            <div class="showcase-text"><h1>A Fresh Start.</h1><p>Choose a new password to secure your Zentrix account.</p></div>
+            <div class="showcase-text"><h1>A fresh start, securely.</h1><p>Choose a new password to protect your Zentrix account.</p></div>
         </div>
     </section>
     <section class="auth-form-wrapper">
@@ -100,10 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <header class="form-header"><h2>Reset Password</h2><p>Enter a new password for your Zentrix account.</p></header>
                 <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
                 <?php if ($profile): ?>
-                <form method="POST" action="reset-password.php">
+                <form method="POST" action="reset-password.php" data-confirm-password="password" data-confirm-field="confirm_password">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
-                    <div class="input-group"><label for="password">New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password"></div></div>
-                    <div class="input-group"><label for="confirm_password">Confirm New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Enter your new password again" minlength="8" required autocomplete="new-password"></div></div>
+                    <div class="input-group"><label for="password">New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="password" aria-label="Show password"><i class="ph ph-eye"></i></button></div></div>
+                    <div class="input-group"><label for="confirm_password">Confirm New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Enter your new password again" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="confirm_password" aria-label="Show password"><i class="ph ph-eye"></i></button></div></div>
                     <button type="submit" class="btn-primary"><span class="btn-text">Update Password</span><i class="ph-bold ph-arrow-right"></i></button>
                 </form>
                 <?php else: ?>
@@ -115,5 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p></footer>
     </section>
 </main>
+<script src="js/auth-enhancements.js"></script>
 </body>
 </html>
