@@ -96,7 +96,7 @@ $filteredCount = count($filteredLogs);
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content audit-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="admin-page-heading admin-section-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div><h2 class="mb-1"><i class="bi bi-shield-exclamation me-2"></i>Audit Log</h2><p class="text-muted mb-0">Administrative accountability and sensitive activity history</p></div>
         <span class="badge bg-secondary fs-6"><?= $filteredCount ?> / <?= $totalLogs ?> records</span>
     </div>
