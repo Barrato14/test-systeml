@@ -74,7 +74,7 @@ $filteredCount = count($filteredLogs);
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Log - Zentrix</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
+<link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
 <style>
 .audit-page{padding:30px;min-height:100vh;background:var(--admin-bg,#100b18);color:var(--admin-text,#f4efff)}
 .audit-intro,.audit-panel{background:var(--admin-surface,#1a1328);border:1px solid var(--admin-border,#49375e);border-radius:16px}
