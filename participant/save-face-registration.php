@@ -39,23 +39,29 @@ if (($existingFaceResponse['code'] ?? 500) >= 400) {
     faceRegistrationRespond(false, 'Unable to verify your existing face registration. Please try again.', 503);
 }
 if (!empty($existingFaceResponse['data'])) {
-    faceRegistrationRespond(false, 'A face is already registered to your account. Contact an administrator if it needs to be reset.', 409);
+    faceRegistrationRespond(false, 'A face is already registered to this account. Contact an administrator if it needs to be reset.', 409);
 }
 
-$imageData = $input['image_data'] ?? '';
-if (!is_string($imageData) || $imageData === '') {
-    faceRegistrationRespond(false, 'A camera image is required. Please try again.');
+$angleImages = $input['angle_images'] ?? null;
+if (!is_array($angleImages)) {
+    faceRegistrationRespond(false, 'Front, left, and right face images are required.');
+}
+foreach (['front', 'left', 'right'] as $angle) {
+    if (!isset($angleImages[$angle]) || !is_string($angleImages[$angle]) || $angleImages[$angle] === '') {
+        faceRegistrationRespond(false, 'The ' . $angle . ' face image is missing.');
+    }
 }
 
-$response = callEmisFaceService('register', [
+$response = callEmisFaceService('register-multi', [
     'participant_id' => (string)$_SESSION['user_id'],
-    'image_data' => $imageData,
+    'angle_images' => $angleImages,
     'consent_given' => true
 ]);
 
 $data = $response['data'] ?? [];
 if (($response['code'] ?? 500) >= 300 || empty($data['success'])) {
-    faceRegistrationRespond(false, $data['message'] ?? 'Unable to register your face. Please try again.', $response['code'] ?? 500);
+    faceRegistrationRespond(false, $data['message'] ?? 'Unable to register your three face angles. Please try again.', $response['code'] ?? 500);
 }
 
-faceRegistrationRespond(true, $data['message'] ?? 'Your face has been registered successfully.');
+faceRegistrationRespond(true, $data['message'] ?? 'Your front, left, and right face angles have been registered successfully.');
+?>
