@@ -14,11 +14,17 @@ if (empty($_SESSION['face_registration_csrf'])) {
 }
 
 $existingFaceResponse = supabaseServiceRequest(
-    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=participant_id,updated_at',
+    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=participant_id,updated_at,face_front_descriptor,face_left_descriptor,face_right_descriptor',
     'GET'
 );
-$hasRegisteredFace = (($existingFaceResponse['code'] ?? 500) < 400 && !empty($existingFaceResponse['data']));
-$lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_at'] ?? '') : '';
+$existingProfile = (($existingFaceResponse['code'] ?? 500) < 400) ? ($existingFaceResponse['data'][0] ?? null) : null;
+$hasRegisteredFace = $existingProfile !== null;
+$hasMultiAngleFace = $hasRegisteredFace
+    && $existingProfile['face_front_descriptor'] !== null
+    && $existingProfile['face_left_descriptor'] !== null
+    && $existingProfile['face_right_descriptor'] !== null;
+$needsFaceUpgrade = $hasRegisteredFace && !$hasMultiAngleFace;
+$lastUpdated = $hasRegisteredFace ? ($existingProfile['updated_at'] ?? '') : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,13 +55,15 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
             </div>
         </div>
 
-        <?php if ($hasRegisteredFace): ?>
-            <div class="alert alert-success">A face is already registered to your account. Face registration is locked to prevent duplicate registrations. Contact an administrator if your face needs to be reset.</div>
+        <?php if ($hasMultiAngleFace): ?>
+            <div class="alert alert-success">Your front, left, and right face templates are registered. Duplicate registration is disabled.</div>
+        <?php elseif ($needsFaceUpgrade): ?>
+            <div class="alert alert-warning">Your account has an older single-angle face template. Complete this three-angle upgrade to use the new attendance verification. Your existing attendance history will remain unchanged.</div>
         <?php else: ?>
             <div class="alert alert-info">You have not registered a face yet. Register before using face-based attendance.</div>
         <?php endif; ?>
 
-        <?php if (!$hasRegisteredFace): ?>
+        <?php if (!$hasMultiAngleFace): ?>
         <div id="faceRegistrationStatus" class="alert alert-info text-center">Preparing camera...</div>
         <div class="mb-2 d-flex justify-content-between align-items-center">
             <span class="fw-semibold" id="faceRegistrationStep">Step 1 of 3 · Front</span>
@@ -76,7 +84,7 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
 
         <button type="button" id="saveFaceButton" class="btn btn-primary w-100" disabled><i class="bi bi-camera-fill me-2"></i> Capture Front Angle</button>
         <?php else: ?>
-        <div class="alert alert-secondary mb-0">Your registered face cannot be replaced from this page.</div>
+        <div class="alert alert-secondary mb-0">Your three-angle face registration is complete. It cannot be replaced from this page.</div>
         <?php endif; ?>
     </section>
 </main>
