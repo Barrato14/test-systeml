@@ -129,6 +129,149 @@ def get_profile(participant_id: str):
     return rows[0]
 
 
+def decode_angle_images(angle_images: dict):
+    if not isinstance(angle_images, dict):
+        raise ValueError("Front, left, and right face images are required.")
+
+    descriptors = {}
+    for angle in ("front", "left", "right"):
+        image_data = angle_images.get(angle)
+        if not isinstance(image_data, str) or not image_data:
+            raise ValueError(f"The {angle} face image is missing.")
+        descriptors[angle] = decode_face_image(image_data)
+
+    return descriptors
+
+
+def save_multi_angle_profile(participant_id: str, descriptors: dict):
+    url, key = supabase_config()
+    endpoint = f"{url}/rest/v1/participant_face_profiles"
+    now = datetime.now(timezone.utc).isoformat()
+    payload = {
+        "participant_id": participant_id,
+        "face_descriptor": descriptors["front"],
+        "face_front_descriptor": descriptors["front"],
+        "face_left_descriptor": descriptors["left"],
+        "face_right_descriptor": descriptors["right"],
+        "consent_given": True,
+        "consent_given_at": now,
+        "updated_at": now,
+        "face_model": "dlib_face_recognition_v1",
+    }
+    result = requests.post(
+        endpoint,
+        headers=supabase_headers(key, "return=representation"),
+        json=payload,
+        timeout=30,
+    )
+    if result.status_code == 409:
+        raise ValueError("A face is already registered to this account. Contact an administrator if it needs to be reset.")
+    if not result.ok:
+        raise RuntimeError("The three-angle face registration could not be saved. Please try again.")
+    return True
+
+
+def get_multi_angle_profile(participant_id: str):
+    url, key = supabase_config()
+    endpoint = (
+        f"{url}/rest/v1/participant_face_profiles"
+        f"?participant_id=eq.{participant_id}"
+        "&select=face_front_descriptor,face_left_descriptor,face_right_descriptor,consent_given,face_model"
+    )
+    result = requests.get(endpoint, headers=supabase_headers(key), timeout=20)
+    if not result.ok:
+        raise RuntimeError("The registered face could not be loaded. Please try again.")
+    rows = result.json()
+    if not rows:
+        return None
+    return rows[0]
+
+
+def compare_face_descriptor(descriptor: list[float], stored_value):
+    stored = np.asarray(stored_value or [], dtype=np.float64)
+    submitted = np.asarray(descriptor, dtype=np.float64)
+    if stored.shape != (128,) or not np.all(np.isfinite(stored)):
+        raise ValueError("The saved face angle is invalid. Please complete face registration again.")
+    distance = float(np.linalg.norm(stored - submitted))
+    return distance <= MATCH_THRESHOLD
+
+
+@app.post("/register-multi")
+def register_multi(payload: dict, x_face_service_token: str | None = Header(default=None)):
+    if not authorize(x_face_service_token):
+        return response_error("Face service authorization failed.", 401)
+
+    participant_id = payload.get("participant_id")
+    if not isinstance(participant_id, str) or not participant_id.strip():
+        return response_error("Participant account is missing.")
+
+    if payload.get("consent_given") is not True:
+        return response_error("Participant consent is required.")
+
+    try:
+        if get_profile(participant_id):
+            return response_error("A face is already registered to this account. Contact an administrator if it needs to be reset.", 409)
+
+        descriptors = decode_angle_images(payload.get("angle_images"))
+        save_multi_angle_profile(participant_id, descriptors)
+        return {
+            "success": True,
+            "message": "Your front, left, and right face angles have been registered successfully.",
+            "registered_angles": ["front", "left", "right"],
+        }
+    except ValueError as error:
+        return response_error(str(error))
+    except RuntimeError as error:
+        return response_error(str(error), 502)
+    except Exception:
+        return response_error("Multi-angle face registration is temporarily unavailable. Please try again.", 500)
+
+
+@app.post("/verify-angle")
+def verify_angle(payload: dict, x_face_service_token: str | None = Header(default=None)):
+    if not authorize(x_face_service_token):
+        return response_error("Face service authorization failed.", 401)
+
+    participant_id = payload.get("participant_id")
+    if not isinstance(participant_id, str) or not participant_id.strip():
+        return response_error("Participant account is missing.")
+
+    angle = payload.get("angle")
+    if angle not in ("front", "left", "right"):
+        return response_error("A valid face angle is required.")
+
+    try:
+        profile = get_multi_angle_profile(participant_id)
+        if not profile:
+            return response_error("No face is registered to your account. Please register your face first.", 404)
+        if profile.get("face_model") != "dlib_face_recognition_v1":
+            return response_error("Your face registration uses an unsupported recognition model. Please register your face again.", 409)
+        if profile.get("consent_given") not in (True, "true"):
+            return response_error("Your face registration is not active. Please register your face again.", 403)
+
+        descriptor_key = f"face_{angle}_descriptor"
+        stored_descriptor = profile.get(descriptor_key)
+        if stored_descriptor is None:
+            return response_error("Your account does not have a complete three-angle face registration. Please contact an administrator to re-register.", 409)
+
+        descriptor = decode_face_image(payload.get("image_data", ""))
+        if not compare_face_descriptor(descriptor, stored_descriptor):
+            return response_error(f"The {angle} face angle does not match your registration. Please try again.", 403)
+
+        return {
+            "success": True,
+            "verified": True,
+            "angle": angle,
+            "message": f"{angle.capitalize()} face angle verified.",
+        }
+    except ValueError as error:
+        return response_error(str(error))
+    except RuntimeError as error:
+        return response_error(str(error), 502)
+    except Exception:
+        return response_error("Face angle verification is temporarily unavailable. Please try again.", 500)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "zentrix-face-recognition"}
