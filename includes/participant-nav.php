@@ -262,3 +262,26 @@ $participantNavItems = [
     });
 })();
 </script>
+
+<script>
+(function () {
+    // Keep the mobile settings popover and navigation menu mutually exclusive.
+    const menus = document.querySelectorAll('.participant-settings, .participant-mobile-settings, .participant-mobile-menu');
+    menus.forEach(function (menu) {
+        menu.addEventListener('toggle', function () {
+            if (!menu.open) return;
+            menus.forEach(function (other) {
+                if (other !== menu) other.open = false;
+            });
+        });
+    });
+    document.addEventListener('pointerdown', function (event) {
+        menus.forEach(function (menu) {
+            if (menu.open && !menu.contains(event.target)) menu.open = false;
+        });
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') menus.forEach(function (menu) { menu.open = false; });
+    });
+})();
+</script>
