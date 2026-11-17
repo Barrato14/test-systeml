@@ -1723,3 +1723,50 @@ body:has(.auth-layout) {
  box-shadow:0 0 0 3px rgba(201,199,234,.1);
 }
 .btn-primary.loading .spinner{color:#C9C7EA!important}
+
+
+/* Google OAuth completion screen — match the plum Zentrix showcase. */
+body.auth-callback-page{
+ min-height:100vh!important;
+ background:#342B46!important;
+ color:#F8F5FC!important;
+}
+body.auth-callback-page .auth-layout{
+ min-height:100vh!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ padding:32px 20px!important;
+ background:#342B46!important;
+}
+body.auth-callback-page .auth-form-wrapper{
+ width:min(100%,480px)!important;
+ background:transparent!important;
+}
+body.auth-callback-page .auth-form-container{
+ width:100%!important;
+ padding:42px!important;
+ border:1px solid #61556E!important;
+ border-radius:22px!important;
+ background:#443955!important;
+ box-shadow:0 22px 65px rgba(17,12,25,.24)!important;
+}
+body.auth-callback-page .brand-logo,
+body.auth-callback-page .brand-logo span{color:#F8F5FC!important}
+body.auth-callback-page .brand-logo i{color:#C9C7EA!important}
+body.auth-callback-page .form-header h2{color:#F8F5FC!important}
+body.auth-callback-page .form-header p{color:#D0C8DC!important}
+body.auth-callback-page .auth-callback-spinner{
+ width:54px;height:54px;display:grid;place-items:center;margin:30px 0 18px;
+ border:1px solid #756985;border-radius:16px;background:#514562;color:#C9C7EA;
+}
+body.auth-callback-page .auth-callback-spinner i{
+ font-size:27px;animation:zentrix-auth-spin 1s linear infinite;
+}
+body.auth-callback-page .alert-error{
+ border-color:rgba(255,150,170,.35)!important;background:rgba(150,55,80,.16)!important;color:#FFD5DE!important;
+}
+@keyframes zentrix-auth-spin{to{transform:rotate(360deg)}}
+@media(max-width:520px){
+ body.auth-callback-page .auth-form-container{padding:30px 23px!important}
+}
