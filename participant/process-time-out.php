@@ -105,6 +105,8 @@ if (
     || ($angleVerification['participant_id'] ?? '') !== $participantId
     || ($angleVerification['event_id'] ?? '') !== $eventId
     || ($angleVerification['action'] ?? '') !== 'time-out'
+    || !preg_match('/^[a-f0-9]{64}$/', (string)($angleVerification['challenge_id'] ?? ''))
+    || empty($angleVerification['completed'])
     || (int)($angleVerification['expires_at'] ?? 0) < time()
     || array_diff($requiredAngles, array_keys($verifiedAngles))
 ) {
