@@ -95,6 +95,7 @@ $lastUpdated = $hasRegisteredFace ? ($existingProfile['updated_at'] ?? '') : '';
     </section>
 </main>
 
+<script src="../js/zentrix-face-pose.js"></script>
 <script>
 const faceVideo=document.getElementById('faceRegistrationVideo');
 if(faceVideo){
@@ -108,7 +109,7 @@ function updateReady(){saveFaceButton.disabled=!cameraReady||!consentCheckbox.ch
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function scanProgress(angle,index){
 stepLabel.textContent='Scanning '+angle.label+' · '+(index+1)+' of 3';instruction.textContent=angle.prompt;status('Position your head now. Scanning will capture automatically when the progress reaches 100%.','info');scanFrame.classList.add('scanning');
-for(let percent=0;percent<=100;percent+=2){scanPercent.textContent='SCANNING · '+percent+'%';progressLabel.textContent=angle.label+' · '+percent+'%';progressBar.style.width=((index*100+percent)/3)+'%';await wait(45);}
+await window.ZentrixFacePose.captureAngle(faceVideo,angle.key,(percent)=>{scanPercent.textContent='POSE CHECK · '+percent+'%';progressLabel.textContent=angle.label+' · '+percent+'%';progressBar.style.width=((index*100+percent)/3)+'%';});
 const c=document.createElement('canvas');c.width=faceVideo.videoWidth;c.height=faceVideo.videoHeight;c.getContext('2d').drawImage(faceVideo,0,0,c.width,c.height);angleImages[angle.key.toLowerCase()]=c.toDataURL('image/jpeg',0.9);scanFrame.classList.remove('scanning');scanPercent.textContent='CAPTURED · 100%';status(angle.label+' angle captured. Preparing the next position...','success');await wait(900);
 }
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera access is not supported by this browser.');cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false});faceVideo.srcObject=cameraStream;await faceVideo.play();cameraReady=true;status('Camera ready. Give consent, then start the automatic scan.','success');updateReady();}catch(e){status(e.message||'Unable to access camera permission.','danger');}}
