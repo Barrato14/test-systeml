@@ -50,11 +50,12 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
         </div>
 
         <?php if ($hasRegisteredFace): ?>
-            <div class="alert alert-success">A face is already registered to your account. A new registration will replace it.</div>
+            <div class="alert alert-success">A face is already registered to your account. Face registration is locked to prevent duplicate registrations. Contact an administrator if your face needs to be reset.</div>
         <?php else: ?>
             <div class="alert alert-info">You have not registered a face yet. Register before using face-based attendance.</div>
         <?php endif; ?>
 
+        <?php if (!$hasRegisteredFace): ?>
         <div id="faceRegistrationStatus" class="alert alert-info text-center">Preparing face recognition...</div>
         <video id="faceRegistrationVideo" autoplay muted playsinline></video>
 
@@ -68,13 +69,17 @@ $lastUpdated = $hasRegisteredFace ? ($existingFaceResponse['data'][0]['updated_a
         <p class="face-privacy-note">Zentrix stores a mathematical face template rather than using your registration photo as the matching record. You can request assistance from the administrator if you want your face registration removed. Face matching can make mistakes and does not by itself prove that a live person is present.</p>
 
         <button type="button" id="saveFaceButton" class="btn btn-primary w-100" disabled>
-            <i class="bi bi-shield-check me-2"></i><?= $hasRegisteredFace ? 'Update Registered Face' : 'Register My Face' ?>
+            <i class="bi bi-shield-check me-2"></i><?= $hasRegisteredFace ? 'Face Already Registered' : 'Register My Face' ?>
         </button>
+        <?php else: ?>
+        <div class="alert alert-secondary mb-0">Your registered face cannot be replaced from this page.</div>
+        <?php endif; ?>
     </section>
 </main>
 
 <script>
 const faceVideo = document.getElementById('faceRegistrationVideo');
+if (!faceVideo) { /* Existing registration: camera capture is intentionally unavailable. */ } else {
 const faceStatus = document.getElementById('faceRegistrationStatus');
 const consentCheckbox = document.getElementById('faceConsent');
 const saveFaceButton = document.getElementById('saveFaceButton');
@@ -158,6 +163,7 @@ window.addEventListener('beforeunload', function () {
 });
 
 startRegistrationCamera();
+}
 </script>
 </body>
 </html>
