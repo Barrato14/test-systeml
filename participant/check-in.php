@@ -78,7 +78,7 @@ $faceRegistrationRequired = empty($faceProfileCheck['data']);
         @media (max-width: 600px) { .scanner-container { margin: 18px auto; padding: 18px; } #videoElement { max-height: 58vh; object-fit: cover; } }
         @media (max-width: 360px) { .scanner-container { margin: 12px auto; padding: 13px; } .scanner-container h3 { font-size: 1.15rem; } .scanner-container .alert { overflow-wrap: anywhere; } }
     </style>
-<link rel="stylesheet" href="../css/style.css?v=20261117-1">
+<link rel="stylesheet" href="../css/style.css?v=20261117-5">
 </head>
 <body class="participant-page">
 <?php include '../includes/participant-nav.php'; ?>
@@ -176,6 +176,6 @@ finally{isBusy=false;updateStep();}
 window.addEventListener('beforeunload',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});startCamera();
 </script>
 <?php endif; ?>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
 </body>
 </html>
