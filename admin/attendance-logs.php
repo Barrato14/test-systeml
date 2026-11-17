@@ -244,7 +244,7 @@ function formatManilaTime($utcString) {
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="admin-page-heading admin-section-heading d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-person-bounding-box text-primary me-2"></i> Course Attendance Logs</h2>
             <div class="d-flex align-items-center gap-2 flex-wrap"><span class="badge bg-secondary fs-6" id="attendanceRecordCount">Showing: <?= count($attendanceLogs) ?> Records</span><button type="button" class="btn btn-outline-primary" id="printAttendanceLogs"><i class="bi bi-printer me-1"></i> Print Logs</button></div>
         </div>
