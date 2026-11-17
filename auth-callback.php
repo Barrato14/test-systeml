@@ -9,13 +9,14 @@ require_once 'config/database.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signing in - Zentrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css"><meta name="theme-color" content="#F8F6FB">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css?v=20261117-7"><meta name="theme-color" content="#342B46">
 </head>
-<body>
+<body class="auth-callback-page">
     <main class="auth-layout">
         <section class="auth-form-wrapper">
             <div class="auth-form-container">
                 <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
+                <div class="auth-callback-spinner" aria-hidden="true"><i class="ph ph-spinner-gap"></i></div>
                 <header class="form-header">
                     <h2>Completing sign in</h2>
                     <p id="authStatus">Verifying your Google account...</p>
