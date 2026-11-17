@@ -134,7 +134,7 @@ $faceRegistrationRequired = empty($faceProfileCheck['data']);
 const video=document.getElementById('videoElement'),canvas=document.getElementById('canvas'),captureBtn=document.getElementById('captureBtn'),statusAlert=document.getElementById('statusAlert'),faceDetectionStatus=document.getElementById('faceDetectionStatus'),latDisplay=document.getElementById('latDisplay'),lngDisplay=document.getElementById('lngDisplay'),stepLabel=document.getElementById('angleStepLabel'),progressLabel=document.getElementById('angleProgressLabel'),progressBar=document.getElementById('angleProgressBar'),instruction=document.getElementById('angleInstruction'),scanFrame=document.getElementById('attendanceScanFrame'),scanPercent=document.getElementById('attendanceScanPercent');
 const eventId=<?= json_encode((string)$eventId) ?>,attendanceAction='check-in';
 const angles=[{key:'front',label:'FRONT',prompt:'Look straight into the camera. Keep your head upright and face centered.'},{key:'left',label:'LEFT',prompt:'Now slowly turn your head to your LEFT. Keep your eyes visible.'},{key:'right',label:'RIGHT',prompt:'Now slowly turn your head to your RIGHT. Keep your eyes visible.'}];
-let currentLatitude=null,currentLongitude=null,currentAccuracy=null,cameraStream=null,cameraReady=false,gpsReady=false,currentAngleIndex=0,isBusy=false,completed=false,scanStarted=false,scanFinished=false;
+let currentLatitude=null,currentLongitude=null,currentAccuracy=null,cameraStream=null,cameraReady=false,gpsReady=false,currentAngleIndex=0,isBusy=false,completed=false,scanStarted=false,scanFinished=false,challengeId=null;
 function alertBox(el,message,type){el.className='alert alert-'+type+' text-center';el.textContent=message;}
 function frame(){if(!cameraReady||!video.videoWidth)throw Error('Camera is not ready yet.');canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',0.88);}
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
@@ -149,15 +149,20 @@ if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{currentLa
 async function runFaceScan(){
 scanStarted=true;isBusy=true;updateStep();
 try{
+alertBox(statusAlert,'Starting a secure attendance verification session...','info');
+const challengeResponse=await fetch('start-face-verification.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction})});
+const challengeResult=await challengeResponse.json();
+if(!challengeResponse.ok||!challengeResult.success||!challengeResult.challenge_id)throw Error(challengeResult.message||'Unable to start secure face verification.');
+challengeId=challengeResult.challenge_id;
 for(let i=0;i<angles.length;i++){
 const angle=angles[i];currentAngleIndex=i;updateStep();alertBox(statusAlert,'Turn to '+angle.label.toLowerCase()+'. The scan will capture automatically at 100%.','info');scanFrame.classList.add('scanning');
 await window.ZentrixFacePose.captureAngle(video,angle.key,(percent)=>{scanPercent.textContent='POSE CHECK · '+percent+'%';progressLabel.textContent=angle.label+' · '+percent+'%';progressBar.style.width=((i*100+percent)/3)+'%';});
-const imageData=frame();alertBox(statusAlert,'Sending '+angle.label.toLowerCase()+' scan for identity verification...','info');
-const r=await fetch('verify-face-angle.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction,angle:angle.key,image_data:imageData})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||angle.label+' face verification failed.');
+const imageData=frame();alertBox(statusAlert,'Sending '+angle.label.toLowerCase()+' scan for identity and liveness verification...','info');
+const r=await fetch('verify-face-angle.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction,angle:angle.key,image_data:imageData,challenge_id:challengeId})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||angle.label+' face verification failed.');
 currentAngleIndex=i+1;scanFrame.classList.remove('scanning');scanPercent.textContent='VERIFIED · 100%';progressLabel.textContent=(i+1)+' / 3 verified';progressBar.style.width=((i+1)/3*100)+'%';alertBox(statusAlert,result.message||angle.label+' angle verified.','success');await wait(650);
 }
 scanFinished=true;alertBox(statusAlert,'All three face angles verified. Take your separate front-facing evidence photo to finish.','success');
-}catch(error){scanStarted=false;currentAngleIndex=0;scanFinished=false;scanFrame.classList.remove('scanning');scanPercent.textContent='RETRY · 0%';progressBar.style.width='0%';progressLabel.textContent='0 / 3 verified';alertBox(statusAlert,error.message||'Face scan failed. Press Start Face Scan to retry.','danger');}
+}catch(error){scanStarted=false;currentAngleIndex=0;scanFinished=false;challengeId=null;scanFrame.classList.remove('scanning');scanPercent.textContent='RETRY · 0%';progressBar.style.width='0%';progressLabel.textContent='0 / 3 verified';alertBox(statusAlert,error.message||'Face scan failed. Press Start Face Scan to retry.','danger');}
 finally{isBusy=false;updateStep();}
 }
 captureBtn.addEventListener('click',async()=>{
