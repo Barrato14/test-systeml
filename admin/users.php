@@ -1412,7 +1412,7 @@ $totalUsers = count($allUsers);
 
     <!-- PAGE HEADER -->
 
-    <header class="users-header">
+    <header class="users-header admin-section-heading">
 
         <div>
             <h2>
