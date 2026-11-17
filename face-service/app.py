@@ -92,7 +92,7 @@ def decode_face_image(image_data: str):
 
 def save_profile(participant_id: str, descriptor: list[float]):
     url, key = supabase_config()
-    endpoint = f"{url}/rest/v1/participant_face_profiles?on_conflict=participant_id"
+    endpoint = f"{url}/rest/v1/participant_face_profiles"
     payload = {
         "participant_id": participant_id,
         "face_descriptor": descriptor,
@@ -103,10 +103,12 @@ def save_profile(participant_id: str, descriptor: list[float]):
     }
     result = requests.post(
         endpoint,
-        headers=supabase_headers(key, "resolution=merge-duplicates,return=representation"),
+        headers=supabase_headers(key, "return=representation"),
         json=payload,
         timeout=20,
     )
+    if result.status_code == 409:
+        raise ValueError("A face is already registered to this account. Contact an administrator if it needs to be reset.")
     if not result.ok:
         raise RuntimeError("The face registration could not be saved. Please try again.")
     return True
@@ -145,6 +147,8 @@ def register(payload: dict, x_face_service_token: str | None = Header(default=No
         return response_error("Participant consent is required.")
 
     try:
+        if get_profile(participant_id):
+            return response_error("A face is already registered to this account. Contact an administrator if it needs to be reset.", 409)
         descriptor = decode_face_image(payload.get("image_data", ""))
         save_profile(participant_id, descriptor)
         return {"success": True, "message": "Your face has been registered to your Zentrix account successfully."}
