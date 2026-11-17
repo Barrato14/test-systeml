@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Profile - Zentrix</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css?v=20261117-1">
+<link rel="stylesheet" href="../css/style.css?v=20261117-5">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center participant-page" style="min-height: 100vh;">
@@ -85,6 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn btn-primary w-100">Save & Continue</button>
         </form>
     </div>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
 </body>
 </html>
