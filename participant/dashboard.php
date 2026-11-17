@@ -517,12 +517,13 @@ $calendarJson = json_encode(
 <link rel="stylesheet" href="../css/style.css?v=20261117-1">
 <link rel="stylesheet" href="../css/weather-widget.css?v=20261113-2">
 <link rel="stylesheet" href="../css/participant-dashboard.css?v=20261113-1">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-2">
 </head>
 <body class="bg-light participant-page">
 
 <?php $showParticipantNotifications = true; include '../includes/participant-nav.php'; ?>
 
-<div class="container">
+<div class="participant-dashboard-shell">
     <?php if ($successMsg): ?>
         <div class="alert alert-success"><?= htmlspecialchars($successMsg) ?></div>
     <?php endif; ?>
@@ -530,14 +531,14 @@ $calendarJson = json_encode(
         <div class="alert alert-danger"><?= htmlspecialchars($errorMsg) ?></div>
     <?php endif; ?>
 
-    <section class="participant-dashboard-hero mb-4">
+    <div class="participant-dashboard-topline">
         <div>
-            <span class="participant-dashboard-eyebrow">PARTICIPANT OVERVIEW</span>
-            <h1>Welcome back, <?= htmlspecialchars((string)$firstName) ?>!</h1>
-            <p>Your events, attendance progress, and latest updates in one place.</p>
+            <span class="participant-dashboard-kicker">YOUR CAMPUS, CONNECTED</span>
+            <h1>Good day, <?= htmlspecialchars((string)$firstName) ?> <span aria-hidden="true">✦</span></h1>
+            <p>Here's what's happening in your campus life.</p>
         </div>
-        <a href="browse-events.php" class="participant-dashboard-primary-link"><i class="bi bi-compass"></i> Explore Events</a>
-    </section>
+        <a href="browse-events.php" class="participant-dashboard-primary-link"><i class="bi bi-calendar-event"></i> Explore events <i class="bi bi-arrow-up-right"></i></a>
+    </div>
 
     <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
@@ -636,85 +637,85 @@ $calendarJson = json_encode(
         </div>
     </div>
 
-    <section class="participant-dashboard-stats mb-4">
+
+    <section class="participant-dashboard-stats mb-4" aria-label="Participation summary">
         <article class="participant-dashboard-stat">
-            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-check"></i></span>
-            <div><strong><?= number_format($dashboardRegistrationCount) ?></strong><span>Registered events</span></div>
+            <span class="participant-dashboard-stat-icon tone-lavender"><i class="bi bi-calendar2-check"></i></span>
+            <div><span>Registered events</span><strong><?= number_format($dashboardRegistrationCount) ?></strong><small>Events you've joined</small></div>
         </article>
         <article class="participant-dashboard-stat">
-            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar-event"></i></span>
-            <div><strong><?= number_format($dashboardUpcomingCount) ?></strong><span>Upcoming events</span></div>
+            <span class="participant-dashboard-stat-icon tone-green"><i class="bi bi-check2-circle"></i></span>
+            <div><span>Attendance rate</span><strong><?= $dashboardAttendanceRate ?>%</strong><small><?= number_format($dashboardAttendedCount) ?> attended</small></div>
         </article>
-        <a href="attendance.php" class="participant-dashboard-stat participant-dashboard-stat-link" aria-label="View the events and daily attendance records included in your completed attendance time">
-            <span class="participant-dashboard-stat-icon"><i class="bi bi-clock-history"></i></span>
-            <div><strong><?= number_format($dashboardAttendanceHours, 1) ?> <small>hrs</small></strong><span>Completed attendance time</span><small class="participant-dashboard-stat-hint">View event breakdown <i class="bi bi-arrow-up-right"></i></small></div>
+        <article class="participant-dashboard-stat">
+            <span class="participant-dashboard-stat-icon tone-blue"><i class="bi bi-calendar-event"></i></span>
+            <div><span>Upcoming events</span><strong><?= number_format($dashboardUpcomingCount) ?></strong><small>Coming up on your calendar</small></div>
+        </article>
+        <a href="attendance.php" class="participant-dashboard-stat participant-dashboard-stat-link">
+            <span class="participant-dashboard-stat-icon tone-amber"><i class="bi bi-clock-history"></i></span>
+            <div><span>Completed attendance</span><strong><?= number_format($dashboardAttendanceHours, 1) ?><small class="stat-unit"> hrs</small></strong><small><?= number_format($dashboardAttendanceSessionCount) ?> attendance days · View history <i class="bi bi-arrow-up-right"></i></small></div>
         </a>
-        <article class="participant-dashboard-stat">
-            <span class="participant-dashboard-stat-icon"><i class="bi bi-calendar2-range"></i></span>
-            <div><strong><?= number_format($dashboardAttendanceSessionCount) ?></strong><span>Attendance days</span></div>
-        </article>
-        <article class="participant-dashboard-stat">
-            <span class="participant-dashboard-stat-icon"><i class="bi bi-graph-up-arrow"></i></span>
-            <div><strong><?= $dashboardAttendanceRate ?>%</strong><span>Attendance rate</span></div>
-        </article>
     </section>
 
     <section class="participant-dashboard-main-grid mb-4">
         <article class="participant-dashboard-panel participant-dashboard-next-event">
             <div class="participant-dashboard-panel-heading">
-                <div><span class="participant-dashboard-eyebrow">UP NEXT</span><h2>Your next event</h2></div>
-                <i class="bi bi-calendar2-week"></i>
+                <div><span class="participant-dashboard-kicker">COMING UP</span><h2>Your upcoming events</h2><p>The next moments on your calendar</p></div>
+                <a href="my-events.php" class="participant-dashboard-view-link">View all <i class="bi bi-arrow-up-right"></i></a>
             </div>
             <?php if ($dashboardNextEvent && $dashboardNextEventStart): ?>
-                <h3><?= htmlspecialchars($dashboardNextEvent['title'] ?? 'Untitled Event') ?></h3>
-                <p class="participant-dashboard-event-description"><?= htmlspecialchars($dashboardNextEvent['description'] ?? 'You are registered for this event.') ?></p>
-                <div class="participant-dashboard-event-details">
-                    <span><i class="bi bi-calendar3"></i><?= htmlspecialchars($dashboardNextEventStart->format('F j, Y')) ?></span>
-                    <span><i class="bi bi-clock"></i><?= htmlspecialchars($dashboardNextEventStart->format('g:i A')) ?> PHT</span>
-                    <span><i class="bi bi-geo-alt"></i><?= htmlspecialchars($dashboardNextEvent['venue'] ?? 'Venue to be announced') ?></span>
+                <div class="participant-dashboard-featured-event">
+                    <div class="participant-dashboard-date-tile"><span><?= htmlspecialchars($dashboardNextEventStart->format('M')) ?></span><strong><?= htmlspecialchars($dashboardNextEventStart->format('d')) ?></strong><small><?= htmlspecialchars($dashboardNextEventStart->format('D')) ?></small></div>
+                    <div class="participant-dashboard-featured-copy">
+                        <span class="participant-dashboard-event-label">YOUR NEXT EVENT</span>
+                        <h3><?= htmlspecialchars($dashboardNextEvent['title'] ?? 'Untitled Event') ?></h3>
+                        <p><?= htmlspecialchars($dashboardNextEvent['description'] ?? 'You are registered for this event.') ?></p>
+                        <div class="participant-dashboard-event-details">
+                            <span><i class="bi bi-clock"></i><?= htmlspecialchars($dashboardNextEventStart->format('g:i A')) ?> PHT</span>
+                            <span><i class="bi bi-geo-alt"></i><?= htmlspecialchars($dashboardNextEvent['venue'] ?? 'Venue to be announced') ?></span>
+                        </div>
+                        <a href="my-events.php" class="participant-dashboard-text-link">View event details <i class="bi bi-arrow-right"></i></a>
+                    </div>
                 </div>
-                <a href="my-events.php" class="participant-dashboard-text-link">View my events <i class="bi bi-arrow-right"></i></a>
             <?php else: ?>
-                <div class="participant-dashboard-empty">
-                    <i class="bi bi-calendar-plus"></i>
-                    <strong>No upcoming registered events</strong>
-                    <span>Explore available events and register for one.</span>
-                    <a href="browse-events.php" class="participant-dashboard-text-link">Browse events <i class="bi bi-arrow-right"></i></a>
-                </div>
+                <div class="participant-dashboard-empty"><i class="bi bi-calendar-plus"></i><strong>No upcoming registered events</strong><span>Explore available events and register for one.</span><a href="browse-events.php" class="participant-dashboard-text-link">Browse events <i class="bi bi-arrow-right"></i></a></div>
             <?php endif; ?>
         </article>
 
         <article class="participant-dashboard-panel participant-dashboard-progress">
             <div class="participant-dashboard-panel-heading">
-                <div><span class="participant-dashboard-eyebrow">YOUR PARTICIPATION</span><h2>Attendance progress</h2></div>
-                <i class="bi bi-bar-chart-line"></i>
+                <div><span class="participant-dashboard-kicker">YOUR PARTICIPATION</span><h2>Attendance overview</h2><p>Your participation this semester</p></div>
+                <span class="participant-dashboard-panel-icon"><i class="bi bi-activity"></i></span>
             </div>
-            <div class="participant-dashboard-progress-value"><?= $dashboardAttendanceRate ?>%</div>
-            <p>of your registered events have a recorded check-in.</p>
-            <div class="participant-dashboard-progress-track"><span style="width: <?= $dashboardAttendanceRate ?>%;"></span></div>
-            <div class="participant-dashboard-progress-meta">
-                <span><?= number_format($dashboardAttendedCount) ?> attended</span>
-                <span><?= number_format($dashboardRegistrationCount) ?> registered</span>
+            <div class="participant-dashboard-attendance-overview">
+                <div class="participant-dashboard-donut" style="--attendance-rate:<?= max(0,min(100,(int)$dashboardAttendanceRate)) ?>%">
+                    <div><strong><?= $dashboardAttendanceRate ?>%</strong><span>Attendance</span></div>
+                </div>
+                <div class="participant-dashboard-attendance-legend">
+                    <div><span><i class="legend-present"></i> Attended</span><strong><?= number_format($dashboardAttendedCount) ?></strong></div>
+                    <div><span><i class="legend-other"></i> Registered</span><strong><?= number_format($dashboardRegistrationCount) ?></strong></div>
+                    <a href="attendance.php">View attendance history <i class="bi bi-arrow-right"></i></a>
+                </div>
             </div>
-            <a href="attendance.php" class="participant-dashboard-text-link">View my attendance records <i class="bi bi-arrow-right"></i></a>
+            <div class="participant-dashboard-progress-footer"><span>Completed attendance time</span><strong><?= number_format($dashboardAttendanceHours, 1) ?> hrs</strong></div>
         </article>
     </section>
 
     <section class="participant-dashboard-lower-grid mb-4">
         <article class="participant-dashboard-panel">
             <div class="participant-dashboard-panel-heading">
-                <div><span class="participant-dashboard-eyebrow">LATEST UPDATES</span><h2>Announcements</h2></div>
+                <div><span class="participant-dashboard-kicker">STAY IN THE LOOP</span><h2>Recent notifications</h2><p><?= number_format($unreadNotificationCount) ?> unread updates</p></div>
                 <button type="button" class="participant-dashboard-icon-button" data-open-notifications aria-label="Open all notifications"><i class="bi bi-bell"></i></button>
             </div>
             <?php if (empty($notifications)): ?>
-                <div class="participant-dashboard-empty compact"><i class="bi bi-megaphone"></i><span>No announcements yet. New event announcements will appear here.</span></div>
+                <div class="participant-dashboard-empty compact"><i class="bi bi-inbox"></i><strong>You're all caught up</strong><span>New updates will appear here.</span></div>
             <?php else: ?>
                 <div class="participant-dashboard-announcements">
-                    <?php foreach (array_slice($notifications, 0, 4) as $announcement): ?>
+                    <?php foreach (array_slice($notifications, 0, 3) as $announcement): ?>
                         <div class="participant-dashboard-announcement">
-                            <span class="participant-dashboard-announcement-icon"><i class="bi bi-megaphone"></i></span>
+                            <span class="participant-dashboard-announcement-icon"><i class="bi bi-bell"></i></span>
                             <div><strong><?= htmlspecialchars($announcement['title'] ?? 'Announcement') ?></strong><p><?= htmlspecialchars($announcement['message'] ?? '') ?></p>
-                            <?php if (!empty($announcement['created_at'])): ?><time><?= htmlspecialchars((new DateTime($announcement['created_at']))->setTimezone($manilaTimezone)->format('M j, Y · g:i A')) ?></time><?php endif; ?></div>
+                            <?php if (!empty($announcement['created_at'])): ?><time><?= htmlspecialchars((new DateTime($announcement['created_at']))->setTimezone($manilaTimezone)->format('M j · g:i A')) ?></time><?php endif; ?></div>
                             <?php if (($announcement['is_read'] ?? false) !== true && ($announcement['is_read'] ?? '') !== 'true'): ?><span class="participant-dashboard-new-label">NEW</span><?php endif; ?>
                         </div>
                     <?php endforeach; ?>
@@ -723,29 +724,20 @@ $calendarJson = json_encode(
             <?php endif; ?>
         </article>
 
-        <article class="participant-dashboard-panel">
-            <div class="participant-dashboard-panel-heading">
-                <div><span class="participant-dashboard-eyebrow">YOUR LATEST ACTIONS</span><h2>Recent activity</h2></div>
-                <i class="bi bi-activity"></i>
+        <article class="participant-dashboard-panel participant-dashboard-profile-card">
+            <div class="participant-dashboard-profile-top">
+                <div><span class="participant-dashboard-kicker">PARTICIPANT PROFILE</span><h2>Your campus identity</h2><p>Keep your profile and face registration up to date for a smoother event experience.</p></div>
+                <span class="participant-dashboard-profile-shield"><i class="bi bi-shield-check"></i></span>
             </div>
-            <?php if (empty($dashboardActivities)): ?>
-                <div class="participant-dashboard-empty compact"><i class="bi bi-clock-history"></i><span>Your event registrations and attendance updates will appear here.</span></div>
-            <?php else: ?>
-                <div class="participant-dashboard-activity-list">
-                    <?php foreach ($dashboardActivities as $activity): ?>
-                        <div class="participant-dashboard-activity">
-                            <span class="participant-dashboard-activity-icon"><i class="bi <?= htmlspecialchars($activity['icon']) ?>"></i></span>
-                            <div><strong><?= htmlspecialchars($activity['title']) ?></strong><p><?= htmlspecialchars($activity['message']) ?></p>
-                            <?php if (!empty($activity['date'])): ?><time><?= htmlspecialchars((new DateTime($activity['date']))->setTimezone($manilaTimezone)->format('M j, Y · g:i A')) ?></time><?php endif; ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div class="participant-dashboard-profile-actions">
+                <a href="face-registration.php"><i class="bi bi-person-bounding-box"></i> Face registration</a>
+                <a href="my-events.php"><i class="bi bi-ticket-perforated"></i> My events</a>
+            </div>
         </article>
     </section>
 
     <section class="participant-dashboard-quick-links mb-5">
-        <div><span class="participant-dashboard-eyebrow">SHORTCUTS</span><h2>Quick actions</h2></div>
+        <div><span class="participant-dashboard-kicker">GET THINGS DONE</span><h2>Quick actions</h2></div>
         <div class="participant-dashboard-action-grid">
             <a href="browse-events.php"><i class="bi bi-compass"></i><span><strong>Browse events</strong><small>Discover campus activities</small></span><i class="bi bi-arrow-up-right"></i></a>
             <a href="my-events.php"><i class="bi bi-ticket-perforated"></i><span><strong>My events</strong><small>View registrations and attendance</small></span><i class="bi bi-arrow-up-right"></i></a>
@@ -889,6 +881,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script src="../js/weather-widget.js?v=20261115-10" defer></script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-2">
+
 </body>
 </html>
