@@ -11,10 +11,16 @@ from fastapi import FastAPI, Header
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 
+from anti_spoof import check_liveness
+
 app = FastAPI(title="Zentrix Face Recognition", docs_url=None, redoc_url=None)
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MATCH_THRESHOLD = 0.50
+
+
+class FaceSpoofDetected(Exception):
+    pass
 
 
 def response_error(message: str, status_code: int = 400):
@@ -74,6 +80,14 @@ def decode_face_image(image_data: str):
         raise ValueError("No face was detected. Center your face in the camera and try again.")
     if len(locations) > 1:
         raise ValueError("More than one face was detected. Make sure only you are in the camera view.")
+
+    try:
+        liveness = check_liveness(image, locations[0])
+    except Exception as error:
+        raise RuntimeError("The anti-spoofing check is unavailable. Please try again shortly.") from error
+
+    if not liveness["is_real"]:
+        raise FaceSpoofDetected("The camera image could not pass the live-face check. Use your camera directly and try again.")
 
     encodings = face_recognition.face_encodings(
         image,
@@ -248,6 +262,8 @@ def register_multi(payload: dict, x_face_service_token: str | None = Header(defa
             "message": "Your front, left, and right face angles have been registered successfully.",
             "registered_angles": ["front", "left", "right"],
         }
+    except FaceSpoofDetected as error:
+        return response_error(str(error), 403)
     except ValueError as error:
         return response_error(str(error))
     except RuntimeError as error:
@@ -293,6 +309,8 @@ def verify_angle(payload: dict, x_face_service_token: str | None = Header(defaul
             "angle": angle,
             "message": f"{angle.capitalize()} face angle verified.",
         }
+    except FaceSpoofDetected as error:
+        return response_error(str(error), 403)
     except ValueError as error:
         return response_error(str(error))
     except RuntimeError as error:
@@ -324,6 +342,8 @@ def register(payload: dict, x_face_service_token: str | None = Header(default=No
         descriptor = decode_face_image(payload.get("image_data", ""))
         save_profile(participant_id, descriptor)
         return {"success": True, "message": "Your face has been registered to your Zentrix account successfully."}
+    except FaceSpoofDetected as error:
+        return response_error(str(error), 403)
     except ValueError as error:
         return response_error(str(error))
     except RuntimeError as error:
@@ -361,6 +381,8 @@ def verify(payload: dict, x_face_service_token: str | None = Header(default=None
             return response_error("Face does not match the face registered to your account. Please try again.", 403)
 
         return {"success": True, "message": "Face verified."}
+    except FaceSpoofDetected as error:
+        return response_error(str(error), 403)
     except ValueError as error:
         return response_error(str(error))
     except RuntimeError as error:
