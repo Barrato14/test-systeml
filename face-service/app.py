@@ -118,7 +118,8 @@ def get_profile(participant_id: str):
     url, key = supabase_config()
     endpoint = (
         f"{url}/rest/v1/participant_face_profiles"
-        f"?participant_id=eq.{participant_id}&select=face_descriptor,consent_given,face_model"
+        f"?participant_id=eq.{participant_id}"
+        "&select=participant_id,face_descriptor,face_front_descriptor,face_left_descriptor,face_right_descriptor,consent_given,face_model"
     )
     result = requests.get(endpoint, headers=supabase_headers(key), timeout=20)
     if not result.ok:
@@ -143,12 +144,11 @@ def decode_angle_images(angle_images: dict):
     return descriptors
 
 
-def save_multi_angle_profile(participant_id: str, descriptors: dict):
+def save_multi_angle_profile(participant_id: str, descriptors: dict, upgrade_legacy: bool = False):
     url, key = supabase_config()
     endpoint = f"{url}/rest/v1/participant_face_profiles"
     now = datetime.now(timezone.utc).isoformat()
     payload = {
-        "participant_id": participant_id,
         "face_descriptor": descriptors["front"],
         "face_front_descriptor": descriptors["front"],
         "face_left_descriptor": descriptors["left"],
@@ -158,12 +158,32 @@ def save_multi_angle_profile(participant_id: str, descriptors: dict):
         "updated_at": now,
         "face_model": "dlib_face_recognition_v1",
     }
-    result = requests.post(
-        endpoint,
-        headers=supabase_headers(key, "return=representation"),
-        json=payload,
-        timeout=30,
-    )
+
+    if upgrade_legacy:
+        update_endpoint = (
+            endpoint
+            + f"?participant_id=eq.{participant_id}"
+            + "&face_front_descriptor=is.null"
+            + "&face_left_descriptor=is.null"
+            + "&face_right_descriptor=is.null"
+        )
+        result = requests.patch(
+            update_endpoint,
+            headers=supabase_headers(key, "return=representation"),
+            json=payload,
+            timeout=30,
+        )
+        if result.ok and not result.json():
+            raise ValueError("Your face registration changed while you were upgrading. Refresh the page and try again.")
+    else:
+        payload["participant_id"] = participant_id
+        result = requests.post(
+            endpoint,
+            headers=supabase_headers(key, "return=representation"),
+            json=payload,
+            timeout=30,
+        )
+
     if result.status_code == 409:
         raise ValueError("A face is already registered to this account. Contact an administrator if it needs to be reset.")
     if not result.ok:
@@ -209,11 +229,20 @@ def register_multi(payload: dict, x_face_service_token: str | None = Header(defa
         return response_error("Participant consent is required.")
 
     try:
-        if get_profile(participant_id):
-            return response_error("A face is already registered to this account. Contact an administrator if it needs to be reset.", 409)
+        existing_profile = get_profile(participant_id)
+        has_multi_angle_profile = existing_profile and any(
+            existing_profile.get(key) is not None
+            for key in ("face_front_descriptor", "face_left_descriptor", "face_right_descriptor")
+        )
+        if has_multi_angle_profile:
+            return response_error("A three-angle face is already registered to this account. Contact an administrator if it needs to be reset.", 409)
 
         descriptors = decode_angle_images(payload.get("angle_images"))
-        save_multi_angle_profile(participant_id, descriptors)
+        save_multi_angle_profile(
+            participant_id,
+            descriptors,
+            upgrade_legacy=existing_profile is not None,
+        )
         return {
             "success": True,
             "message": "Your front, left, and right face angles have been registered successfully.",
