@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once 'includes/session.php';
 require_once 'config/database.php';
 
 $isPendingGoogleSignup = !empty($_SESSION['pending_google_user_id']);
