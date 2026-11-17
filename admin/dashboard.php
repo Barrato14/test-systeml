@@ -582,47 +582,37 @@ if (!$isEventOrganizer) {
 
 <main class="content-area admin-main-content">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <h2 class="mb-0">
-            <?= $isEventOrganizer ? 'Event Organizer Overview' : ($isStaff ? 'Staff Overview' : 'Dashboard Overview') ?>
-        </h2>
-
-        <div class="d-flex align-items-center">
-
-            <span class="me-3">
-                Welcome,
-                <strong>
-                    <?= htmlspecialchars(
-                        $_SESSION['user_name'] ??
-                        ($isEventOrganizer ? 'Event Organizer' : 'Admin')
-                    ) ?>
-                </strong>
-            </span>
-
+    <section class="admin-page-heading admin-dashboard-heading">
+        <div class="admin-heading-copy">
+            <span class="admin-eyebrow"><i class="bi bi-grid-1x2-fill"></i> ZENTRIX WORKSPACE</span>
+            <h1><?= $isEventOrganizer ? 'Event Organizer Overview' : ($isStaff ? 'Staff Overview' : 'Dashboard Overview') ?></h1>
+            <p>Here's what's happening across your workspace today.</p>
         </div>
-
-    </div>
+        <div class="admin-welcome-chip">
+            <span class="admin-welcome-avatar"><i class="bi bi-person"></i></span>
+            <span><small>Signed in as</small><strong><?= htmlspecialchars($_SESSION['user_name'] ?? ($isEventOrganizer ? 'Event Organizer' : 'Admin')) ?></strong></span>
+        </div>
+    </section>
 
     <?php include __DIR__ . '/../includes/weather-widget.php'; ?>
 
 
     <!-- ROLE-SPECIFIC DASHBOARD METRICS -->
-    <div class="row mb-4">
+    <section class="admin-metrics-grid" aria-label="Workspace overview metrics">
         <?php if ($isStaff): ?>
-            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Equipment Types</h6><h2 class="mb-0"><?= count($equipmentItems) ?></h2></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Available Units</h6><h2 class="mb-0"><?= $availableEquipmentUnits ?></h2></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Borrow Requests</h6><h2 class="mb-0"><?= $pendingBorrowRequests ?></h2></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#0dcaf0;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Currently Borrowed Units</h6><h2 class="mb-0"><?= $currentBorrowedUnits ?></h2></div></div></div>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon violet"><i class="bi bi-box-seam"></i></span><div class="admin-metric-label">Equipment Types</div><div class="admin-metric-value"><?= count($equipmentItems) ?></div><span class="admin-metric-foot">Items in inventory</span></div></article>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon green"><i class="bi bi-check2-circle"></i></span><div class="admin-metric-label">Available Units</div><div class="admin-metric-value"><?= $availableEquipmentUnits ?></div><span class="admin-metric-foot">Ready to borrow</span></div></article>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon amber"><i class="bi bi-inbox"></i></span><div class="admin-metric-label">Pending Borrow Requests</div><div class="admin-metric-value"><?= $pendingBorrowRequests ?></div><span class="admin-metric-foot">Awaiting review</span></div></article>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon blue"><i class="bi bi-arrow-left-right"></i></span><div class="admin-metric-label">Currently Borrowed Units</div><div class="admin-metric-value"><?= $currentBorrowedUnits ?></div><span class="admin-metric-foot">Currently in use</span></div></article>
         <?php else: ?>
-            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Total Users</h6><h2 class="mb-0"><?= $totalUsers ?></h2></div></div></div>
-            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#198754;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2"><?= $isEventOrganizer ? 'Ongoing Events' : 'Active Events' ?></h6><h2 class="mb-0"><?= $isEventOrganizer ? count($ongoingEvents) : $activeEvents ?></h2></div></div></div>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon violet"><i class="bi bi-people"></i></span><div class="admin-metric-label">Total Users</div><div class="admin-metric-value"><?= $totalUsers ?></div><span class="admin-metric-foot">Registered accounts</span></div></article>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon green"><i class="bi bi-calendar2-check"></i></span><div class="admin-metric-label"><?= $isEventOrganizer ? 'Ongoing Events' : 'Active Events' ?></div><div class="admin-metric-value"><?= $isEventOrganizer ? count($ongoingEvents) : $activeEvents ?></div><span class="admin-metric-foot">Events in progress</span></div></article>
             <?php if (!$isEventOrganizer): ?>
-                <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#ffc107;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Pending Equipment</h6><h2 class="mb-0"><?= $pendingEquipment ?></h2></div></div></div>
+                <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon amber"><i class="bi bi-box-seam"></i></span><div class="admin-metric-label">Pending Equipment</div><div class="admin-metric-value"><?= $pendingEquipment ?></div><span class="admin-metric-foot">Requests to review</span></div></article>
             <?php endif; ?>
-            <div class="col-md-3"><div class="card stat-card shadow-sm mb-3" style="border-left-color:#dc3545;"><div class="card-body"><h6 class="text-muted text-uppercase mb-2">Active Event Check-Ins</h6><h2 class="mb-0"><?= $totalCheckIns ?></h2></div></div></div>
+            <article class="card stat-card admin-metric-card"><div class="card-body"><span class="admin-metric-icon blue"><i class="bi bi-person-check"></i></span><div class="admin-metric-label">Active Event Check-Ins</div><div class="admin-metric-value"><?= $totalCheckIns ?></div><span class="admin-metric-foot">Attendance records</span></div></article>
         <?php endif; ?>
-    </div>
+    </section>
 
     <?php if (!$isEventOrganizer && !$isStaff): ?>
     <section class="card shadow-sm mb-4" style="border-left:4px solid #9b6be8;">
