@@ -56,7 +56,7 @@ if ($token === '') {
 <title>Email Verification - Zentrix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css"><meta name="theme-color" content="#F8F6FB">
+<script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css?v=20261117-6"><meta name="theme-color" content="#F8F6FB">
 </head>
 <body class="auth-page">
 <main class="auth-standalone"><section class="auth-standalone-card">
