@@ -531,3 +531,28 @@ html[data-participant-theme="light"] body.participant-page .participant-dashboar
  body.participant-page .participant-dashboard-shell .participant-dashboard-donut strong{font-size:22px}
  body.participant-page .participant-dashboard-shell .participant-dashboard-action-grid{grid-template-columns:1fr}
 }
+
+
+body.participant-page .participant-dashboard-utilitybar{
+ min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 34px;padding:0 0 17px;
+ border-bottom:1px solid var(--p-border);
+}
+body.participant-page .participant-dashboard-utility-context>span{display:block;color:var(--p-text);font-size:12px;font-weight:750}
+body.participant-page .participant-dashboard-utility-context>small{display:block;margin-top:4px;color:var(--p-muted);font-size:10px}
+body.participant-page .participant-dashboard-utility-actions{display:flex;align-items:center;gap:18px}
+body.participant-page .participant-dashboard-utility-notifications{
+ min-height:38px;display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--p-border);border-radius:10px;
+ background:var(--p-surface);color:var(--p-muted);font-size:10px;font-weight:700;
+}
+body.participant-page .participant-dashboard-utility-notifications:hover{border-color:var(--p-accent);color:var(--p-accent)}
+body.participant-page .participant-dashboard-utility-notifications b{min-width:18px;padding:2px 5px;border-radius:99px;background:var(--p-accent);color:white;font-size:9px;text-align:center}
+body.participant-page .participant-dashboard-utility-profile{display:flex;align-items:center;gap:9px}
+body.participant-page .participant-dashboard-avatar{width:36px;height:36px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--p-accent) 28%,transparent);border-radius:50%;background:var(--p-accent-soft);color:var(--p-accent);font-size:12px;font-weight:800}
+body.participant-page .participant-dashboard-utility-profile strong{display:block;color:var(--p-text);font-size:10px}
+body.participant-page .participant-dashboard-utility-profile small{display:block;margin-top:3px;color:var(--p-muted);font-size:9px}
+@media(max-width:680px){
+ body.participant-page .participant-dashboard-utilitybar{align-items:flex-start;margin-bottom:25px}
+ body.participant-page .participant-dashboard-utility-actions{gap:8px}
+ body.participant-page .participant-dashboard-utility-notifications span{display:none}
+ body.participant-page .participant-dashboard-utility-profile>span:last-child{display:none}
+}
