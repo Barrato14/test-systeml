@@ -534,7 +534,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content">
 
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div class="admin-page-heading admin-section-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
             <div>
                 <h2 class="fw-bold mb-1">Equipment &amp; Services</h2>
                 <div class="text-muted">Manage inventory, availability, and borrowing requests.</div>
