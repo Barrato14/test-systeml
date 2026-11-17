@@ -31,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate a random one-time token. Only its SHA-256 hash is stored in the database.
             $token = bin2hex(random_bytes(32));
             $tokenHash = hash('sha256', $token);
-            $expiresAt = gmdate('Y-m-d\TH:i:s\Z', time() + 1800);
+            $expiresAt = gmdate('Y-m-d\TH:i:s\Z', time() + 600);
 
-            // Save the token hash and its 30-minute expiration time to this user's profile.
+            // Save the token hash and its 10-minute expiration time to this user's profile.
             $saved = supabaseServiceRequest(
                 'profiles?id=eq.' . rawurlencode((string)$profile['id']),
                 'PATCH',
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . '<h2>Password reset request</h2><p>Hi ' . $firstName . ',</p>'
                     . '<p>We received a request to reset your Zentrix password. Use the button below to choose a new password.</p>'
                     . '<p><a href="' . $safeLink . '" style="display:inline-block;padding:12px 20px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px">Reset password</a></p>'
-                    . '<p>This link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.</p>'
+                    . '<p>This link expires in 10 minutes and can only be used once. If you did not request this, you can ignore this email.</p>'
                     . '<p>— Zentrix</p></div>';
 
                 // Send the reset instructions using the existing Brevo email helper.
