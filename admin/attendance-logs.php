@@ -223,7 +223,7 @@ function formatManilaTime($utcString) {
         @media print {
             @page { size: landscape; margin: 12mm; }
             body, .content-area { background:#fff!important; color:#111!important; min-height:0!important; padding:0!important; }
-            .admin-sidebar, .sidebar, nav, .filter-card, #attendanceLocationModal, #printAttendanceLogs, .alert, #attendanceInfoCard, .attendance-map-trigger, .snapshot-thumb { display:none!important; }
+            .admin-sidebar, .sidebar, nav, #attendanceFilterCard, .filter-card, #attendanceLocationModal, #printAttendanceLogs, .alert, #attendanceInfoCard, .attendance-map-trigger, .snapshot-thumb { display:none!important; }
             .admin-main-content { margin:0!important; padding:0!important; width:100%!important; }
             #attendanceLogsCard { border:0!important; box-shadow:none!important; }
             #attendanceLogsCard .card-body { padding:0!important; }
@@ -276,7 +276,7 @@ function formatManilaTime($utcString) {
         <?php endif; ?>
 
         <!-- Filter Card -->
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-4" id="attendanceFilterCard">
             <div class="card-body">
                 <form method="GET" action="attendance-logs.php" class="row g-3 align-items-end filter-card">
                     <div class="col-md-4">
