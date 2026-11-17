@@ -727,7 +727,7 @@ $calendarJson = json_encode(
             .event-info-grid { grid-template-columns: 1fr; }
         }
     </style>
-    <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
+    <link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
 </head>
 <body class="admin-portal">
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
