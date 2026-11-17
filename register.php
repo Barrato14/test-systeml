@@ -10,12 +10,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $firstName = trim($_POST['first_name']);
     $lastName = trim($_POST['last_name']);
     $email = strtolower(trim($_POST['email'])); // Force lowercase to avoid duplicate casing issues
-    $password = $_POST['password'];
+    $password = (string)($_POST['password'] ?? '');
+    $confirmPassword = (string)($_POST['confirm_password'] ?? '');
     $course = $_POST['course'] ?? '';
     $section = $_POST['section'] ?? '';
     $role = 'Participant'; // Matches Supabase user_role enum
 
-    if (empty($course) || empty($section)) {
+    if ($firstName === '' || $lastName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter your first name, last name, and a valid email address.";
+    } elseif (strlen($password) < 8) {
+        $error = "Your password must be at least 8 characters long.";
+    } elseif ($password !== $confirmPassword) {
+        $error = "Your passwords do not match.";
+    } elseif (empty($course) || empty($section)) {
         $error = "Please select both your course and year & section.";
     } else {
         // Check if email already exists
@@ -82,19 +89,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Create Account - Zentrix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" type="image/svg+xml" href="/pwa-icons/zentrix-icon.svg">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#241438">
+    <meta name="theme-color" content="#F8F6FB">
 </head>
 <body class="auth-register-page">
 <main class="auth-layout">
 <section class="auth-showcase">
 <div class="showcase-content">
 <div class="brand-logo"><i class="ph-fill ph-ticket"></i><span>Zentrix</span></div>
-<div class="showcase-text"><h1>Be Part of Every Great Event.</h1><p>Create your account to discover campus activities, register for events, and keep everything in one place.</p></div>
+<div class="showcase-text"><h1>Your campus life has a place here.</h1><p>Join your campus community, discover upcoming events, and keep every experience connected in one place.</p></div>
 <div class="visual-decorations">
 <div class="floating-card card-1"><div class="card-header"><i class="ph-fill ph-calendar-check text-violet"></i><span>Campus Events</span></div><div class="card-stats"><div class="stat-bar w-75"></div><div class="stat-bar w-50"></div></div></div>
 <div class="floating-card card-2"><div class="card-header"><i class="ph-fill ph-users text-light-purple"></i><span>Your Community</span></div><div class="card-stats"><h3>Get involved</h3><span class="status-badge">Your next experience starts here</span></div></div>
@@ -107,18 +114,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <header class="form-header"><h2>Create your account</h2><p>Enter your details to join the campus community.</p></header>
 <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
 <?php if ($success): ?><div class="auth-success" role="status"><i class="ph ph-check-circle"></i><span><?= htmlspecialchars($success) ?></span></div><?php endif; ?>
-<form id="registerForm" method="POST" action="register.php">
+<form id="registerForm" method="POST" action="register.php" data-confirm-password="password" data-confirm-field="confirm_password">
 <div class="auth-register-grid">
 <div class="input-group"><label for="first_name">First Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="first_name" name="first_name" placeholder="Your first name" required autocomplete="given-name" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>"></div></div>
 <div class="input-group"><label for="last_name">Last Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="last_name" name="last_name" placeholder="Your last name" required autocomplete="family-name" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>"></div></div>
 <div class="input-group"><label for="course">Course</label><div class="input-wrapper"><i class="ph ph-graduation-cap input-icon"></i><select id="course" name="course" required><option value="">Select your course</option><option value="ACT" <?= (($_POST['course'] ?? '') === 'ACT') ? 'selected' : '' ?>>ACT (Associate in Computer Technology)</option><option value="HM" <?= (($_POST['course'] ?? '') === 'HM') ? 'selected' : '' ?>>HM (Hotel Management)</option><option value="CT" <?= (($_POST['course'] ?? '') === 'CT') ? 'selected' : '' ?>>CT</option></select></div></div>
 <div class="input-group"><label for="section">Year &amp; Section</label><div class="input-wrapper"><i class="ph ph-users-three input-icon"></i><select id="section" name="section" required><option value="">Select your section</option><optgroup label="Year 1"><option value="1A" <?= (($_POST['section'] ?? '') === '1A') ? 'selected' : '' ?>>1A</option><option value="1B" <?= (($_POST['section'] ?? '') === '1B') ? 'selected' : '' ?>>1B</option><option value="1C" <?= (($_POST['section'] ?? '') === '1C') ? 'selected' : '' ?>>1C</option></optgroup><optgroup label="Year 2"><option value="2A" <?= (($_POST['section'] ?? '') === '2A') ? 'selected' : '' ?>>2A</option><option value="2B" <?= (($_POST['section'] ?? '') === '2B') ? 'selected' : '' ?>>2B</option><option value="2C" <?= (($_POST['section'] ?? '') === '2C') ? 'selected' : '' ?>>2C</option></optgroup></select></div></div>
 <div class="input-group auth-register-full"><label for="email">Email Address</label><div class="input-wrapper"><i class="ph ph-envelope-simple input-icon"></i><input type="email" id="email" name="email" placeholder="name@example.com" required autocomplete="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"></div></div>
-<div class="input-group auth-register-full"><label for="password">Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="Create a password" required autocomplete="new-password"></div></div>
+<div class="input-group auth-register-full"><label for="password">Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="password" aria-label="Show password"><i class="ph ph-eye"></i></button></div><small class="auth-field-hint">Use at least 8 characters for a stronger password.</small></div>
+<div class="input-group auth-register-full"><label for="confirm_password">Confirm Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Enter your password again" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="confirm_password" aria-label="Show password"><i class="ph ph-eye"></i></button></div></div>
 </div>
 <button type="submit" class="btn-primary auth-register-submit"><span class="btn-text">Create Account</span><i class="ph-bold ph-arrow-right"></i></button>
 </form>
-<div class="divider"><span>OR</span></div>
+<div class="divider"><span>OR SIGN UP WITH</span></div>
 <div class="social-login">
 <a href="https://tnvrgvcijqccqucwxqyr.supabase.co/auth/v1/authorize?provider=google&redirect_to=https://test-systeml.onrender.com/auth-callback.php%3Fsource%3Dregister" class="btn-social"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="" class="social-icon">Continue with Google</a>
 </div>
@@ -127,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <footer class="auth-footer"><p>&copy; <?= date('Y') ?> Zentrix. All rights reserved.</p><div class="footer-links"><a href="privacy.php">Privacy Policy</a><a href="terms.php">Terms of Service</a></div></footer>
 </section>
 </main>
+<script src="js/auth-enhancements.js"></script>
 <script src="/js/pwa.js"></script>
 </body>
 </html>
