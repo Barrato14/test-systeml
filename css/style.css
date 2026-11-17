@@ -1657,3 +1657,32 @@ body:has(.auth-layout) {
     .auth-register-grid { display:grid; grid-template-columns:1fr; }
     .auth-register-full { grid-column:1; }
 }
+
+
+/* Reset password field readability */
+.auth-form-container .input-wrapper,
+.auth-form-container .input-wrapper:focus-within {
+    background-color: #FFFFFF !important;
+}
+
+.auth-form-container .input-wrapper input {
+    background-color: #FFFFFF !important;
+    color: #292238 !important;
+    -webkit-text-fill-color: #292238 !important;
+    caret-color: #8067B2;
+    opacity: 1;
+}
+
+.auth-form-container .input-wrapper input::placeholder {
+    color: #8B8496 !important;
+    -webkit-text-fill-color: #8B8496 !important;
+    opacity: 1;
+}
+
+.auth-form-container .input-wrapper input:-webkit-autofill,
+.auth-form-container .input-wrapper input:-webkit-autofill:hover,
+.auth-form-container .input-wrapper input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #292238 !important;
+    -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+    caret-color: #8067B2;
+}
