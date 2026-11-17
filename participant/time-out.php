@@ -106,18 +106,16 @@ if (empty($faceProfileCheck['data'])) {
         <div id="statusAlert" class="alert alert-info text-center" role="alert">
             Initializing camera and requesting GPS coordinates...
         </div>
-        <div id="faceDetectionStatus" class="alert alert-info text-center">Loading face detection...</div>
-        <div class="position-relative mb-3">
-            <video id="videoElement" autoplay playsinline></video>
-            <canvas id="canvas"></canvas>
-        </div>
+        <div id="faceDetectionStatus" class="alert alert-info text-center">Preparing camera and multi-angle verification...</div>
+        <div class="mb-2 d-flex justify-content-between align-items-center"><span class="fw-semibold" id="angleStepLabel">Step 1 of 3 · Front</span><span class="small text-muted" id="angleProgressLabel">0 / 3 verified</span></div>
+        <div class="progress mb-3" style="height:8px"><div id="angleProgressBar" class="progress-bar" style="width:0%"></div></div>
+        <div class="position-relative mb-2"><video id="videoElement" autoplay playsinline></video><canvas id="canvas"></canvas></div>
+        <p class="small text-muted text-center mb-3" id="angleInstruction">Look directly at the camera and keep your face centered.</p>
         <div class="mb-3 p-3 bg-light rounded border small">
             <div><strong>Latitude:</strong> <span id="latDisplay">Acquiring...</span></div>
             <div><strong>Longitude:</strong> <span id="lngDisplay">Acquiring...</span></div>
         </div>
-        <button id="captureBtn" class="btn btn-warning fw-bold w-100 py-2" disabled>
-            <i class="bi bi-shield-check me-2"></i> Capture Face & Time Out
-        </button>
+        <button id="captureBtn" class="btn btn-warning fw-bold w-100 py-2" disabled><i class="bi bi-camera-fill me-2"></i> Capture Front Angle</button>
         <div class="text-center mt-3">
             
         </div>
@@ -125,114 +123,26 @@ if (empty($faceProfileCheck['data'])) {
 </div>
 
 <script>
-const video = document.getElementById('videoElement');
-const canvas = document.getElementById('canvas');
-const captureBtn = document.getElementById('captureBtn');
-const statusAlert = document.getElementById('statusAlert');
-const faceDetectionStatus = document.getElementById('faceDetectionStatus');
-const latDisplay = document.getElementById('latDisplay');
-const lngDisplay = document.getElementById('lngDisplay');
-
-let currentLatitude = null;
-let currentLongitude = null;
-let currentAccuracy = null;
-let cameraStream = null;
-let cameraReady = false;
-let gpsReady = false;
-
-function updateCaptureAvailability() {
-    captureBtn.disabled = !(cameraReady && gpsReady);
-    if (cameraReady && gpsReady) {
-        statusAlert.className = 'alert alert-success text-center';
-        statusAlert.textContent = 'Camera and GPS are ready. Python will verify your face when you capture.';
-    }
+const video=document.getElementById('videoElement'),canvas=document.getElementById('canvas'),captureBtn=document.getElementById('captureBtn'),statusAlert=document.getElementById('statusAlert'),faceDetectionStatus=document.getElementById('faceDetectionStatus'),latDisplay=document.getElementById('latDisplay'),lngDisplay=document.getElementById('lngDisplay'),stepLabel=document.getElementById('angleStepLabel'),progressLabel=document.getElementById('angleProgressLabel'),progressBar=document.getElementById('angleProgressBar'),instruction=document.getElementById('angleInstruction');
+const eventId=<?= json_encode((string)$eventId) ?>,attendanceAction='time-out';
+const angles=[{key:'front',label:'Front',prompt:'Look directly at the camera and keep your face centered.'},{key:'left',label:'Left',prompt:'Slowly turn your head to your left. Keep your face visible.'},{key:'right',label:'Right',prompt:'Slowly turn your head to your right. Keep your face visible.'}];
+let currentLatitude=null,currentLongitude=null,currentAccuracy=null,cameraStream=null,cameraReady=false,gpsReady=false,currentAngleIndex=0,isBusy=false,completed=false;
+function alertBox(el,message,type){el.className='alert alert-'+type+' text-center';el.textContent=message;}
+function frame(){if(!cameraReady||!video.videoWidth)throw Error('Camera is not ready yet.');canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',0.88);}
+function updateStep(){
+if(currentAngleIndex<3){const angle=angles[currentAngleIndex];stepLabel.textContent='Step '+(currentAngleIndex+1)+' of 3 · '+angle.label;progressLabel.textContent=currentAngleIndex+' / 3 verified';progressBar.style.width=(currentAngleIndex/3*100)+'%';instruction.textContent=angle.prompt;captureBtn.innerHTML='<i class="bi bi-camera-fill me-2"></i> Capture '+angle.label+' Angle';}
+else{stepLabel.textContent='Identity verified · Evidence photo';progressLabel.textContent='3 / 3 verified';progressBar.style.width='100%';instruction.textContent='Face the camera directly again. Capture your separate attendance evidence photo.';captureBtn.innerHTML='<i class="bi bi-camera-fill me-2"></i> Capture Evidence & Time Out';}
+captureBtn.disabled=!(cameraReady&&gpsReady)||isBusy||completed;
 }
-
-async function startCamera() {
-    try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 720 } },
-            audio: false
-        });
-        video.srcObject = cameraStream;
-        await video.play();
-        cameraReady = true;
-        faceDetectionStatus.className = 'alert alert-success text-center';
-        faceDetectionStatus.textContent = 'Camera ready. Python will detect and verify one face during attendance.';
-        updateCaptureAvailability();
-    } catch (error) {
-        faceDetectionStatus.className = 'alert alert-danger text-center';
-        faceDetectionStatus.textContent = error.message || 'Unable to access the camera. Allow camera permission and try again.';
-    }
-}
-
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        position => {
-            currentLatitude = position.coords.latitude;
-            currentLongitude = position.coords.longitude;
-            currentAccuracy = position.coords.accuracy;
-            latDisplay.textContent = currentLatitude;
-            lngDisplay.textContent = currentLongitude;
-            gpsReady = true;
-            updateCaptureAvailability();
-        },
-        () => {
-            statusAlert.className = 'alert alert-danger text-center';
-            statusAlert.textContent = 'GPS Error: Please enable location services.';
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-} else {
-    statusAlert.className = 'alert alert-danger text-center';
-    statusAlert.textContent = 'Geolocation is not supported by your browser.';
-}
-
-captureBtn.addEventListener('click', async () => {
-    if (!cameraReady || !gpsReady || !video.videoWidth) return;
-
-    captureBtn.disabled = true;
-    captureBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying Face & Timing Out...';
-    statusAlert.className = 'alert alert-info text-center';
-    statusAlert.textContent = 'Capturing image. Python is detecting and matching your registered face...';
-
-    try {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        const photoDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-
-        const response = await fetch('process-time-out.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                event_id: <?= json_encode((string)$eventId) ?>,
-                latitude: currentLatitude,
-                longitude: currentLongitude,
-                accuracy: currentAccuracy,
-                photo_data: photoDataUrl
-            })
-        });
-
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message || 'Server rejected time out.');
-
-        statusAlert.className = 'alert alert-success text-center';
-        statusAlert.textContent = 'Time Out Successful! Redirecting...';
-        setTimeout(() => { window.location.href = 'dashboard.php'; }, 2000);
-    } catch (error) {
-        captureBtn.disabled = false;
-        captureBtn.innerHTML = '<i class="bi bi-shield-check me-2"></i> Capture Face & Time Out';
-        statusAlert.className = 'alert alert-danger text-center';
-        statusAlert.textContent = 'Error: ' + error.message;
-    }
+async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera access is not supported by this browser.');cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false});video.srcObject=cameraStream;await video.play();cameraReady=true;alertBox(faceDetectionStatus,'Camera ready. Follow the front, left, and right prompts.','success');updateStep();if(gpsReady)alertBox(statusAlert,'Camera and GPS are ready. Complete all three face angles.','success');}catch(e){alertBox(faceDetectionStatus,e.message||'Unable to access the camera.','danger');}}
+if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{currentLatitude=p.coords.latitude;currentLongitude=p.coords.longitude;currentAccuracy=p.coords.accuracy;latDisplay.textContent=currentLatitude;lngDisplay.textContent=currentLongitude;gpsReady=true;updateStep();if(cameraReady)alertBox(statusAlert,'Camera and GPS are ready. Complete all three face angles.','success');},()=>alertBox(statusAlert,'GPS Error: Please enable location services.','danger'),{enableHighAccuracy:true,timeout:15000,maximumAge:0});}else alertBox(statusAlert,'Geolocation is not supported by your browser.','danger');
+captureBtn.addEventListener('click',async()=>{if(!cameraReady||!gpsReady||isBusy||completed)return;isBusy=true;updateStep();try{
+if(currentAngleIndex<3){const angle=angles[currentAngleIndex],imageData=frame();alertBox(statusAlert,'Verifying '+angle.label.toLowerCase()+' face angle with Zentrix...','info');const r=await fetch('verify-face-angle.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction,angle:angle.key,image_data:imageData})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||angle.label+' face verification failed.');currentAngleIndex++;updateStep();alertBox(statusAlert,result.message||angle.label+' angle verified. Continue to the next position.','success');}
+else{const evidencePhoto=frame();alertBox(statusAlert,'All three angles passed. Submitting your separate front-facing evidence photo...','info');const r=await fetch('process-time-out.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,latitude:currentLatitude,longitude:currentLongitude,accuracy:currentAccuracy,photo_data:evidencePhoto})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||'Server rejected time-out.');completed=true;alertBox(statusAlert,'Time-out successful! Redirecting...','success');captureBtn.innerHTML='<i class="bi bi-check-circle me-2"></i> Completed';setTimeout(()=>{window.location.href='dashboard.php';},2000);}
+}catch(error){alertBox(statusAlert,error.message||'Verification failed. Please try again.','danger');}
+finally{isBusy=false;updateStep();}
 });
-
-window.addEventListener('beforeunload', () => {
-    if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-});
-
-startCamera();
+window.addEventListener('beforeunload',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});startCamera();
 </script>
 </body>
 </html>
