@@ -32,14 +32,19 @@ if (($input['consent_given'] ?? false) !== true) {
 }
 
 $existingFaceResponse = supabaseServiceRequest(
-    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=participant_id',
+    'participant_face_profiles?participant_id=eq.' . rawurlencode((string)$_SESSION['user_id']) . '&select=participant_id,face_front_descriptor,face_left_descriptor,face_right_descriptor',
     'GET'
 );
 if (($existingFaceResponse['code'] ?? 500) >= 400) {
     faceRegistrationRespond(false, 'Unable to verify your existing face registration. Please try again.', 503);
 }
-if (!empty($existingFaceResponse['data'])) {
-    faceRegistrationRespond(false, 'A face is already registered to this account. Contact an administrator if it needs to be reset.', 409);
+$existingProfile = $existingFaceResponse['data'][0] ?? null;
+if ($existingProfile && (
+    $existingProfile['face_front_descriptor'] !== null
+    || $existingProfile['face_left_descriptor'] !== null
+    || $existingProfile['face_right_descriptor'] !== null
+)) {
+    faceRegistrationRespond(false, 'A three-angle face is already registered to this account. Contact an administrator if it needs to be reset.', 409);
 }
 
 $angleImages = $input['angle_images'] ?? null;
