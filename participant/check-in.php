@@ -116,6 +116,9 @@ $faceRegistrationRequired = empty($faceProfileCheck['data']);
         <div class="mb-3 p-3 bg-light rounded border small">
             <div><strong>Latitude:</strong> <span id="latDisplay">Acquiring...</span></div>
             <div><strong>Longitude:</strong> <span id="lngDisplay">Acquiring...</span></div>
+            <div><strong>GPS accuracy:</strong> <span id="accuracyDisplay">Waiting for GPS...</span></div>
+            <div class="mt-2 text-muted" id="gpsQualityMessage" aria-live="polite">Collecting location readings to find the most accurate fix...</div>
+            <button type="button" id="retryGpsBtn" class="btn btn-outline-secondary btn-sm mt-2"><i class="bi bi-crosshair me-1"></i> Refresh GPS Location</button>
         </div>
 
         <!-- Action Button -->
@@ -145,7 +148,48 @@ else{stepLabel.textContent='Identity verified · Evidence photo';progressLabel.t
 captureBtn.disabled=!(cameraReady&&gpsReady)||isBusy||completed|| (scanStarted&&!scanFinished&&currentAngleIndex===0);
 }
 async function startCamera(){try{if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera access is not supported by this browser.');cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false});video.srcObject=cameraStream;await video.play();cameraReady=true;alertBox(faceDetectionStatus,'Camera ready. Press Start Face Scan once and follow the prompts.','success');updateStep();if(gpsReady)alertBox(statusAlert,'Camera and GPS are ready. Start your guided face scan.','success');}catch(e){alertBox(faceDetectionStatus,e.message||'Unable to access the camera.','danger');}}
-if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{currentLatitude=p.coords.latitude;currentLongitude=p.coords.longitude;currentAccuracy=p.coords.accuracy;latDisplay.textContent=currentLatitude;lngDisplay.textContent=currentLongitude;gpsReady=true;updateStep();if(cameraReady)alertBox(statusAlert,'Camera and GPS are ready. Start your guided face scan.','success');},()=>alertBox(statusAlert,'GPS Error: Please enable location services.','danger'),{enableHighAccuracy:true,timeout:15000,maximumAge:0});}else alertBox(statusAlert,'Geolocation is not supported by your browser.','danger');
+const accuracyDisplay=document.getElementById('accuracyDisplay'),gpsQualityMessage=document.getElementById('gpsQualityMessage'),retryGpsBtn=document.getElementById('retryGpsBtn');
+let gpsWatchId=null,gpsAcquisitionTimer=null,gpsAcquisitionStarted=0,bestGpsPosition=null,gpsAcquiring=false;
+function stopGpsAcquisition(){if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}if(gpsAcquisitionTimer){clearTimeout(gpsAcquisitionTimer);gpsAcquisitionTimer=null;}gpsAcquiring=false;retryGpsBtn.disabled=false;}
+function finishGpsAcquisition(){
+stopGpsAcquisition();
+if(!bestGpsPosition||bestGpsPosition.coords.accuracy>50){
+gpsReady=false;currentLatitude=null;currentLongitude=null;currentAccuracy=null;
+accuracyDisplay.textContent=bestGpsPosition?'±'+Math.round(bestGpsPosition.coords.accuracy)+' m':'Unavailable';
+gpsQualityMessage.textContent='GPS accuracy is still worse than 50 m. Move near a window or outdoors, keep location services enabled, then refresh GPS.';
+alertBox(statusAlert,'GPS signal is not accurate enough yet. Refresh your location and try again.','warning');
+updateStep();return;
+}
+const c=bestGpsPosition.coords;
+currentLatitude=c.latitude;currentLongitude=c.longitude;currentAccuracy=c.accuracy;gpsReady=true;
+latDisplay.textContent=currentLatitude.toFixed(6);lngDisplay.textContent=currentLongitude.toFixed(6);
+accuracyDisplay.textContent='±'+Math.round(currentAccuracy)+' m';
+gpsQualityMessage.textContent=currentAccuracy<=20?'Good GPS fix. Best reading collected.': 'Usable GPS fix. For better accuracy, try near a window or outdoors.';
+updateStep();
+if(cameraReady)alertBox(statusAlert,'Camera and GPS are ready. Start your guided face scan.','success');
+}
+function acquireGpsLocation(){
+if(!navigator.geolocation){alertBox(statusAlert,'Geolocation is not supported by this browser.','danger');return;}
+stopGpsAcquisition();gpsReady=false;bestGpsPosition=null;gpsAcquiring=true;retryGpsBtn.disabled=true;
+currentLatitude=null;currentLongitude=null;currentAccuracy=null;
+latDisplay.textContent='Searching...';lngDisplay.textContent='Searching...';accuracyDisplay.textContent='Collecting readings...';
+gpsQualityMessage.textContent='Keep this page open. Zentrix is comparing location updates for up to 20 seconds.';
+alertBox(statusAlert,'Finding your most accurate GPS reading. This may take up to 20 seconds...','info');updateStep();
+gpsAcquisitionStarted=Date.now();
+gpsWatchId=navigator.geolocation.watchPosition(position=>{
+if(!bestGpsPosition||position.coords.accuracy<bestGpsPosition.coords.accuracy)bestGpsPosition=position;
+const c=position.coords;
+latDisplay.textContent=c.latitude.toFixed(6);lngDisplay.textContent=c.longitude.toFixed(6);
+accuracyDisplay.textContent='±'+Math.round(c.accuracy)+' m (best: ±'+Math.round(bestGpsPosition.coords.accuracy)+' m)';
+gpsQualityMessage.textContent=c.accuracy<=20?'Strong GPS reading found. Confirming the best fix...':'Improving GPS reading... keep the page open.';
+if(Date.now()-gpsAcquisitionStarted>=10000&&bestGpsPosition.coords.accuracy<=20)finishGpsAcquisition();
+},error=>{
+if(!bestGpsPosition){stopGpsAcquisition();accuracyDisplay.textContent='Unavailable';gpsQualityMessage.textContent=error.code===1?'Location permission is blocked. Allow location access for this site.':'Unable to obtain a GPS reading. Check device location services and try again.';alertBox(statusAlert,gpsQualityMessage.textContent,'danger');updateStep();}
+},{enableHighAccuracy:true,timeout:30000,maximumAge:0});
+gpsAcquisitionTimer=setTimeout(finishGpsAcquisition,20000);
+}
+retryGpsBtn.addEventListener('click',acquireGpsLocation);
+acquireGpsLocation();
 async function runFaceScan(){
 scanStarted=true;isBusy=true;updateStep();
 try{
