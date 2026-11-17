@@ -1686,3 +1686,40 @@ body:has(.auth-layout) {
     -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
     caret-color: #8067B2;
 }
+
+
+/* Auth showcase palette: match the Zentrix plum/lavender reference. */
+:root{
+ --bg-primary:#342B46;
+ --bg-secondary:#443955;
+ --bg-input:#514562;
+ --accent-primary:#C9C7EA;
+ --accent-hover:#B7B2DF;
+ --accent-secondary:#D8D3F2;
+ --text-main:#F8F5FC;
+ --text-muted:#D0C8DC;
+ --border-color:#61556E;
+}
+.auth-showcase{
+ background:#342B46!important;
+ border-right-color:#514562!important;
+}
+.auth-showcase::before{display:none!important}
+.auth-showcase .floating-card{
+ background:#443955!important;
+ border-color:#61556E!important;
+ box-shadow:0 18px 42px rgba(20,14,30,.18)!important;
+ backdrop-filter:none;
+}
+.auth-showcase .stat-bar{background:#776B87}
+.auth-showcase .stat-bar.w-75{background:#A79BB8}
+.auth-showcase .text-violet,.auth-showcase .text-light-purple,
+.auth-showcase .brand-logo i{color:#C9C7EA!important}
+.auth-showcase .showcase-text p{color:#D0C8DC!important}
+.btn-primary.loading{
+ background:#443955!important;
+ color:#F8F5FC!important;
+ border:1px solid #61556E!important;
+ box-shadow:0 0 0 3px rgba(201,199,234,.1);
+}
+.btn-primary.loading .spinner{color:#C9C7EA!important}
