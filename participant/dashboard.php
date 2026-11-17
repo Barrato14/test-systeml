@@ -524,6 +524,16 @@ $calendarJson = json_encode(
 <?php $showParticipantNotifications = true; include '../includes/participant-nav.php'; ?>
 
 <div class="participant-dashboard-shell">
+    <header class="participant-dashboard-utilitybar">
+        <div class="participant-dashboard-utility-context">
+            <span>Participant workspace</span>
+            <small><?= htmlspecialchars(date('l, F j, Y')) ?></small>
+        </div>
+        <div class="participant-dashboard-utility-actions">
+            <button type="button" class="participant-dashboard-utility-notifications" data-open-notifications aria-label="Open notifications"><i class="bi bi-bell"></i><span>Notifications</span><?php if ($unreadNotificationCount > 0): ?><b><?= number_format($unreadNotificationCount) ?></b><?php endif; ?></button>
+            <div class="participant-dashboard-utility-profile"><span class="participant-dashboard-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr((string)$firstName, 0, 1))) ?></span><span><strong><?= htmlspecialchars((string)$firstName) ?></strong><small>Participant</small></span></div>
+        </div>
+    </header>
     <?php if ($successMsg): ?>
         <div class="alert alert-success"><?= htmlspecialchars($successMsg) ?></div>
     <?php endif; ?>
