@@ -128,6 +128,7 @@ if (empty($faceProfileCheck['data'])) {
     </div>
 </div>
 
+<script src="../js/zentrix-face-pose.js"></script>
 <script>
 const video=document.getElementById('videoElement'),canvas=document.getElementById('canvas'),captureBtn=document.getElementById('captureBtn'),statusAlert=document.getElementById('statusAlert'),faceDetectionStatus=document.getElementById('faceDetectionStatus'),latDisplay=document.getElementById('latDisplay'),lngDisplay=document.getElementById('lngDisplay'),stepLabel=document.getElementById('angleStepLabel'),progressLabel=document.getElementById('angleProgressLabel'),progressBar=document.getElementById('angleProgressBar'),instruction=document.getElementById('angleInstruction'),scanFrame=document.getElementById('attendanceScanFrame'),scanPercent=document.getElementById('attendanceScanPercent');
 const eventId=<?= json_encode((string)$eventId) ?>,attendanceAction='time-out';
@@ -149,7 +150,7 @@ scanStarted=true;isBusy=true;updateStep();
 try{
 for(let i=0;i<angles.length;i++){
 const angle=angles[i];currentAngleIndex=i;updateStep();alertBox(statusAlert,'Turn to '+angle.label.toLowerCase()+'. The scan will capture automatically at 100%.','info');scanFrame.classList.add('scanning');
-for(let percent=0;percent<=100;percent+=2){scanPercent.textContent='SCANNING · '+percent+'%';progressLabel.textContent=angle.label+' · '+percent+'%';progressBar.style.width=((i*100+percent)/3)+'%';await wait(45);}
+await window.ZentrixFacePose.captureAngle(video,angle.key,(percent)=>{scanPercent.textContent='POSE CHECK · '+percent+'%';progressLabel.textContent=angle.label+' · '+percent+'%';progressBar.style.width=((i*100+percent)/3)+'%';});
 const imageData=frame();alertBox(statusAlert,'Sending '+angle.label.toLowerCase()+' scan for identity verification...','info');
 const r=await fetch('verify-face-angle.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction,angle:angle.key,image_data:imageData})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||angle.label+' face verification failed.');
 currentAngleIndex=i+1;scanFrame.classList.remove('scanning');scanPercent.textContent='VERIFIED · 100%';progressLabel.textContent=(i+1)+' / 3 verified';progressBar.style.width=((i+1)/3*100)+'%';alertBox(statusAlert,result.message||angle.label+' angle verified.','success');await wait(650);
