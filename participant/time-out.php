@@ -174,6 +174,6 @@ finally{isBusy=false;updateStep();}
 });
 window.addEventListener('beforeunload',()=>{if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());});startCamera();
 </script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-2">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-3">
 </body>
 </html>
