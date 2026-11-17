@@ -733,7 +733,7 @@ $calendarJson = json_encode(
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 <main class="content-area admin-main-content">
 
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div class="admin-page-heading admin-section-heading d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
                 <h2 class="mb-1">Event Management</h2>
                 <p class="text-muted mb-0">View your schedule and manage Zentrix events.</p>
