@@ -889,6 +889,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script src="../js/weather-widget.js?v=20261115-10" defer></script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-1">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-2">
 </body>
 </html>
