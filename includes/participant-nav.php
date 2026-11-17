@@ -83,7 +83,7 @@ $participantNavItems = [
 </header>
 <div class="participant-notifications-overlay" id="participantNotificationsOverlay" aria-hidden="true">
  <section class="participant-notifications-dialog" role="dialog" aria-modal="true" aria-labelledby="participantNotificationsTitle">
-  <header class="participant-notifications-header"><div><span class="portal-page-eyebrow">YOUR UPDATES</span><h2 id="participantNotificationsTitle">Notifications</h2><p><span data-unread-label>0 unread notifications</span></p></div><button type="button" class="participant-notifications-close" data-close-notifications aria-label="Close notifications"><i class="bi bi-x-lg"></i></button></header>
+  <header class="participant-notifications-header"><div><span class="portal-page-eyebrow">YOUR UPDATES</span><h2 id="participantNotificationsTitle">Notifications</h2><p><span data-unread-label>0 unread notifications</span></p></div><div class="participant-notifications-header-actions"><button type="button" class="participant-notification-action" data-notification-action="mark_all_read"><i class="bi bi-check2-all"></i><span>Mark all read</span></button><button type="button" class="participant-notification-action is-danger" data-notification-action="clear_all"><i class="bi bi-trash3"></i><span>Clear all</span></button><button type="button" class="participant-notifications-close" data-close-notifications aria-label="Close notifications"><i class="bi bi-x-lg"></i></button></div></header>
   <div class="participant-notifications-list" id="participantNotificationsList"><div class="participant-notifications-loading">Loading notifications...</div></div>
  </section>
 </div>
@@ -107,7 +107,7 @@ $participantNavItems = [
   list.innerHTML=items.map(function(item){
    const isRead=item.is_read===true||item.is_read==='true';
    const date=item.created_at?new Date(item.created_at).toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'Date unavailable';
-   return '<article class="participant-notification-item '+(isRead?'is-read':'is-unread')+'" data-notification-id="'+escapeHtml(item.id)+'"><div class="participant-notification-dot"></div><div class="participant-notification-copy"><div class="participant-notification-title">'+escapeHtml(item.title||'Notification')+(isRead?'':' <span>NEW</span>')+'</div><p>'+escapeHtml(item.message||'')+'</p><time>'+escapeHtml(date)+' PHT</time></div>'+(isRead?'':'<button type="button" class="participant-notification-mark" data-mark-read="'+escapeHtml(item.id)+'" aria-label="Mark as read"><i class="bi bi-check2"></i></button>')+'</article>';
+   return '<article class="participant-notification-item '+(isRead?'is-read':'is-unread')+'" data-notification-id="'+escapeHtml(item.id)+'"><div class="participant-notification-dot"></div><div class="participant-notification-copy"><div class="participant-notification-title">'+escapeHtml(item.title||'Notification')+(isRead?'':' <span>NEW</span>')+'</div><p>'+escapeHtml(item.message||'')+'</p><time>'+escapeHtml(date)+' PHT</time></div>'+(isRead?'':'<button type="button" class="participant-notification-mark" data-mark-read="'+escapeHtml(item.id)+'" aria-label="Mark as read" title="Mark as read"><i class="bi bi-check2"></i></button>')+'<button type="button" class="participant-notification-delete" data-delete-notification="'+escapeHtml(item.id)+'" aria-label="Delete notification" title="Delete notification"><i class="bi bi-trash3"></i></button></article>';
   }).join('');
  }
  async function loadNotifications(force){
@@ -140,18 +140,37 @@ $participantNavItems = [
  document.querySelectorAll('[data-close-notifications]').forEach(function(button){button.addEventListener('click',close);});
  overlay.addEventListener('click',function(event){if(event.target===overlay)close();});
  document.addEventListener('keydown',function(event){if(event.key==='Escape'&&overlay.classList.contains('is-open'))close();});
+ async function performNotificationAction(action,notificationId){
+  const body=new URLSearchParams({action:action});
+  if(notificationId)body.set('notification_id',notificationId);
+  const response=await fetch('notification-action.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:body});
+  const payload=await response.json();
+  if(!response.ok||!payload.success)throw new Error(payload.message||'Unable to update notifications.');
+  loaded=false;
+  await loadNotifications(true);
+ }
  list.addEventListener('click',async function(event){
   const retry=event.target.closest('[data-retry-notifications]');
   if(retry){loadNotifications(true);return;}
-  const button=event.target.closest('[data-mark-read]');
+  const markButton=event.target.closest('[data-mark-read]');
+  const deleteButton=event.target.closest('[data-delete-notification]');
+  const button=markButton||deleteButton;
   if(!button)return;
   button.disabled=true;
   try{
-   const response=await fetch('notification-action.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json'},body:new URLSearchParams({notification_id:button.dataset.markRead})});
-   const payload=await response.json();
-   if(!response.ok||!payload.success)throw new Error(payload.message||'Unable to update notification.');
-   loaded=false;loadNotifications(true);
+   await performNotificationAction(markButton?'mark_read':'delete',button.dataset.markRead||button.dataset.deleteNotification);
   }catch(error){button.disabled=false;button.title=error.message;}
+ });
+ overlay.addEventListener('click',async function(event){
+  const button=event.target.closest('[data-notification-action]');
+  if(!button)return;
+  const action=button.dataset.notificationAction;
+  if(action==='clear_all'&&!window.confirm('Clear all your notifications? This cannot be undone.'))return;
+  button.disabled=true;
+  try{
+   await performNotificationAction(action);
+  }catch(error){button.title=error.message;}
+  finally{button.disabled=false;}
  });
  document.addEventListener('DOMContentLoaded',function(){fetch('notifications-data.php',{headers:{'Accept':'application/json'},cache:'no-store'}).then(r=>r.json()).then(p=>{if(p.success){updateCount((p.notifications||[]).filter(n=>n.is_read!==true&&n.is_read!=='true').length);}}).catch(function(){});});
 })();
