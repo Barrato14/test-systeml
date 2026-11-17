@@ -556,3 +556,54 @@ body.participant-page .participant-dashboard-utility-profile small{display:block
  body.participant-page .participant-dashboard-utility-notifications span{display:none}
  body.participant-page .participant-dashboard-utility-profile>span:last-child{display:none}
 }
+
+
+/* Dark participant palette matched to the Zentrix auth showcase reference. */
+html[data-participant-theme="dark"] body.participant-page{
+ --p-bg:#342B46;
+ --p-surface:#443955;
+ --p-raised:#4B405C;
+ --p-soft:#514562;
+ --p-text:#F8F5FC;
+ --p-muted:#D0C8DC;
+ --p-border:#61556E;
+ --p-accent:#C9C7EA;
+ --p-accent-strong:#AFA6D5;
+ --p-accent-soft:rgba(201,199,234,.14);
+ --emis-bg:var(--p-bg);--emis-surface:var(--p-surface);--emis-raised:var(--p-raised);--emis-soft:var(--p-soft);
+ --emis-purple:var(--p-accent-strong);--emis-violet:var(--p-accent);--emis-lavender:#D8D3F2;
+ --emis-text:var(--p-text);--emis-muted:var(--p-muted);--emis-border:var(--p-border);
+ background:var(--p-bg)!important;color:var(--p-text)!important;
+}
+html[data-participant-theme="dark"] body.participant-page main .card,
+html[data-participant-theme="dark"] body.participant-page main .modal-content,
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-stat,
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-panel,
+html[data-participant-theme="dark"] body.participant-page .calendar-launch-card,
+html[data-participant-theme="dark"] body.participant-page .browse-event-card,
+html[data-participant-theme="dark"] body.participant-page .my-event-card,
+html[data-participant-theme="dark"] body.participant-page .borrowing-card,
+html[data-participant-theme="dark"] body.participant-page .attendance-event,
+html[data-participant-theme="dark"] body.participant-page .face-registration-card,
+html[data-participant-theme="dark"] body.participant-page .scanner-container{
+ background:var(--p-surface)!important;border-color:var(--p-border)!important;color:var(--p-text)!important;
+}
+html[data-participant-theme="dark"] body.participant-page main .form-control,
+html[data-participant-theme="dark"] body.participant-page main .form-select{
+ background:#3D334F!important;border-color:#695D78!important;color:#F8F5FC!important;
+}
+html[data-participant-theme="dark"] body.participant-page main .form-control::placeholder{color:#C0B7CE!important}
+html[data-participant-theme="dark"] body.participant-page main .table{
+ --bs-table-bg:var(--p-surface);--bs-table-color:var(--p-text);--bs-table-border-color:var(--p-border);
+}
+html[data-participant-theme="dark"] body.participant-page main .table thead th{background:#514562!important;color:#F8F5FC!important}
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-profile-card{
+ background:#2D253D!important;border-color:#594C68!important;
+}
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-featured-event,
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-action-grid a,
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-action-grid button{
+ background:var(--p-raised)!important;border-color:var(--p-border)!important;
+}
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-donut>div{background:var(--p-surface)}
+html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-utilitybar{border-color:var(--p-border)}
