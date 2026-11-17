@@ -36,7 +36,7 @@ if (!is_string($imageData) || $imageData === '') {
     angleRespond(false, 'A camera image is required.');
 }
 
-$eventResponse = supabaseRequest(
+$eventResponse = supabaseServiceRequest(
     'events?id=eq.' . rawurlencode($eventId) . '&select=id',
     'GET'
 );
