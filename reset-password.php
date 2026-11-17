@@ -1,3 +1,4 @@
+<?php
 // This page validates the emailed reset token and lets the account owner set a new password.
 // It updates the stored password hash and clears the token so the link cannot be reused.
 require_once 'config/database.php';
