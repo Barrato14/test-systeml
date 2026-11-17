@@ -796,7 +796,7 @@ $totalUsers = count($allUsers);
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
     >
 
-    <link rel="stylesheet" href="../css/portal-theme.css?v=20261114-1">
+    <link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
 
     <style>
 
