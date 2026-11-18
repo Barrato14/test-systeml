@@ -81,10 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="css/style.css?v=20261117-6">
-    <meta name="theme-color" content="#F8F6FB">
+    <link rel="stylesheet" href="css/style.css?v=20261118-auth-premium">
+    <meta name="theme-color" content="#101014">
 </head>
-<body>
+<body class="auth-forgot-page">
 <main class="auth-layout">
     <section class="auth-showcase">
         <div class="showcase-content">
