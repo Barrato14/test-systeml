@@ -9,7 +9,7 @@ require_once 'config/database.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signing in - Zentrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css?v=20261117-7"><meta name="theme-color" content="#342B46">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" href="css/style.css?v=20261118-auth-premium"><meta name="theme-color" content="#342B46">
 </head>
 <body class="auth-callback-page">
     <main class="auth-layout">
