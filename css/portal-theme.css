@@ -1774,3 +1774,8 @@ body.admin-portal #attendanceInfoCard p,body.admin-portal #attendanceInfoCard .s
 @media (prefers-reduced-motion: reduce) {
     .admin-portal *, .admin-portal *::before, .admin-portal *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+.admin-portal .admin-topbar-settings .admin-settings-panel { top:calc(100% + 8px); right:0; bottom:auto; }
+.admin-portal .admin-topbar-settings > summary { display:grid; place-items:center; }
+.admin-portal .admin-command-trigger { cursor:pointer; }
+.admin-portal .admin-command-trigger:hover { border-color:var(--zx-border-strong); background:var(--zx-surface-raised); color:var(--zx-text); }
