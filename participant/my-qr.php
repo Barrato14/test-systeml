@@ -127,6 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_email'])) {
         </div>
     </div>
 </div>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-4">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261118-premium1">
 </body>
 </html>
