@@ -120,7 +120,7 @@ $adminCurrentTitle = $adminPageTitles[$adminCurrentPage] ?? 'Workspace';
 
 <script data-turbo-eval="false">
 (function () {
-    const root = document.documentElement;
+    const root = document.body;
     const themeKey = 'emis-admin-theme';
     const sidebarKey = 'zentrix-admin-sidebar-collapsed';
     const sidebar = document.getElementById('emis-admin-sidebar');
@@ -187,6 +187,10 @@ $adminCurrentTitle = $adminPageTitles[$adminCurrentPage] ?? 'Workspace';
     document.addEventListener('keydown', event => {
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openCommand(); }
         if (event.key === 'Escape') closeCommand();
+        if (overlay?.classList.contains('is-open') && event.key === 'Enter' && document.activeElement === commandInput) {
+            const firstResult = commandResults?.querySelector('a:not([hidden])');
+            if (firstResult) { event.preventDefault(); window.location.href = firstResult.href; }
+        }
         if (overlay?.classList.contains('is-open') && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
             const visible = Array.from(commandResults.querySelectorAll('a:not([hidden])'));
             if (!visible.length) return;
