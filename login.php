@@ -74,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=20261117-6">
+    <link rel="stylesheet" href="css/style.css?v=20261118-auth-premium">
     <link rel="icon" type="image/svg+xml" href="/pwa-icons/zentrix-icon.svg">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#F8F6FB">
+    <meta name="theme-color" content="#101014">
 </head>
-<body>
+<body class="auth-login-page">
     <main class="auth-layout">
         
         <!-- Left Section: Branding & Visuals -->
