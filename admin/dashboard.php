@@ -568,6 +568,7 @@ if (!$isEventOrganizer) {
     >
 
     <link rel="stylesheet" href="../css/portal-theme.css?v=20261117-2">
+    <link rel="stylesheet" href="../css/admin-dashboard-redesign.css?v=20261118-1">
 
     <link
         rel="stylesheet"
@@ -576,7 +577,7 @@ if (!$isEventOrganizer) {
 
 </head>
 
-<body class="admin-portal">
+<body class="admin-portal admin-dashboard-page">
 
 <?php require_once __DIR__ . '/../includes/admin-nav.php'; ?>
 
@@ -1432,6 +1433,8 @@ if (!$isEventOrganizer) {
 
 <?php endif; ?>
 
+
+<script src="../js/admin-dashboard-motion.js?v=20261118-1" defer></script>
 
 </body>
 </html>
