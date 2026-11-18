@@ -607,3 +607,190 @@ html[data-participant-theme="dark"] body.participant-page .participant-dashboard
 }
 html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-donut>div{background:var(--p-surface)}
 html[data-participant-theme="dark"] body.participant-page .participant-dashboard-shell .participant-dashboard-utilitybar{border-color:var(--p-border)}
+
+
+/* =========================================================
+   ZENTRIX PARTICIPANT — PREMIUM WORKSPACE SYSTEM
+   Presentation-only layer. Existing markup and behavior stay intact.
+   ========================================================= */
+body.participant-page{
+ --p-bg:#101014;--p-surface:#17171f;--p-raised:#1d1d28;--p-soft:#252535;
+ --p-text:#f4f2fa;--p-muted:#a5a2b3;--p-border:rgba(255,255,255,.085);
+ --p-accent:#a99bef;--p-accent-strong:#8274d9;--p-accent-soft:rgba(130,116,217,.14);
+ --emis-bg:var(--p-bg);--emis-surface:var(--p-surface);--emis-raised:var(--p-raised);
+ --emis-soft:var(--p-soft);--emis-purple:var(--p-accent-strong);--emis-violet:var(--p-accent-strong);
+ --emis-lavender:var(--p-accent);--emis-text:var(--p-text);--emis-muted:var(--p-muted);
+ --emis-border:var(--p-border);
+ background:var(--p-bg)!important;color:var(--p-text)!important;
+ font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+ -webkit-font-smoothing:antialiased;
+}
+html[data-participant-theme="light"] body.participant-page{
+ --p-bg:#f5f6fa;--p-surface:#fff;--p-raised:#f8f8fc;--p-soft:#eff0f7;
+ --p-text:#20212b;--p-muted:#6f7181;--p-border:rgba(30,31,48,.10);
+ --p-accent:#6558b8;--p-accent-strong:#6558b8;--p-accent-soft:rgba(101,88,184,.10);
+}
+body.participant-page .participant-sidebar{
+ background:#14151d!important;border-right:1px solid rgba(255,255,255,.075)!important;
+ box-shadow:8px 0 28px rgba(0,0,0,.16)!important;
+}
+body.participant-page .participant-sidebar-link{border-radius:10px!important;min-height:44px!important;color:#a7a8b8!important}
+body.participant-page .participant-sidebar-link>i{color:#aaa0ee!important}
+body.participant-page .participant-sidebar-link:hover,
+body.participant-page .participant-sidebar-link.is-active{
+ background:rgba(130,116,217,.15)!important;border-color:rgba(169,155,239,.20)!important;color:#f4f2fa!important;
+}
+body.participant-page .participant-sidebar-link.is-active{box-shadow:inset 3px 0 #a99bef!important}
+body.participant-page .participant-sidebar-bottom{border-color:rgba(255,255,255,.08)!important}
+html[data-participant-theme="light"] body.participant-page .participant-sidebar{
+ background:#fff!important;border-color:#e7e7ef!important;box-shadow:5px 0 22px rgba(28,29,48,.06)!important;
+}
+html[data-participant-theme="light"] body.participant-page .participant-sidebar-link:hover,
+html[data-participant-theme="light"] body.participant-page .participant-sidebar-link.is-active{
+ background:#f0effb!important;border-color:#e1def7!important;color:#39345f!important;
+}
+body.participant-page .participant-dashboard-utilitybar{
+ padding:12px 0 20px!important;border-bottom:1px solid var(--p-border)!important;
+}
+body.participant-page .participant-dashboard-utility-context>span{
+ color:var(--p-text)!important;font-size:13px!important;font-weight:700!important;letter-spacing:.01em!important;
+}
+body.participant-page .participant-dashboard-utility-context small{color:var(--p-muted)!important}
+body.participant-page .participant-dashboard-avatar{
+ background:linear-gradient(145deg,#8274d9,#5b55a9)!important;border:1px solid rgba(255,255,255,.18)!important;
+ box-shadow:0 4px 12px rgba(91,85,169,.22)!important;
+}
+body.participant-page .participant-dashboard-shell{max-width:1440px!important}
+body.participant-page main .card,body.participant-page main article,
+body.participant-page .participant-dashboard-stat,body.participant-page .participant-dashboard-panel,
+body.participant-page .browse-event-card,body.participant-page .my-event-card,
+body.participant-page .borrowing-card,body.participant-page .attendance-event,
+body.participant-page .face-registration-card,body.participant-page .scanner-container,
+body.participant-page .calendar-launch-card{
+ border:1px solid var(--p-border)!important;border-radius:15px!important;
+ background:var(--p-surface)!important;box-shadow:0 8px 24px rgba(0,0,0,.10)!important;
+}
+body.participant-page main .card:hover,body.participant-page .browse-event-card:hover,
+body.participant-page .my-event-card:hover,body.participant-page .borrowing-card:hover{
+ border-color:color-mix(in srgb,var(--p-accent) 42%,var(--p-border))!important;
+ box-shadow:0 12px 28px rgba(0,0,0,.15)!important;
+}
+body.participant-page main .btn,body.participant-page main button{
+ border-radius:10px;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+body.participant-page main .btn-primary,body.participant-page main button[type="submit"]{
+ background:#655bb7!important;border-color:#655bb7!important;box-shadow:none!important;
+}
+body.participant-page main .btn-primary:hover,body.participant-page main button[type="submit"]:hover{
+ background:#756bd0!important;border-color:#756bd0!important;
+}
+body.participant-page main .form-control,body.participant-page main .form-select,
+body.participant-page main input:not([type=checkbox]):not([type=radio]),
+body.participant-page main select,body.participant-page main textarea{
+ border-radius:10px!important;min-height:44px!important;
+}
+body.participant-page main .form-control:focus,body.participant-page main .form-select:focus,
+body.participant-page main input:focus,body.participant-page main textarea:focus{
+ border-color:var(--p-accent)!important;box-shadow:0 0 0 3px var(--p-accent-soft)!important;
+}
+body.participant-page .participant-dashboard-hero{
+ background:linear-gradient(115deg,#1c1d2b 0%,#171821 72%,#202034 100%)!important;
+ border:1px solid var(--p-border)!important;border-radius:17px!important;
+ box-shadow:0 12px 30px rgba(0,0,0,.12)!important;
+}
+html[data-participant-theme="light"] body.participant-page .participant-dashboard-hero{
+ background:linear-gradient(115deg,#fff,#f5f4fc)!important;
+}
+body.participant-page .participant-dashboard-primary-link{
+ background:#655bb7!important;border-color:#756bd0!important;border-radius:10px!important;
+}
+body.participant-page .participant-dashboard-stat,
+body.participant-page .participant-dashboard-panel{border-radius:15px!important}
+body.participant-page .participant-dashboard-stat-icon,
+body.participant-page .participant-dashboard-announcement-icon,
+body.participant-page .participant-dashboard-activity-icon{
+ background:var(--p-accent-soft)!important;color:var(--p-accent)!important;border-radius:11px!important;
+}
+body.participant-page .participant-dashboard-progress-track span{
+ background:linear-gradient(90deg,#655bb7,#a99bef)!important;
+}
+body.participant-page .participant-dashboard-featured-event{
+ border-radius:13px!important;background:var(--p-raised)!important;border:1px solid var(--p-border)!important;
+}
+body.participant-page .participant-dashboard-profile-card{
+ border-radius:15px!important;background:var(--p-raised)!important;border:1px solid var(--p-border)!important;
+}
+body.participant-page .portal-page-heading,body.participant-page .browse-events-heading,
+body.participant-page .my-events-heading,body.participant-page .attendance-heading,
+body.participant-page .borrowings-page-intro{margin-bottom:26px}
+body.participant-page .portal-page-heading h1,body.participant-page .browse-events-heading h1,
+body.participant-page .my-events-heading h1,body.participant-page .attendance-heading h1,
+body.participant-page .borrowings-page-intro h1{
+ font-size:clamp(1.7rem,3vw,2.25rem)!important;letter-spacing:-.045em!important;font-weight:760!important;
+}
+body.participant-page .portal-page-eyebrow,body.participant-page .browse-section-kicker,
+body.participant-page .borrowings-kicker,body.participant-page .my-events-kicker,
+body.participant-page .attendance-kicker{letter-spacing:.13em!important;font-size:.68rem!important}
+body.participant-page .browse-events-main{width:min(1320px,calc(100% - 64px))!important;padding-top:34px!important}
+body.participant-page .browse-event-card{overflow:hidden;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+body.participant-page .browse-event-visual{background:var(--p-raised)!important}
+body.participant-page .browse-event-content{padding:20px!important}
+body.participant-page .my-event-card,body.participant-page .borrowing-card,
+body.participant-page .attendance-event{padding:20px!important}
+body.participant-page .attendance-table-wrap{border:1px solid var(--p-border)!important;border-radius:13px!important;overflow:auto}
+body.participant-page .attendance-table{margin:0!important}
+body.participant-page .attendance-table thead th{font-size:.68rem!important;letter-spacing:.08em!important}
+body.participant-page .checkin-main{width:min(1120px,calc(100% - 36px))!important}
+body.participant-page .scanner-container,body.participant-page .face-registration-card{
+ padding:clamp(18px,3vw,30px)!important;border-radius:17px!important;
+}
+body.participant-page .attendance-scan-frame,body.participant-page .face-scan-frame{
+ border-radius:15px!important;border-color:rgba(169,155,239,.45)!important;
+}
+body.participant-page #participantCalendar{
+ border:1px solid var(--p-border)!important;border-radius:13px!important;
+}
+body.participant-page #participantCalendar .fc-button-primary{
+ border-radius:8px!important;background:var(--p-raised)!important;border-color:var(--p-border)!important;color:var(--p-text)!important;
+}
+body.participant-page .participant-venue-map{border:1px solid var(--p-border)!important;border-radius:13px!important;overflow:hidden}
+body.participant-page .participant-map-legend{color:var(--p-muted)!important}
+body.participant-page .my-event-map-dialog,body.participant-page .browse-event-map-dialog{border-radius:16px!important;overflow:hidden}
+body.participant-page .my-event-map-header,body.participant-page .browse-map-header{
+ background:var(--p-raised)!important;border-color:var(--p-border)!important;
+}
+body.participant-page .my-event-map-header h2,body.participant-page .browse-map-header h2{color:var(--p-text)!important}
+body.participant-page main .alert{border-radius:11px!important}
+body.participant-page main .empty-state,body.participant-page .my-events-empty,
+body.participant-page .borrowings-empty,body.participant-page .attendance-empty{
+ border:1px dashed var(--p-border)!important;border-radius:15px!important;background:var(--p-raised)!important;
+}
+body.participant-page a,body.participant-page button{ -webkit-tap-highlight-color:transparent }
+body.participant-page a:focus-visible,body.participant-page button:focus-visible,
+body.participant-page input:focus-visible,body.participant-page select:focus-visible,
+body.participant-page textarea:focus-visible{
+ outline:2px solid var(--p-accent)!important;outline-offset:3px;
+}
+@media(max-width:820px){
+ body.participant-page .browse-events-main{width:calc(100% - 32px)!important;padding-top:24px!important}
+ body.participant-page .participant-dashboard-shell{padding-left:16px!important;padding-right:16px!important}
+ body.participant-page .participant-dashboard-utilitybar{gap:12px!important}
+ body.participant-page .participant-dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:520px){
+ body.participant-page .browse-events-main{width:calc(100% - 24px)!important}
+ body.participant-page .participant-dashboard-hero{padding:22px!important}
+ body.participant-page .participant-dashboard-panel{padding:17px!important}
+ body.participant-page .participant-dashboard-stat{padding:14px!important}
+ body.participant-page .participant-dashboard-stats{gap:9px!important}
+ body.participant-page .my-event-card,body.participant-page .borrowing-card,
+ body.participant-page .attendance-event{padding:15px!important}
+ body.participant-page .checkin-main{width:calc(100% - 24px)!important}
+ body.participant-page .participant-dashboard-utility-context small{font-size:11px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.participant-page *,body.participant-page *::before,body.participant-page *::after{
+  scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;
+  transition-duration:.01ms!important;
+ }
+}

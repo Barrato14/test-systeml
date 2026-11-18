@@ -517,7 +517,7 @@ $calendarJson = json_encode(
 <link rel="stylesheet" href="../css/style.css?v=20261117-5">
 <link rel="stylesheet" href="../css/weather-widget.css?v=20261113-2">
 <link rel="stylesheet" href="../css/participant-dashboard.css?v=20261113-1">
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261118-premium1">
 </head>
 <body class="bg-light participant-page">
 

@@ -327,6 +327,6 @@ if (venueMap) venueMap.remove();
     });
 })();
 </script>
-<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261117-5">
+<link rel="stylesheet" href="../css/participant-content-refresh.css?v=20261118-premium1">
 </body>
 </html>
