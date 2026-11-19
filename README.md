@@ -277,7 +277,6 @@ Other modules also use equipment-related tables and QR-token records.
 
 The repository includes supporting features such as:
 
-- **QR pass:** `participant/my-qr.php` generates a QR pass for an approved event registration and can email it to the participant. The main check-in flow described above currently uses camera-based face verification.
 - **Notifications:** event announcements can be saved in the in-app notifications table and sent through the email helper.
 - **Equipment borrowing:** admin and participant equipment pages support equipment inventory and borrowing workflows.
 - **Weather widget:** dashboard weather display is a supplementary information feature and is not part of event registration or attendance processing.
