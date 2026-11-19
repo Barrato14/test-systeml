@@ -2,6 +2,7 @@
 // This page validates the emailed reset token and lets the account owner set a new password.
 // It updates the stored password hash and clears the token so the link cannot be reused.
 require_once 'config/database.php';
+require_once 'includes/auth.php';
 
 // Read the token from the email link (GET) or the submitted password form (POST).
 $token = trim($_GET['token'] ?? $_POST['token'] ?? '');
@@ -30,6 +31,13 @@ function findValidResetToken($tokenHash) {
 $profile = findValidResetToken($tokenHash);
 
 // Validate the new password only after the user submits the reset form.
+$csrfToken = csrfToken('reset_password_csrf');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken($_POST['csrf_token'] ?? null, 'reset_password_csrf')) {
+    http_response_code(403);
+    exit('Invalid security token. Refresh the page and try again.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -102,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
                 <?php if ($profile): ?>
                 <form method="POST" action="reset-password.php" data-confirm-password="password" data-confirm-field="confirm_password">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="input-group"><label for="password">New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="password" name="password" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="password" aria-label="Show password"><i class="ph ph-eye"></i></button></div></div>
                     <div class="input-group"><label for="confirm_password">Confirm New Password</label><div class="input-wrapper"><i class="ph ph-lock-key input-icon"></i><input type="password" id="confirm_password" name="confirm_password" placeholder="Enter your new password again" minlength="8" required autocomplete="new-password"><button type="button" class="password-toggle" data-password-toggle="confirm_password" aria-label="Show password"><i class="ph ph-eye"></i></button></div></div>
