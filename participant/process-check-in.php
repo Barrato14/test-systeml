@@ -8,6 +8,7 @@ require_once '../includes/auth.php';
 require_once '../includes/face-service.php';
 require_once '../includes/attendance-geofence.php';
 require_once '../includes/daily-attendance.php';
+require_once '../includes/attendance-storage.php';
 
 function respond($success, $message) {
     echo json_encode(['success' => $success, 'message' => $message]);
@@ -29,9 +30,9 @@ $participantId = (string)$_SESSION['user_id'];
 $latitude = $input['latitude'] ?? null;
 $longitude = $input['longitude'] ?? null;
 $gpsAccuracy = $input['accuracy'] ?? null;
-$photoDataUrl = $input['photo_data'] ?? '';
+$photoPath = $input['photo_path'] ?? '';
 
-if ($eventId === '' || !is_string($photoDataUrl) || $photoDataUrl === '') {
+if ($eventId === '' || !is_string($photoPath) || $photoPath === '') {
     respond(false, 'Missing required check-in data or photo.');
 }
 
@@ -111,6 +112,22 @@ if (
     respond(false, 'Please complete front, left, and right face verification before submitting attendance.');
 }
 
+
+
+$pendingUpload = $_SESSION['attendance_uploads'][$photoPath] ?? null;
+if (
+    !is_array($pendingUpload)
+    || ($pendingUpload['participant_id'] ?? '') !== $participantId
+    || ($pendingUpload['event_id'] ?? '') !== $eventId
+    || ($pendingUpload['action'] ?? '') !== 'check-in'
+    || (int)($pendingUpload['expires_at'] ?? 0) < time()
+    || !attendanceStorageObjectExists($photoPath)
+) {
+    respond(false, 'Your attendance photo upload is missing or expired. Please capture the evidence photo again.');
+}
+
+$photoStorageValue = 'storage://attendance-evidence/' . $photoPath;
+
 unset($_SESSION['face_angle_verifications'][$verificationKey]);
 
 $payload = [
@@ -118,7 +135,7 @@ $payload = [
     'participant_id' => $participantId,
     'latitude' => $latitude !== null ? (float)$latitude : null,
     'longitude' => $longitude !== null ? (float)$longitude : null,
-    'photo_url' => $photoDataUrl,
+    'photo_url' => $photoStorageValue,
     'check_in_time' => $now->format('c'),
     'status' => 'Present'
 ];
@@ -127,8 +144,11 @@ if ($dailyMode) $payload['attendance_date'] = $attendanceDate;
 $response = $dailyMode ? supabaseServiceRequest('daily_attendance', 'POST', $payload) : supabaseRequest('attendance', 'POST', $payload);
 
 if (($response['code'] ?? 500) >= 400) {
+    try { attendanceStorageDeleteObject($photoPath); } catch (Throwable $e) { error_log('Orphan attendance photo cleanup failed: ' . $e->getMessage()); }
+    unset($_SESSION['attendance_uploads'][$photoPath]);
     respond(false, 'Failed to save check-in. Please try again.');
 }
 
+unset($_SESSION['attendance_uploads'][$photoPath]);
 respond(true, 'Check-in recorded successfully!');
 ?>
