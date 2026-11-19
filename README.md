@@ -266,18 +266,17 @@ The PHP files query these Supabase tables. This list is based on the table names
 | `profiles` | User identity, email, role, course, section, and account verification details. |
 | `events` | Event title, description, venue, schedule, capacity, status, image, organizer, and optional coordinates. |
 | `event_registrations` | Connects a participant to an event and stores registration status. |
-| `attendance` | Stores participant/event attendance, check-in and time-out timestamps, face-photo data, and GPS coordinates. |
+| `attendance` | Stores participant/event attendance, check-in and time-out timestamps, private storage object references for photo evidence, and GPS coordinates. |
 | `participant_face_profiles` | Stores the participant's face descriptor, consent details, and face model. |
 | `notifications` | Stores in-app event announcements. |
 | `audit_logs` | Receives audit activity through the authentication helper. |
 
-Other modules also use equipment-related tables and QR-token records.
+Other modules also use equipment-related tables.
 
 ## 5. Other features outside the main presentation focus
 
 The repository includes supporting features such as:
 
-- **QR pass:** `participant/my-qr.php` generates a QR pass for an approved event registration and can email it to the participant. The main check-in flow described above currently uses camera-based face verification.
 - **Notifications:** event announcements can be saved in the in-app notifications table and sent through the email helper.
 - **Equipment borrowing:** admin and participant equipment pages support equipment inventory and borrowing workflows.
 - **Weather widget:** dashboard weather display is a supplementary information feature and is not part of event registration or attendance processing.
