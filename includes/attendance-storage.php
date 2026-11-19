@@ -71,7 +71,7 @@ function attendanceStorageCreateSignedUpload($path)
     $result = attendanceStorageRequest(
         'POST',
         '/object/upload/sign/attendance-evidence/' . $encodedPath,
-        []
+        ['upsert' => false]
     );
 
     $relativeUrl = $result['data']['url'] ?? '';
