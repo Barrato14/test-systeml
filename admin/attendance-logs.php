@@ -9,8 +9,8 @@ require_once '../includes/attendance-storage.php';
 // Administrators and Staff can view all logs; Event Organizers are restricted to their own events.
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
 if (
-    !isset($_SESSION['user_id']) ||
-    !in_array($currentRole, ['administrator', 'staff', 'event organizer'], true)
+    !isLoggedIn() ||
+    !userHasRole(['administrator', 'staff', 'event organizer'])
 ) {
     http_response_code(403);
     exit('Access denied.');
@@ -19,7 +19,7 @@ if (
 // Fetch events visible to the current role.
 $eventsQuery = 'events?select=id,title,end_datetime&order=start_datetime.desc';
 if ($currentRole === 'event organizer') {
-    $eventsQuery = 'events?select=id,title&organizer_id=eq.'
+    $eventsQuery = 'events?select=id,title,end_datetime&organizer_id=eq.'
         . rawurlencode((string)$_SESSION['user_id'])
         . '&order=start_datetime.desc';
 }
@@ -45,6 +45,10 @@ $attendanceCsrf = $_SESSION['attendance_logs_csrf'];
 $attendanceActionMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_attendance_status') {
+    if (!userHasRole(['administrator', 'staff'])) {
+        http_response_code(403);
+        exit('Only administrators and staff can change attendance status.');
+    }
     $submittedToken = (string)($_POST['csrf_token'] ?? '');
     $attendanceId = trim((string)($_POST['attendance_id'] ?? ''));
     $attendanceSource = ($_POST['attendance_source'] ?? '') === 'daily' ? 'daily_attendance' : 'attendance';
