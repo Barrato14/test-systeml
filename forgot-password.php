@@ -2,6 +2,7 @@
 // This page lets a user request a password-reset link using their registered email.
 // It checks the account, creates a secure temporary token, saves its hash, and emails the link through Brevo.
 require_once 'config/database.php';
+require_once 'includes/auth.php';
 require_once 'includes/mail.php';
 
 // These variables control the feedback shown after the form is submitted.
@@ -10,6 +11,13 @@ $error = '';
 $email = '';
 
 // Process the email form only when the user submits it.
+$csrfToken = csrfToken('forgot_password_csrf');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken($_POST['csrf_token'] ?? null, 'forgot_password_csrf')) {
+    http_response_code(403);
+    exit('Invalid security token. Refresh the page and try again.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
 
@@ -99,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
             <?php if ($message): ?><div class="auth-success" role="status"><i class="ph ph-check-circle"></i><span><?= htmlspecialchars($message) ?></span></div><?php endif; ?>
             <form method="POST" action="forgot-password.php">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                 <div class="input-group">
                     <label for="email">Email Address</label>
                     <div class="input-wrapper"><i class="ph ph-envelope-simple input-icon"></i><input type="email" id="email" name="email" placeholder="Enter your email address" value="<?= htmlspecialchars($email) ?>" required autocomplete="email"></div>
