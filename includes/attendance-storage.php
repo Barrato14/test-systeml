@@ -120,23 +120,25 @@ function attendanceStorageCreateSignedUrls($paths, $expiresIn = 3600)
 
     if (empty($paths)) return [];
 
-    $result = attendanceStorageRequest(
-        'POST',
-        '/object/sign/attendance-evidence',
-        ['expiresIn' => (int)$expiresIn, 'paths' => $paths]
-    );
-
     [$baseUrl] = attendanceStorageCredentials();
     $signed = [];
 
-    foreach (($result['data'] ?? []) as $item) {
-        $path = $item['path'] ?? '';
-        $relativeUrl = $item['signedURL'] ?? '';
-        if ($path === '' || $relativeUrl === '') continue;
+    foreach (array_chunk($paths, 100) as $pathBatch) {
+        $result = attendanceStorageRequest(
+            'POST',
+            '/object/sign/attendance-evidence',
+            ['expiresIn' => (int)$expiresIn, 'paths' => $pathBatch]
+        );
 
-        $signed[$path] = preg_match('/^https?:\/\//i', $relativeUrl)
-            ? $relativeUrl
-            : $baseUrl . '/storage/v1' . $relativeUrl;
+        foreach (($result['data'] ?? []) as $item) {
+            $path = $item['path'] ?? '';
+            $relativeUrl = $item['signedURL'] ?? '';
+            if ($path === '' || $relativeUrl === '') continue;
+
+            $signed[$path] = preg_match('/^https?:\\/\\//i', $relativeUrl)
+                ? $relativeUrl
+                : $baseUrl . '/storage/v1' . $relativeUrl;
+        }
     }
 
     return $signed;
