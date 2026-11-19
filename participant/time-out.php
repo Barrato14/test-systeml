@@ -164,11 +164,21 @@ scanFinished=true;alertBox(statusAlert,'All three face angles verified. Take you
 }catch(error){scanStarted=false;currentAngleIndex=0;scanFinished=false;challengeId=null;scanFrame.classList.remove('scanning');scanPercent.textContent='RETRY · 0%';progressBar.style.width='0%';progressLabel.textContent='0 / 3 verified';alertBox(statusAlert,error.message||'Face scan failed. Press Start Face Scan to retry.','danger');}
 finally{isBusy=false;updateStep();}
 }
+async function uploadAttendanceEvidence(dataUrl){
+const blob=await (await fetch(dataUrl)).blob();
+if(blob.size>2*1024*1024)throw Error('The attendance photo is too large. Please try again.');
+const preparedResponse=await fetch('create-attendance-upload.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,action:attendanceAction})});
+const prepared=await preparedResponse.json();
+if(!preparedResponse.ok||!prepared.success||!prepared.signed_url||!prepared.path)throw Error(prepared.message||'Unable to prepare secure photo storage.');
+const uploadResponse=await fetch(prepared.signed_url,{method:'PUT',headers:{'Content-Type':'image/jpeg','x-upsert':'false'},body:blob});
+if(!uploadResponse.ok)throw Error('The attendance photo could not be uploaded securely. Please try again.');
+return prepared.path;
+}
 captureBtn.addEventListener('click',async()=>{
 if(!cameraReady||!gpsReady||isBusy||completed)return;
 if(!scanFinished){if(!scanStarted)await runFaceScan();return;}
 isBusy=true;updateStep();
-try{const evidencePhoto=frame();alertBox(statusAlert,'Submitting your separate front-facing evidence photo...','info');const r=await fetch('process-time-out.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,latitude:currentLatitude,longitude:currentLongitude,accuracy:currentAccuracy,photo_data:evidencePhoto})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||'Server rejected time-out.');completed=true;alertBox(statusAlert,'Time Out successful! Redirecting...','success');captureBtn.innerHTML='<i class="bi bi-check-circle me-2"></i> Completed';setTimeout(()=>{window.location.href='dashboard.php';},2000);}
+try{const evidencePhoto=frame();alertBox(statusAlert,'Uploading your separate front-facing evidence photo securely...','info');const photoPath=await uploadAttendanceEvidence(evidencePhoto);const r=await fetch('process-time-out.php',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({event_id:eventId,latitude:currentLatitude,longitude:currentLongitude,accuracy:currentAccuracy,photo_path:photoPath})});const result=await r.json();if(!r.ok||!result.success)throw Error(result.message||'Server rejected time-out.');completed=true;alertBox(statusAlert,'Time Out successful! Redirecting...','success');captureBtn.innerHTML='<i class="bi bi-check-circle me-2"></i> Completed';setTimeout(()=>{window.location.href='dashboard.php';},2000);}
 catch(error){alertBox(statusAlert,error.message||'Time Out failed. Please try again.','danger');}
 finally{isBusy=false;updateStep();}
 });
