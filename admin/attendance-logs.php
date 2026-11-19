@@ -301,36 +301,6 @@ function formatManilaTime($utcString) {
             </div>
         <?php endif; ?>
 
-        <section class="card shadow-sm border-0 mb-4" id="attendanceStorageTestCard">
-            <div class="card-body p-4">
-                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                    <div>
-                        <span class="badge rounded-pill text-bg-warning mb-2">TEST ONLY</span>
-                        <h5 class="mb-1"><i class="bi bi-cloud-arrow-up me-2"></i>Storage Test Upload</h5>
-                        <p class="text-muted small mb-0">Upload a JPEG directly to the private attendance-evidence bucket. This does not create or change an attendance record.</p>
-                    </div>
-                    <span class="small text-muted">JPEG · Maximum 2 MB</span>
-                </div>
-                <div class="row g-3 align-items-end mt-1">
-                    <div class="col-md-8">
-                        <label for="attendanceStorageTestFile" class="form-label fw-semibold">Choose a test photo</label>
-                        <input type="file" class="form-control" id="attendanceStorageTestFile" accept="image/jpeg,.jpg,.jpeg">
-                    </div>
-                    <div class="col-md-4">
-                        <button type="button" class="btn btn-primary w-100" id="attendanceStorageTestUpload">
-                            <i class="bi bi-upload me-2"></i>Upload Test Photo
-                        </button>
-                    </div>
-                </div>
-                <input type="hidden" id="attendanceStorageTestCsrf" value="<?= htmlspecialchars($attendanceCsrf, ENT_QUOTES, 'UTF-8') ?>">
-                <div id="attendanceStorageTestStatus" class="small mt-3" role="status" aria-live="polite"></div>
-                <div id="attendanceStorageTestPreview" class="mt-3" hidden>
-                    <img id="attendanceStorageTestImage" alt="Uploaded storage test photo" class="img-thumbnail" style="max-width:220px;max-height:220px;object-fit:cover">
-                    <div class="small text-muted mt-2" id="attendanceStorageTestPath"></div>
-                </div>
-            </div>
-        </section>
-
         <!-- Filter Card -->
         <div class="card shadow-sm border-0 mb-4" id="attendanceFilterCard">
             <div class="card-body">
@@ -566,80 +536,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('printAttendanceLogs')?.addEventListener('click', function () {
         window.print();
-    });
-
-    const testUploadButton = document.getElementById('attendanceStorageTestUpload');
-    testUploadButton?.addEventListener('click', async function () {
-        const fileInput = document.getElementById('attendanceStorageTestFile');
-        const status = document.getElementById('attendanceStorageTestStatus');
-        const preview = document.getElementById('attendanceStorageTestPreview');
-        const image = document.getElementById('attendanceStorageTestImage');
-        const pathLabel = document.getElementById('attendanceStorageTestPath');
-        const file = fileInput?.files?.[0];
-        const csrf = document.getElementById('attendanceStorageTestCsrf')?.value || '';
-
-        if (!file) {
-            status.textContent = 'Choose a JPEG photo first.';
-            status.className = 'small mt-3 text-danger';
-            return;
-        }
-        if (file.type !== 'image/jpeg' || file.size > 2 * 1024 * 1024) {
-            status.textContent = 'Please choose a JPEG image no larger than 2 MB.';
-            status.className = 'small mt-3 text-danger';
-            return;
-        }
-
-        testUploadButton.disabled = true;
-        testUploadButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading…';
-        status.textContent = 'Preparing secure upload…';
-        status.className = 'small mt-3 text-muted';
-        preview.hidden = true;
-
-        try {
-            const preparedResponse = await fetch('create-attendance-test-upload.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'prepare', csrf_token: csrf})
-            });
-            const prepared = await preparedResponse.json();
-            if (!preparedResponse.ok || !prepared.success || !prepared.signed_url || !prepared.path) {
-                throw new Error(prepared.message || 'Could not prepare the upload.');
-            }
-
-            status.textContent = 'Uploading photo to Supabase Storage…';
-            const uploadResponse = await fetch(prepared.signed_url, {
-                method: 'PUT',
-                headers: {'Content-Type': 'image/jpeg', 'x-upsert': 'false'},
-                body: file
-            });
-            if (!uploadResponse.ok) {
-                const uploadError = await uploadResponse.text();
-                throw new Error('Supabase Storage upload failed (' + uploadResponse.status + '). ' + uploadError.slice(0, 180));
-            }
-
-            const previewResponse = await fetch('create-attendance-test-upload.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'preview', path: prepared.path, csrf_token: csrf})
-            });
-            const previewData = await previewResponse.json();
-            if (!previewResponse.ok || !previewData.success || !previewData.signed_url) {
-                throw new Error(previewData.message || 'Photo uploaded, but preview link could not be created.');
-            }
-
-            image.src = previewData.signed_url;
-            pathLabel.textContent = 'Stored in attendance-evidence/' + prepared.path;
-            preview.hidden = false;
-            status.textContent = 'Upload successful — the photo is now in your Supabase Storage bucket. No attendance record was created.';
-            status.className = 'small mt-3 text-success fw-semibold';
-            fileInput.value = '';
-        } catch (error) {
-            status.textContent = error.message || 'Upload failed. Please try again.';
-            status.className = 'small mt-3 text-danger';
-        } finally {
-            testUploadButton.disabled = false;
-            testUploadButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload Test Photo';
-        }
     });
 
     const tableBody = document.querySelector('#attendanceLogsCard tbody');
