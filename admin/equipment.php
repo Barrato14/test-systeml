@@ -5,7 +5,7 @@ date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 
-$allowedRoles = ['administrator', 'staff'];
+$allowedRoles = ['administrator', 'staff', 'event organizer'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
 if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)) {
@@ -126,6 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
 
         if ($action === 'save_equipment') {
+            if (!in_array($currentRole, ['administrator', 'staff'], true)) {
+                throw new Exception('Permission denied. Only administrators and staff can manage equipment inventory.');
+            }
+
             $id = trim($_POST['equipment_id'] ?? '');
             $name = trim($_POST['name'] ?? '');
             $category = trim($_POST['category'] ?? '');
@@ -188,6 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             logAudit($_SESSION['user_id'], 'equipment_deleted', 'Equipment deleted: ' . ($itemBefore['name'] ?? $id) . ' | Previous record: ' . json_encode($itemBefore));
             $successMsg = 'Equipment deleted successfully.';
         } elseif ($action === 'update_condition') {
+            if (!in_array($currentRole, ['administrator', 'staff'], true)) {
+                throw new Exception('Permission denied. Only administrators and staff can change equipment condition.');
+            }
+
             $id = trim($_POST['equipment_id'] ?? '');
             $condition = $_POST['condition_status'] ?? '';
             if ($id === '' || !in_array($condition, ['Available', 'Maintenance', 'Unavailable'], true)) {
@@ -629,14 +637,16 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                         </div>
                                     </div>
                                     <div class="equipment-card-actions">
+                                        <?php if (in_array($currentRole, ['administrator', 'staff'], true)): ?>
                                         <button type="button" class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil me-1"></i> Edit</button>
                                         <button type="button" class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders me-1"></i> Condition</button>
-                                        <form method="POST" class="delete-equipment-form" data-equipment-name="<?= h($item['name'] ?? 'this equipment') ?>
-<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">">
+                                        <form method="POST" class="delete-equipment-form" data-equipment-name="<?= h($item['name'] ?? 'this equipment') ?>">
+                                            <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                                             <input type="hidden" name="action" value="delete_equipment">
                                             <input type="hidden" name="equipment_id" value="<?= h($id) ?>">
                                             <button type="button" class="btn btn-sm btn-outline-danger delete-equipment-trigger" title="Delete equipment"><i class="bi bi-trash me-1"></i> Delete</button>
                                         </form>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </article>
