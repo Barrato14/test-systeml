@@ -30,6 +30,14 @@ if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     uploadRespond(false, 'Invalid attendance upload request.', 400);
 }
 
+$eventCheck = supabaseRequest(
+    'events?id=eq.' . rawurlencode($eventId) . '&select=id',
+    'GET'
+);
+if (($eventCheck['code'] ?? 500) >= 400 || empty($eventCheck['data'])) {
+    uploadRespond(false, 'Event not found. Attendance evidence cannot be uploaded.', 404);
+}
+
 $verificationKey = hash('sha256', $participantId . '|' . $eventId . '|' . $action);
 $verification = $_SESSION['face_angle_verifications'][$verificationKey] ?? null;
 $requiredAngles = ['front', 'left', 'right'];
