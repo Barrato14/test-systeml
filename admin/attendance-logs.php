@@ -4,6 +4,7 @@ date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/daily-attendance.php';
+require_once '../includes/attendance-storage.php';
 
 // Administrators and Event Organizers may access Attendance Logs.
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
@@ -190,6 +191,31 @@ if (!empty($filterEvent) || !empty($filterCourse) || !empty($filterSection)) {
     });
 }
 
+// Resolve private Storage evidence links in one batch while preserving legacy inline photos.
+$attendancePhotoPaths = [];
+foreach ($attendanceLogs as $photoLog) {
+    foreach (['photo_url', 'timeout_photo_url'] as $photoField) {
+        $photoPath = attendanceStoragePathFromValue($photoLog[$photoField] ?? '');
+        if ($photoPath !== null) $attendancePhotoPaths[] = $photoPath;
+    }
+}
+$attendanceSignedUrls = [];
+try {
+    $attendanceSignedUrls = attendanceStorageCreateSignedUrls($attendancePhotoPaths, 3600);
+} catch (Throwable $e) {
+    error_log('Attendance photo preview signing failed: ' . $e->getMessage());
+}
+foreach ($attendanceLogs as &$photoLog) {
+    foreach (['photo_url', 'timeout_photo_url'] as $photoField) {
+        $photoPath = attendanceStoragePathFromValue($photoLog[$photoField] ?? '');
+        $displayField = $photoField === 'photo_url' ? '_photo_display_url' : '_timeout_photo_display_url';
+        $photoLog[$displayField] = $photoPath !== null
+            ? ($attendanceSignedUrls[$photoPath] ?? '')
+            : ($photoLog[$photoField] ?? '');
+    }
+}
+unset($photoLog);
+
 // Helper function to safely format UTC strings to Manila Time
 function formatManilaTime($utcString) {
     if (empty($utcString)) return 'N/A';
@@ -370,8 +396,8 @@ function formatManilaTime($utcString) {
                                         <!-- Time In Details -->
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <?php if (!empty($log['photo_url'])): ?>
-                                                    <img src="<?= htmlspecialchars($log['photo_url']) ?>" alt="Check-in Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                <?php if (!empty($log['_photo_display_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['_photo_display_url']) ?>" alt="Check-in Face" class="snapshot-thumb border" title="Hover to zoom">
                                                 <?php else: ?>
                                                     <span class="text-muted small">No photo</span>
                                                 <?php endif; ?>
@@ -393,8 +419,8 @@ function formatManilaTime($utcString) {
                                         <!-- Time Out Details -->
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <?php if (!empty($log['timeout_photo_url'])): ?>
-                                                    <img src="<?= htmlspecialchars($log['timeout_photo_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
+                                                <?php if (!empty($log['_timeout_photo_display_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($log['_timeout_photo_display_url']) ?>" alt="Time-out Face" class="snapshot-thumb border" title="Hover to zoom">
                                                     <div>
                                                         <div class="small fw-bold text-success"><?= formatManilaTime($log['time_out'] ?? '') ?></div>
                                                         <?php if (is_numeric($log['timeout_latitude'] ?? null) && is_numeric($log['timeout_longitude'] ?? null)): ?>
