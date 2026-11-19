@@ -266,12 +266,12 @@ The PHP files query these Supabase tables. This list is based on the table names
 | `profiles` | User identity, email, role, course, section, and account verification details. |
 | `events` | Event title, description, venue, schedule, capacity, status, image, organizer, and optional coordinates. |
 | `event_registrations` | Connects a participant to an event and stores registration status. |
-| `attendance` | Stores participant/event attendance, check-in and time-out timestamps, face-photo data, and GPS coordinates. |
+| `attendance` | Stores participant/event attendance, check-in and time-out timestamps, private storage object references for photo evidence, and GPS coordinates. |
 | `participant_face_profiles` | Stores the participant's face descriptor, consent details, and face model. |
 | `notifications` | Stores in-app event announcements. |
 | `audit_logs` | Receives audit activity through the authentication helper. |
 
-Other modules also use equipment-related tables and QR-token records.
+Other modules also use equipment-related tables.
 
 ## 5. Other features outside the main presentation focus
 
