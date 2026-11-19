@@ -18,6 +18,8 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)
 $successMsg = '';
 $errorMsg = '';
 
+$csrfToken = csrfToken('admin_events_csrf');
+
 function h($value) {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
@@ -164,6 +166,10 @@ function buildEventPayload() {
 
 // CREATE / EDIT / DELETE: same events table and fields as the original Zentrix page.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null, 'admin_events_csrf')) {
+        http_response_code(403);
+        exit('Invalid security token. Refresh the page and try again.');
+    }
     $action = $_POST['action'] ?? '';
 
     try {
@@ -843,6 +849,7 @@ $calendarJson = json_encode(
                                         </button>
                                         <?php if (in_array($currentRole, ['administrator', 'event organizer'], true)): ?>
                                             <form method="POST" class="mb-0" onsubmit="return confirm('Delete this event?');">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="event_id" value="<?= h($eventId) ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Event">
@@ -921,6 +928,7 @@ $calendarJson = json_encode(
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="send_notification">
                     <input type="hidden" name="event_id" id="notify-event-id">
@@ -963,6 +971,7 @@ $calendarJson = json_encode(
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create">
                     <div class="mb-3">
@@ -1037,6 +1046,7 @@ $calendarJson = json_encode(
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="event_id" id="edit-id">
