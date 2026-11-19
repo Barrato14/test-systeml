@@ -6,11 +6,11 @@ require_once '../includes/auth.php';
 require_once '../includes/daily-attendance.php';
 require_once '../includes/attendance-storage.php';
 
-// Administrators and Event Organizers may access Attendance Logs.
+// Administrators and Staff can view all logs; Event Organizers are restricted to their own events.
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
 if (
     !isset($_SESSION['user_id']) ||
-    !in_array($currentRole, ['administrator', 'staff'], true)
+    !in_array($currentRole, ['administrator', 'staff', 'event organizer'], true)
 ) {
     http_response_code(403);
     exit('Access denied.');
@@ -37,7 +37,7 @@ if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
     }
 }
 
-// Allow Administrators and Staff to toggle attendance between Present and Absent.
+// Allow authorized roles to toggle attendance only for events visible to their account.
 if (empty($_SESSION['attendance_logs_csrf'])) {
     $_SESSION['attendance_logs_csrf'] = bin2hex(random_bytes(32));
 }
