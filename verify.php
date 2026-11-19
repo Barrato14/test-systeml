@@ -1,14 +1,20 @@
 <?php
 require_once 'config/database.php';
+require_once 'includes/auth.php';
 
 $token = trim((string)($_POST['token'] ?? $_GET['token'] ?? ''));
 $message = '';
 $isSuccess = false;
 $showConfirmation = false;
+$csrfToken = csrfToken('verify_email_csrf');
 
 if ($token === '') {
     $message = 'Invalid or missing verification token.';
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null, 'verify_email_csrf')) {
+        http_response_code(403);
+        exit('Invalid security token. Refresh the page and try again.');
+    }
     // Only consume the verification token after the user explicitly presses Verify.
     // Email security scanners commonly open links automatically with GET requests.
     $response = supabaseRequest('profiles?verification_token=eq.' . urlencode($token) . '&select=id,is_verified', 'GET');
@@ -65,7 +71,8 @@ if ($token === '') {
 <h1><?= $isSuccess ? 'Email verified.' : ($showConfirmation ? 'Verify your email.' : 'Verification unavailable.') ?></h1>
 <p><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></p>
 <?php if ($showConfirmation): ?>
-<form method="POST" action="verify.php"><input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>"><button type="submit" class="btn-primary">Verify my email</button></form>
+<form method="POST" action="verify.php">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>"><input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>"><button type="submit" class="btn-primary">Verify my email</button></form>
 <?php else: ?>
 <a class="btn-primary" href="login.php"><?= $isSuccess ? 'Continue to sign in' : 'Return to sign in' ?></a>
 <?php endif; ?>

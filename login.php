@@ -9,6 +9,13 @@ if (function_exists('isLoggedIn') && isLoggedIn()) {
 $error = (string)($_SESSION['social_login_error'] ?? '');
 unset($_SESSION['social_login_error']);
 
+$csrfToken = csrfToken('login_csrf');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken($_POST['csrf_token'] ?? null, 'login_csrf')) {
+    http_response_code(403);
+    exit('Invalid security token. Refresh the page and try again.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
@@ -143,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <form id="loginForm" method="POST" action="login.php" novalidate>
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                     <!-- Email Field -->
                     <div class="input-group">
                         <label for="email">Email Address</label>

@@ -6,6 +6,13 @@ require_once 'includes/auth.php';
 $error = '';
 $success = '';
 
+$csrfToken = csrfToken('register_csrf');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !verifyCsrfToken($_POST['csrf_token'] ?? null, 'register_csrf')) {
+    http_response_code(403);
+    exit('Invalid security token. Refresh the page and try again.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $firstName = trim($_POST['first_name']);
     $lastName = trim($_POST['last_name']);
@@ -115,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($error): ?><div class="alert-error" role="alert"><i class="ph ph-warning-circle"></i><span><?= htmlspecialchars($error) ?></span></div><?php endif; ?>
 <?php if ($success): ?><div class="auth-success" role="status"><i class="ph ph-check-circle"></i><span><?= htmlspecialchars($success) ?></span></div><?php endif; ?>
 <form id="registerForm" method="POST" action="register.php" data-confirm-password="password" data-confirm-field="confirm_password">
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 <div class="auth-register-grid">
 <div class="input-group"><label for="first_name">First Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="first_name" name="first_name" placeholder="Your first name" required autocomplete="given-name" value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>"></div></div>
 <div class="input-group"><label for="last_name">Last Name</label><div class="input-wrapper"><i class="ph ph-user input-icon"></i><input type="text" id="last_name" name="last_name" placeholder="Your last name" required autocomplete="family-name" value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>"></div></div>

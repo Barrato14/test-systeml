@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../includes/session.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');

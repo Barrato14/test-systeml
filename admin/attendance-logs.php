@@ -1,16 +1,16 @@
 <?php
-session_start();
+require_once '../includes/session.php';
 date_default_timezone_set('Asia/Manila');
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/daily-attendance.php';
 require_once '../includes/attendance-storage.php';
 
-// Administrators and Event Organizers may access Attendance Logs.
+// Administrators and Staff can view all logs; Event Organizers are restricted to their own events.
 $currentRole = strtolower(trim((string)($_SESSION['user_role'] ?? '')));
 if (
-    !isset($_SESSION['user_id']) ||
-    !in_array($currentRole, ['administrator', 'staff'], true)
+    !isLoggedIn() ||
+    !userHasRole(['administrator', 'staff', 'event organizer'])
 ) {
     http_response_code(403);
     exit('Access denied.');
@@ -19,7 +19,7 @@ if (
 // Fetch events visible to the current role.
 $eventsQuery = 'events?select=id,title,end_datetime&order=start_datetime.desc';
 if ($currentRole === 'event organizer') {
-    $eventsQuery = 'events?select=id,title&organizer_id=eq.'
+    $eventsQuery = 'events?select=id,title,end_datetime&organizer_id=eq.'
         . rawurlencode((string)$_SESSION['user_id'])
         . '&order=start_datetime.desc';
 }
@@ -37,7 +37,7 @@ if (($eventsRes['code'] ?? 0) === 200 && is_array($eventsRes['data'] ?? null)) {
     }
 }
 
-// Allow Administrators and Staff to toggle attendance between Present and Absent.
+// Allow authorized roles to toggle attendance only for events visible to their account.
 if (empty($_SESSION['attendance_logs_csrf'])) {
     $_SESSION['attendance_logs_csrf'] = bin2hex(random_bytes(32));
 }
@@ -45,6 +45,10 @@ $attendanceCsrf = $_SESSION['attendance_logs_csrf'];
 $attendanceActionMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_attendance_status') {
+    if (!userHasRole(['administrator', 'staff'])) {
+        http_response_code(403);
+        exit('Only administrators and staff can change attendance status.');
+    }
     $submittedToken = (string)($_POST['csrf_token'] ?? '');
     $attendanceId = trim((string)($_POST['attendance_id'] ?? ''));
     $attendanceSource = ($_POST['attendance_source'] ?? '') === 'daily' ? 'daily_attendance' : 'attendance';
