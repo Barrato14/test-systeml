@@ -8,7 +8,7 @@ require_once '../includes/auth.php';
 $allowedRoles = ['administrator', 'staff', 'event organizer'];
 $currentRole = strtolower($_SESSION['user_role'] ?? '');
 
-if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)) {
+if (!isLoggedIn() || !userHasRole($allowedRoles)) {
     header("Location: ../login.php");
     exit;
 }
