@@ -4,6 +4,7 @@ date_default_timezone_set('Asia/Manila');
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/attendance-storage.php';
 
 /* =========================================================
    1. ADMINISTRATOR ACCESS
@@ -280,9 +281,25 @@ function usersDeleteAttendancePhoto($photoUrl, $targetId)
 
     if (!is_string($photoUrl) || $photoUrl === '') return;
 
-    // Time-out evidence is currently stored as a data URL in the attendance row,
-    // not as a separate Storage object. Deleting that row removes the image.
+    // Legacy inline evidence is removed with its attendance row.
     if (strpos($photoUrl, 'data:image/') === 0) return;
+
+    // New private Storage evidence is stored as a scoped storage:// reference.
+    $storagePath = attendanceStoragePathFromValue($photoUrl);
+    if ($storagePath !== null) {
+        $segments = explode('/', $storagePath);
+        $fileName = end($segments);
+        if (
+            count($segments) !== 3 ||
+            !preg_match('/^[0-9a-f-]{36}$/i', $segments[0]) ||
+            $segments[1] !== $targetId ||
+            !preg_match('/^(check-in|time-out)-[a-f0-9]{32}\\.jpg$/', $fileName)
+        ) {
+            throw new Exception('An attendance evidence path did not match the selected user. No database records were deleted.');
+        }
+        attendanceStorageDeleteObject($storagePath);
+        return;
+    }
 
     $photoParts = parse_url($photoUrl);
     $baseParts = parse_url($supabaseUrl);
@@ -360,8 +377,18 @@ function usersPermanentlyDeleteAccount($targetId, $targetUser)
         usersDeleteAttendancePhoto($attendance['timeout_photo_url'] ?? '', $targetId);
     }
 
-    // Remove records that do not have a profile foreign key.
+    $dailyAttendanceRows = usersApiRequest(
+        'daily_attendance?participant_id=eq.' . rawurlencode($targetId)
+        . '&select=id,photo_url,timeout_photo_url'
+    );
+    foreach ($dailyAttendanceRows as $attendance) {
+        usersDeleteAttendancePhoto($attendance['photo_url'] ?? '', $targetId);
+        usersDeleteAttendancePhoto($attendance['timeout_photo_url'] ?? '', $targetId);
+    }
+
+    // Remove attendance rows and their associated evidence references.
     usersApiRequest('attendance?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
+    usersApiRequest('daily_attendance?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
     usersApiRequest('equipment_borrow_requests?participant_id=eq.' . rawurlencode($targetId), 'DELETE');
     // Preserve other users' borrowing requests while anonymizing this user's reviewer reference.
     usersApiRequest(
