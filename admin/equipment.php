@@ -16,6 +16,8 @@ if (!isset($_SESSION['user_id']) || !in_array($currentRole, $allowedRoles, true)
 $successMsg = '';
 $errorMsg = '';
 
+$csrfToken = csrfToken('admin_equipment_csrf');
+
 function h($value) {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
@@ -116,6 +118,10 @@ function equipmentRequest($endpoint, $method = 'GET', $payload = null) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null, 'admin_equipment_csrf')) {
+        http_response_code(403);
+        exit('Invalid security token. Refresh the page and try again.');
+    }
     try {
         $action = $_POST['action'] ?? '';
 
@@ -625,7 +631,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                     <div class="equipment-card-actions">
                                         <button type="button" class="btn btn-sm btn-outline-primary edit-equipment" data-item="<?= h(json_encode($item, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT)) ?>" title="Edit equipment"><i class="bi bi-pencil me-1"></i> Edit</button>
                                         <button type="button" class="btn btn-sm btn-outline-secondary condition-button" data-id="<?= h($id) ?>" data-condition="<?= h($condition) ?>" title="Change condition"><i class="bi bi-sliders me-1"></i> Condition</button>
-                                        <form method="POST" class="delete-equipment-form" data-equipment-name="<?= h($item['name'] ?? 'this equipment') ?>">
+                                        <form method="POST" class="delete-equipment-form" data-equipment-name="<?= h($item['name'] ?? 'this equipment') ?>
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">">
                                             <input type="hidden" name="action" value="delete_equipment">
                                             <input type="hidden" name="equipment_id" value="<?= h($id) ?>">
                                             <button type="button" class="btn btn-sm btn-outline-danger delete-equipment-trigger" title="Delete equipment"><i class="bi bi-trash me-1"></i> Delete</button>
@@ -663,6 +670,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                         <i class="bi bi-check-lg"></i> Approve
                                     </button>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Reject this borrowing request?')">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                                         <input type="hidden" name="action" value="review_request">
                                         <input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>">
                                         <input type="hidden" name="decision" value="Rejected">
@@ -696,7 +704,8 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
                                 <td class="small"><?= h($request['borrow_date'] ?? '—') ?><br><span class="text-muted">to <?= h($request['expected_return_date'] ?? '—') ?></span></td>
                                 <td><?= h($request['purpose'] ?? '—') ?></td>
                                 <td><span class="badge bg-<?= $badge ?>"><?= h($status) ?></span></td>
-                                <td><?php if ($status === 'Approved'): ?><form method="POST" onsubmit="return confirm('Confirm that this equipment has been returned?')"><input type="hidden" name="action" value="mark_returned"><input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>"><button class="btn btn-sm btn-outline-success">Mark returned</button></form><?php else: ?>—<?php endif; ?></td>
+                                <td><?php if ($status === 'Approved'): ?><form method="POST" onsubmit="return confirm('Confirm that this equipment has been returned?')">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>"><input type="hidden" name="action" value="mark_returned"><input type="hidden" name="request_id" value="<?= h($request['id'] ?? '') ?>"><button class="btn btn-sm btn-outline-success">Mark returned</button></form><?php else: ?>—<?php endif; ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -713,6 +722,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4">
             <form method="POST">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">Approve Borrowing Request</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -752,6 +762,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 rounded-4">
             <form method="POST" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                 <div class="modal-header bg-dark text-white"><h5 class="modal-title" id="equipmentModalTitle">Add Equipment</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body p-4">
                     <input type="hidden" name="action" value="save_equipment">
@@ -798,6 +809,7 @@ if (!in_array($activeTab, ['inventory', 'requests', 'history'], true)) {
 <div class="modal fade" id="conditionModal" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content">
         <form method="POST">
+<input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
             <div class="modal-header"><h5 class="modal-title">Equipment Condition</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body"><input type="hidden" name="action" value="update_condition"><input type="hidden" name="equipment_id" id="condition_equipment_id"><label class="form-label">Set condition</label><select name="condition_status" id="condition_status" class="form-select"><option value="Available">Available</option><option value="Maintenance">Under maintenance</option><option value="Unavailable">Unavailable</option></select></div>
             <div class="modal-footer"><button class="btn btn-primary">Update</button></div>
